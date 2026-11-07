@@ -1,14 +1,20 @@
 -- Announcements and notifications.
 --
--- Announcement visibility is explicit, like documents. `audience` decides who
--- can read an announcement. `campus_id` and `department_id` are attribution and
--- routing only and never restrict who can see an announcement.
--- Writes happen only through the backend (service_role).
+-- Access rules:
+--   audience = 'all_students'  -> every authenticated user, across all campuses
+--   audience = 'staff_only'    -> staff on the announcement's campus; any campus
+--                                 only when scope = 'university_wide'
+--
+-- `campus_id` and `department_id` are attribution and routing only for
+-- student-facing announcements. Campus is required unless scope is
+-- 'university_wide'. Writes happen only through the backend (service_role).
 
 create table public.announcements (
   id uuid primary key default gen_random_uuid(),
   audience text not null default 'all_students'
     check (audience in ('all_students', 'staff_only')),
+  scope text not null default 'campus'
+    check (scope in ('campus', 'university_wide')),
   campus_id uuid references public.campuses(id),
   department_id uuid,
   category text,
@@ -21,7 +27,9 @@ create table public.announcements (
     foreign key (department_id, campus_id)
     references public.departments(id, campus_id),
   constraint announcements_department_requires_campus
-    check (department_id is null or campus_id is not null)
+    check (department_id is null or campus_id is not null),
+  constraint announcements_scope_requires_campus
+    check (scope = 'university_wide' or campus_id is not null)
 );
 
 create index announcements_campus_id_idx on public.announcements(campus_id);
@@ -45,7 +53,10 @@ create policy "announcements_select" on public.announcements
   for select to authenticated
   using (
     audience = 'all_students'
-    or public.app_role() in ('faculty', 'authority', 'management')
+    or (
+      public.app_role() in ('faculty', 'authority', 'management')
+      and (scope = 'university_wide' or campus_id = public.app_campus_id())
+    )
   );
 
 create policy "notifications_select_own" on public.notifications

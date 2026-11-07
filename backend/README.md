@@ -82,13 +82,23 @@ FastAPI dependencies live in `app/middleware/auth.py`: `get_current_user` and
 
 | Data | Rule |
 |---|---|
-| Public student-facing documents | Every authenticated student across all campuses. Not filtered by campus. |
+| Published public student documents | Every authenticated user across all campuses. Not filtered by campus. |
+| Published staff-only documents and staff-only announcements | Staff on the item's campus. Any campus only when `scope = university_wide`. |
+| Draft and archived documents | Uploader, plus authority reviewers on the item's campus (any campus only when `scope = university_wide`). |
+| Campus-scoped content | `campus_id` is required unless `scope = university_wide`. |
 | Tickets | Student sees their own. Assigned faculty sees assigned tickets. Faculty sees their campus and department queue. Authority sees its own campus. Management sees all campuses only with `all_campuses_access`. |
 | Profiles | Own profile. Faculty and authority see their own campus. Management sees all campuses only with `all_campuses_access`. |
 | `all_campuses_access` | Set by the backend, allowed only for `management`. Never set at signup. |
 
-Management has no cross-campus access unless `all_campuses_access` is true.
-Those are the default rules. The next section lists rules still open.
+Management has no cross-campus access to tickets or profiles unless
+`all_campuses_access` is true. The grant does not extend to staff-only or draft
+content, which follows the `scope` rule above.
+
+Defaults chosen for this round, to confirm:
+- Draft and archived documents are reviewable by authority only. Management does not
+  review drafts by default.
+- Staff-only content is not opened to management through `all_campuses_access`. It
+  opens only when the item itself is `university_wide`.
 
 ## Supabase development project setup
 
@@ -139,11 +149,11 @@ approve applying them to this development project.
 
 ## Open decisions
 
-- **Staff-only documents and announcements:** currently every faculty, authority and
-  management account can read them across all campuses. This does not match the
-  authority campus default. Tell me who should read them.
-- **Staff draft visibility:** staff currently read draft and archived documents across
-  campuses too. Tell me whether drafts should be limited to their uploader and campus.
+- **Management oversight of staff content:** management can't read staff-only or draft
+  content unless it is university-wide. Confirm whether management needs read access to
+  staff content for reporting, or whether reporting should use aggregates only.
+- **Who sets `scope`:** the uploader or publisher chooses `campus` or `university_wide`.
+  Confirm whether a university-wide choice needs approval.
 
 ## Database (Supabase)
 

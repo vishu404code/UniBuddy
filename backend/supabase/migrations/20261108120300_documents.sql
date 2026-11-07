@@ -1,12 +1,19 @@
 -- Documents and their chunks/embeddings.
 --
--- Access rule: `campus_id` and `department_id` are for attribution, routing and
--- reporting only. Retrieval is never filtered by a student's campus. What
--- restricts a document is `visibility` plus `publication_status`.
+-- Access rules:
+--   published + public_students  -> every authenticated user, across all campuses
+--   published + staff_only       -> staff on the document's campus; any campus
+--                                   only when scope = 'university_wide'
+--   draft or archived            -> the uploader, plus authority reviewers on the
+--                                   document's campus (any campus if university_wide)
+--
+-- `campus_id` is required unless scope is 'university_wide', so every campus-scoped
+-- document has a campus to check against. Retrieval never filters student-facing
+-- documents by campus.
 --
 -- The backend's retrieval query runs with the service_role key, which bypasses
--- RLS. It must apply the same publication_status and visibility filter in its
--- own SQL. These policies are a second line of defence, not the only gate.
+-- RLS. It must apply the same rules in its own SQL. These policies are a second
+-- line of defence.
 
 create table public.documents (
   id uuid primary key default gen_random_uuid(),
@@ -18,6 +25,8 @@ create table public.documents (
   uploaded_by uuid not null references public.profiles(id),
   campus_id uuid references public.campuses(id),
   department_id uuid,
+  scope text not null default 'campus'
+    check (scope in ('campus', 'university_wide')),
   visibility text not null default 'public_students'
     check (visibility in ('public_students', 'staff_only')),
   processing_status text not null default 'pending'
@@ -31,7 +40,9 @@ create table public.documents (
     foreign key (department_id, campus_id)
     references public.departments(id, campus_id),
   constraint documents_department_requires_campus
-    check (department_id is null or campus_id is not null)
+    check (department_id is null or campus_id is not null),
+  constraint documents_campus_scope_requires_campus
+    check (scope = 'university_wide' or campus_id is not null)
 );
 
 create index documents_uploaded_by_idx on public.documents(uploaded_by);
@@ -62,18 +73,41 @@ create index document_chunks_embedding_idx
   on public.document_chunks
   using hnsw (embedding vector_cosine_ops);
 
+-- One definition of document access, shared by documents and document_chunks.
+create or replace function public.can_read_document(doc public.documents)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select
+    doc.uploaded_by = auth.uid()
+    or (
+      doc.publication_status = 'published'
+      and doc.visibility = 'public_students'
+    )
+    or (
+      doc.publication_status = 'published'
+      and doc.visibility = 'staff_only'
+      and public.app_role() in ('faculty', 'authority', 'management')
+      and (doc.scope = 'university_wide' or doc.campus_id = public.app_campus_id())
+    )
+    or (
+      doc.publication_status in ('draft', 'archived')
+      and public.app_role() = 'authority'
+      and (doc.scope = 'university_wide' or doc.campus_id = public.app_campus_id())
+    );
+$$;
+
+revoke execute on function public.can_read_document(public.documents) from public, anon;
+grant execute on function public.can_read_document(public.documents) to authenticated, service_role;
+
 alter table public.documents enable row level security;
 alter table public.document_chunks enable row level security;
 
--- Readable by the uploader, any staff role, or any authenticated user when the
--- document is published and marked public_students. Never filtered by campus.
 create policy "documents_select" on public.documents
   for select to authenticated
-  using (
-    uploaded_by = auth.uid()
-    or public.app_role() in ('faculty', 'authority', 'management')
-    or (publication_status = 'published' and visibility = 'public_students')
-  );
+  using (public.can_read_document(documents));
 
 create policy "document_chunks_select" on public.document_chunks
   for select to authenticated
@@ -81,11 +115,7 @@ create policy "document_chunks_select" on public.document_chunks
     exists (
       select 1 from public.documents d
       where d.id = document_chunks.document_id
-        and (
-          d.uploaded_by = auth.uid()
-          or public.app_role() in ('faculty', 'authority', 'management')
-          or (d.publication_status = 'published' and d.visibility = 'public_students')
-        )
+        and public.can_read_document(d)
     )
   );
 
