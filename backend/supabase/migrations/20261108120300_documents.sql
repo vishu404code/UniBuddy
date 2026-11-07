@@ -1,14 +1,12 @@
--- Milestone 2: documents and their chunks/embeddings.
+-- Documents and their chunks/embeddings.
 --
--- IMPORTANT access-control note (see Milestone 2 report): `campus_id` and
--- `department_id` on a document are for ATTRIBUTION and ROUTING only. Per
--- the confirmed project rule, retrieval must NOT be silently filtered by a
--- student's campus. The only thing that restricts whether a student can see
--- a document is `visibility` (plus `publication_status` actually being
--- 'published'). These RLS policies enforce that -- but the backend's own
--- retrieval query (Milestone 3, run with the service_role key) bypasses RLS
--- entirely and MUST apply the same publication_status/visibility filter
--- explicitly in its SQL. RLS here is a safety net, not the only gate.
+-- Access rule: `campus_id` and `department_id` are for attribution, routing and
+-- reporting only. Retrieval is never filtered by a student's campus. What
+-- restricts a document is `visibility` plus `publication_status`.
+--
+-- The backend's retrieval query runs with the service_role key, which bypasses
+-- RLS. It must apply the same publication_status and visibility filter in its
+-- own SQL. These policies are a second line of defence, not the only gate.
 
 create table public.documents (
   id uuid primary key default gen_random_uuid(),
@@ -19,7 +17,7 @@ create table public.documents (
   storage_path text not null,
   uploaded_by uuid not null references public.profiles(id),
   campus_id uuid references public.campuses(id),
-  department_id uuid references public.departments(id),
+  department_id uuid,
   visibility text not null default 'public_students'
     check (visibility in ('public_students', 'staff_only')),
   processing_status text not null default 'pending'
@@ -28,7 +26,12 @@ create table public.documents (
     check (publication_status in ('draft', 'published', 'archived')),
   page_count integer,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint documents_department_in_campus
+    foreign key (department_id, campus_id)
+    references public.departments(id, campus_id),
+  constraint documents_department_requires_campus
+    check (department_id is null or campus_id is not null)
 );
 
 create index documents_uploaded_by_idx on public.documents(uploaded_by);
@@ -54,8 +57,7 @@ create table public.document_chunks (
 
 create index document_chunks_document_id_idx on public.document_chunks(document_id);
 
--- Vector similarity index (cosine distance, matching how OpenAI embeddings
--- are typically compared). Created now, empty, so it's ready for Milestone 3.
+-- Cosine distance, matching how OpenAI embeddings are compared.
 create index document_chunks_embedding_idx
   on public.document_chunks
   using hnsw (embedding vector_cosine_ops);
@@ -63,8 +65,8 @@ create index document_chunks_embedding_idx
 alter table public.documents enable row level security;
 alter table public.document_chunks enable row level security;
 
--- Readable by: its uploader, any staff role, or any authenticated student
--- IF it's published AND marked public_students. Never filtered by campus.
+-- Readable by the uploader, any staff role, or any authenticated user when the
+-- document is published and marked public_students. Never filtered by campus.
 create policy "documents_select" on public.documents
   for select to authenticated
   using (

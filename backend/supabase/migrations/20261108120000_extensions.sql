@@ -1,4 +1,4 @@
--- Milestone 2: core extensions and shared helpers.
+-- Core extensions and shared helpers.
 
 create extension if not exists pgcrypto;  -- gen_random_uuid()
 create extension if not exists vector;    -- pgvector, for document_chunks.embedding

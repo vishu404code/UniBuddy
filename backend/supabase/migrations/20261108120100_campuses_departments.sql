@@ -1,4 +1,4 @@
--- Milestone 2: campuses and departments.
+-- Campuses and departments.
 -- Campus/department matter for user assignment, ticket routing, and
 -- reporting -- NOT for restricting which documents a student can retrieve.
 
@@ -14,7 +14,10 @@ create table public.departments (
   campus_id uuid not null references public.campuses(id) on delete cascade,
   name text not null,
   created_at timestamptz not null default now(),
-  unique (campus_id, name)
+  unique (campus_id, name),
+  -- Target of composite foreign keys that guarantee a department belongs to
+  -- the campus recorded alongside it on users, documents, tickets, announcements.
+  unique (id, campus_id)
 );
 
 create index departments_campus_id_idx on public.departments(campus_id);

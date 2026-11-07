@@ -1,10 +1,12 @@
--- Milestone 2: tickets and their event timeline.
+-- Tickets and their event timeline.
 --
--- Note (see Milestone 2 report): `department_id` here is not currently
--- constrained to belong to the same `campus_id` as the ticket -- Postgres
--- CHECK constraints can't reference another table directly. The backend
--- must enforce "department belongs to this campus" when creating a ticket
--- (Milestone 4).
+-- Visibility:
+--   student       -> tickets they filed
+--   faculty       -> tickets assigned to them, plus unassigned-or-assigned
+--                    tickets in their own campus AND department (the queue)
+--   authority,
+--   management    -> all tickets (oversight and cross-campus reporting)
+-- Writes happen only through the backend (service_role).
 
 create sequence public.ticket_number_seq;
 
@@ -14,7 +16,7 @@ create table public.tickets (
     default ('UB-' || lpad(nextval('public.ticket_number_seq')::text, 4, '0')),
   student_id uuid not null references public.profiles(id),
   campus_id uuid not null references public.campuses(id),
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null,
   assigned_faculty_id uuid references public.profiles(id),
   subject text not null,
   question text not null,
@@ -25,7 +27,10 @@ create table public.tickets (
     check (status in ('submitted', 'assigned', 'in_progress', 'resolved')),
   source_message_id uuid references public.messages(id),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint tickets_department_in_campus
+    foreign key (department_id, campus_id)
+    references public.departments(id, campus_id)
 );
 
 create index tickets_student_id_idx on public.tickets(student_id);
@@ -51,13 +56,16 @@ create index ticket_events_ticket_id_idx on public.ticket_events(ticket_id);
 alter table public.tickets enable row level security;
 alter table public.ticket_events enable row level security;
 
--- Visible to: the student who filed it, the faculty member assigned to it,
--- and authority/management (oversight + cross-campus reporting).
 create policy "tickets_select" on public.tickets
   for select to authenticated
   using (
     student_id = auth.uid()
     or assigned_faculty_id = auth.uid()
+    or (
+      public.app_role() = 'faculty'
+      and campus_id = public.app_campus_id()
+      and department_id = public.app_department_id()
+    )
     or public.app_role() in ('authority', 'management')
   );
 
@@ -70,6 +78,11 @@ create policy "ticket_events_select" on public.ticket_events
         and (
           t.student_id = auth.uid()
           or t.assigned_faculty_id = auth.uid()
+          or (
+            public.app_role() = 'faculty'
+            and t.campus_id = public.app_campus_id()
+            and t.department_id = public.app_department_id()
+          )
           or public.app_role() in ('authority', 'management')
         )
     )

@@ -1,4 +1,4 @@
--- Milestone 2: chat conversations and messages.
+-- Chat conversations and messages.
 
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
