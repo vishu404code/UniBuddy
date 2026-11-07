@@ -33,7 +33,7 @@ def test_management_without_explicit_grant_is_limited_to_own_campus():
 
 
 def test_management_with_explicit_grant_can_access_any_campus():
-    user = make_profile(USER_ID, role="management", campus_id=str(CAMPUS_A), all_campuses_access=True)
+    user = make_profile(USER_ID, role="management", campus_id=str(CAMPUS_A), cross_campus_record_access=True)
 
     assert can_access_campus(user, CAMPUS_B) is True
 

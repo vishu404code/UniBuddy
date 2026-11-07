@@ -2,8 +2,9 @@
 --
 -- Access rules:
 --   published + public_students  -> every authenticated user, across all campuses
---   published + staff_only       -> staff on the document's campus; any campus
---                                   only when scope = 'university_wide'
+--   published + staff_only       -> faculty and authority on the document's campus;
+--                                   any campus only when scope = 'university_wide'.
+--                                   Management has no access to staff content here.
 --   draft or archived            -> the uploader, plus authority reviewers on the
 --                                   document's campus (any campus if university_wide)
 --
@@ -89,7 +90,7 @@ as $$
     or (
       doc.publication_status = 'published'
       and doc.visibility = 'staff_only'
-      and public.app_role() in ('faculty', 'authority', 'management')
+      and public.app_role() in ('faculty', 'authority')
       and (doc.scope = 'university_wide' or doc.campus_id = public.app_campus_id())
     )
     or (

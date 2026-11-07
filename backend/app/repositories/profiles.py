@@ -4,7 +4,7 @@ import httpx
 
 from app.schemas.auth import CurrentUser
 
-PROFILE_COLUMNS = "id,email,full_name,role,campus_id,department_id,all_campuses_access"
+PROFILE_COLUMNS = "id,email,full_name,role,campus_id,department_id,cross_campus_record_access"
 
 
 class ProfileLookupError(Exception):

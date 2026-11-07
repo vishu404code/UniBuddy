@@ -20,4 +20,4 @@ class CurrentUser(BaseModel):
     role: Role
     campus_id: UUID | None
     department_id: UUID | None
-    all_campuses_access: bool = False
+    cross_campus_record_access: bool = False

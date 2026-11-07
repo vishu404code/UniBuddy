@@ -5,7 +5,9 @@
 --   faculty     -> tickets assigned to them, plus tickets in their own campus
 --                  AND department queue
 --   authority   -> all tickets in their own campus
---   management  -> all tickets, only with the explicit all_campuses_access flag
+--   management  -> individual tickets from other campuses only with the explicit
+--                  cross_campus_record_access grant. Aggregate reporting does not use
+--                  this grant.
 -- Writes happen only through the backend (service_role).
 
 create sequence public.ticket_number_seq;
@@ -70,7 +72,7 @@ create policy "tickets_select" on public.tickets
       public.app_role() = 'authority'
       and campus_id = public.app_campus_id()
     )
-    or public.app_all_campuses()
+    or public.app_cross_campus_records()
   );
 
 create policy "ticket_events_select" on public.ticket_events
@@ -91,7 +93,7 @@ create policy "ticket_events_select" on public.ticket_events
             public.app_role() = 'authority'
             and t.campus_id = public.app_campus_id()
           )
-          or public.app_all_campuses()
+          or public.app_cross_campus_records()
         )
     )
   );

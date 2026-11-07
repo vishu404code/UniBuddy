@@ -13,9 +13,9 @@ create table public.profiles (
     check (role in ('student', 'faculty', 'authority', 'management')),
   campus_id uuid references public.campuses(id),
   department_id uuid,
-  -- Explicit grant for cross-campus visibility. Only management may hold it,
+  -- Explicit grant for individual cross-campus record access. Only management may hold it,
   -- and it is set by the backend, never at signup.
-  all_campuses_access boolean not null default false,
+  cross_campus_record_access boolean not null default false,
   -- Flexible extra fields the frontend's onboarding already collects
   -- (e.g. course, age) without forcing a schema change for each one.
   metadata jsonb not null default '{}'::jsonb,
@@ -27,7 +27,7 @@ create table public.profiles (
   constraint profiles_department_requires_campus
     check (department_id is null or campus_id is not null),
   constraint profiles_cross_campus_only_management
-    check (all_campuses_access = false or role = 'management')
+    check (cross_campus_record_access = false or role = 'management')
 );
 
 create index profiles_campus_id_idx on public.profiles(campus_id);
@@ -70,7 +70,7 @@ as $$
   select department_id from public.profiles where id = auth.uid();
 $$;
 
-create or replace function public.app_all_campuses()
+create or replace function public.app_cross_campus_records()
 returns boolean
 language sql
 security definer
@@ -78,7 +78,7 @@ stable
 set search_path = public
 as $$
   select coalesce(
-    (select all_campuses_access from public.profiles where id = auth.uid()),
+    (select cross_campus_record_access from public.profiles where id = auth.uid()),
     false
   );
 $$;
@@ -86,21 +86,22 @@ $$;
 revoke execute on function public.app_role() from public, anon;
 revoke execute on function public.app_campus_id() from public, anon;
 revoke execute on function public.app_department_id() from public, anon;
-revoke execute on function public.app_all_campuses() from public, anon;
+revoke execute on function public.app_cross_campus_records() from public, anon;
 grant execute on function public.app_role() to authenticated, service_role;
 grant execute on function public.app_campus_id() to authenticated, service_role;
 grant execute on function public.app_department_id() to authenticated, service_role;
-grant execute on function public.app_all_campuses() to authenticated, service_role;
+grant execute on function public.app_cross_campus_records() to authenticated, service_role;
 
 alter table public.profiles enable row level security;
 
 -- Own profile always. Faculty and authority see profiles in their own campus.
--- Management sees all campuses only with the explicit all_campuses_access flag.
+-- Individual profiles from other campuses need the explicit
+-- cross_campus_record_access grant. Analytics never read this table directly.
 create policy "profiles_select" on public.profiles
   for select to authenticated
   using (
     id = auth.uid()
-    or public.app_all_campuses()
+    or public.app_cross_campus_records()
     or (
       public.app_role() in ('faculty', 'authority')
       and campus_id = public.app_campus_id()

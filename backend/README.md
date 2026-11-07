@@ -59,7 +59,7 @@ is the one Supabase Auth issues to the logged-in user.
 ```json
 {
   "id": "…", "email": "…", "full_name": "…", "role": "faculty",
-  "campus_id": "…", "department_id": "…", "all_campuses_access": false
+  "campus_id": "…", "department_id": "…", "cross_campus_record_access": false
 }
 ```
 
@@ -71,7 +71,7 @@ How the backend identifies the caller:
 2. The audience must be `authenticated`, the issuer `<SUPABASE_URL>/auth/v1`,
    and `exp`, `iat` and `sub` must be present.
 3. `sub` is looked up in `profiles` with the service-role key. Role, campus,
-   department and `all_campuses_access` come from that row. Token claims such as
+   department and `cross_campus_record_access` come from that row. Token claims such as
    `user_metadata` are never used for authorization.
 4. A valid token with no profile row gets `403`.
 
@@ -83,22 +83,25 @@ FastAPI dependencies live in `app/middleware/auth.py`: `get_current_user` and
 | Data | Rule |
 |---|---|
 | Published public student documents | Every authenticated user across all campuses. Not filtered by campus. |
-| Published staff-only documents and staff-only announcements | Staff on the item's campus. Any campus only when `scope = university_wide`. |
-| Draft and archived documents | Uploader, plus authority reviewers on the item's campus (any campus only when `scope = university_wide`). |
+| Published staff-only documents and staff-only announcements | Faculty and authority on the item's campus. Any campus only when `scope = university_wide`. Management has no access. |
+| Draft and archived documents | Uploader, plus authority reviewers on the item's campus (any campus only when `scope = university_wide`). Management has no access. |
 | Campus-scoped content | `campus_id` is required unless `scope = university_wide`. |
-| Tickets | Student sees their own. Assigned faculty sees assigned tickets. Faculty sees their campus and department queue. Authority sees its own campus. Management sees all campuses only with `all_campuses_access`. |
-| Profiles | Own profile. Faculty and authority see their own campus. Management sees all campuses only with `all_campuses_access`. |
-| `all_campuses_access` | Set by the backend, allowed only for `management`. Never set at signup. |
+| Tickets (individual) | Student sees their own. Assigned faculty sees assigned tickets. Faculty sees their campus and department queue. Authority sees its own campus. Other campuses only with `cross_campus_record_access`. |
+| Profiles (individual) | Own profile. Faculty and authority see their own campus. Other campuses only with `cross_campus_record_access`. |
+| `cross_campus_record_access` | Explicit grant set by the backend, allowed only for `management`. Never set at signup. It covers individual tickets and profiles only. |
+| Management reporting | Aggregate statistics only (see below). Does not use `cross_campus_record_access`. |
 
-Management has no cross-campus access to tickets or profiles unless
-`all_campuses_access` is true. The grant does not extend to staff-only or draft
-content, which follows the `scope` rule above.
+### Management reporting
 
-Defaults chosen for this round, to confirm:
-- Draft and archived documents are reviewable by authority only. Management does not
-  review drafts by default.
-- Staff-only content is not opened to management through `all_campuses_access`. It
-  opens only when the item itself is `university_wide`.
+Management sees aggregate statistics: campus and department totals, resolution
+rates, and faculty response times. Management does not read staff-only or draft
+document or announcement content for reporting. Reporting never reads individual
+rows through RLS. The backend computes aggregates with the service-role key and
+returns counts and rates, not record contents. That code arrives in the dashboard
+milestone, and it must check `role = management` before running.
+
+Individual ticket or profile access for management needs the separate
+`cross_campus_record_access` grant. Analytics does not imply it.
 
 ## Supabase development project setup
 
@@ -149,9 +152,8 @@ approve applying them to this development project.
 
 ## Open decisions
 
-- **Management oversight of staff content:** management can't read staff-only or draft
-  content unless it is university-wide. Confirm whether management needs read access to
-  staff content for reporting, or whether reporting should use aggregates only.
+- **Who holds `cross_campus_record_access`:** only the backend sets it, and only for
+  management. Confirm which management users should hold it. There is no UI for setting it.
 - **Who sets `scope`:** the uploader or publisher chooses `campus` or `university_wide`.
   Confirm whether a university-wide choice needs approval.
 

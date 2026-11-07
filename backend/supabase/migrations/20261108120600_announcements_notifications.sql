@@ -2,8 +2,9 @@
 --
 -- Access rules:
 --   audience = 'all_students'  -> every authenticated user, across all campuses
---   audience = 'staff_only'    -> staff on the announcement's campus; any campus
---                                 only when scope = 'university_wide'
+--   audience = 'staff_only'    -> faculty and authority on the announcement's campus;
+--                                 any campus only when scope = 'university_wide'.
+--                                 Management has no access to staff announcements here.
 --
 -- `campus_id` and `department_id` are attribution and routing only for
 -- student-facing announcements. Campus is required unless scope is
@@ -54,7 +55,7 @@ create policy "announcements_select" on public.announcements
   using (
     audience = 'all_students'
     or (
-      public.app_role() in ('faculty', 'authority', 'management')
+      public.app_role() in ('faculty', 'authority')
       and (scope = 'university_wide' or campus_id = public.app_campus_id())
     )
   );
