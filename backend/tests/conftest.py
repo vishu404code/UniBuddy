@@ -68,6 +68,7 @@ def make_profile(
     role: str = "student",
     campus_id: str | None = None,
     department_id: str | None = None,
+    all_campuses_access: bool = False,
 ) -> CurrentUser:
     return CurrentUser(
         id=UUID(user_id),
@@ -76,6 +77,7 @@ def make_profile(
         role=role,
         campus_id=UUID(campus_id) if campus_id else None,
         department_id=UUID(department_id) if department_id else None,
+        all_campuses_access=all_campuses_access,
     )
 
 

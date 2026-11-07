@@ -26,8 +26,14 @@ def test_authority_is_limited_to_own_campus():
     assert can_access_campus(user, CAMPUS_B) is False
 
 
-def test_management_can_access_any_campus():
+def test_management_without_explicit_grant_is_limited_to_own_campus():
     user = make_profile(USER_ID, role="management", campus_id=str(CAMPUS_A))
+
+    assert can_access_campus(user, CAMPUS_B) is False
+
+
+def test_management_with_explicit_grant_can_access_any_campus():
+    user = make_profile(USER_ID, role="management", campus_id=str(CAMPUS_A), all_campuses_access=True)
 
     assert can_access_campus(user, CAMPUS_B) is True
 

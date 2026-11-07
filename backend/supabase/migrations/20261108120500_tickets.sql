@@ -1,11 +1,11 @@
 -- Tickets and their event timeline.
 --
 -- Visibility:
---   student       -> tickets they filed
---   faculty       -> tickets assigned to them, plus unassigned-or-assigned
---                    tickets in their own campus AND department (the queue)
---   authority,
---   management    -> all tickets (oversight and cross-campus reporting)
+--   student     -> tickets they filed
+--   faculty     -> tickets assigned to them, plus tickets in their own campus
+--                  AND department queue
+--   authority   -> all tickets in their own campus
+--   management  -> all tickets, only with the explicit all_campuses_access flag
 -- Writes happen only through the backend (service_role).
 
 create sequence public.ticket_number_seq;
@@ -66,7 +66,11 @@ create policy "tickets_select" on public.tickets
       and campus_id = public.app_campus_id()
       and department_id = public.app_department_id()
     )
-    or public.app_role() in ('authority', 'management')
+    or (
+      public.app_role() = 'authority'
+      and campus_id = public.app_campus_id()
+    )
+    or public.app_all_campuses()
   );
 
 create policy "ticket_events_select" on public.ticket_events
@@ -83,7 +87,11 @@ create policy "ticket_events_select" on public.ticket_events
             and t.campus_id = public.app_campus_id()
             and t.department_id = public.app_department_id()
           )
-          or public.app_role() in ('authority', 'management')
+          or (
+            public.app_role() = 'authority'
+            and t.campus_id = public.app_campus_id()
+          )
+          or public.app_all_campuses()
         )
     )
   );
