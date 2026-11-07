@@ -1,0 +1,19 @@
+{
+  "name": "unibuddy",
+  "version": "1.0.0",
+  "description": "UniBuddy - Intelligent Campus AI Assistant & Helpdesk Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "campus-ai",
+    "unibuddy",
+    "helpdesk",
+    "student-assistant",
+    "higher-ed"
+  ],
+  "author": "Vishnu Kumawat",
+  "license": "MIT"
+}
