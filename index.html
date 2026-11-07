@@ -44,14 +44,24 @@ label{display:block;font-size:13px;font-weight:500;margin:14px 0 6px}
 .how{padding:0 0 72px}.hsteps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:26px;position:relative}.hsteps:before{content:"";position:absolute;left:18px;right:18px;top:18px;height:2px;background:linear-gradient(90deg,var(--ind),#d5dcf1)}
 .hs{position:relative;padding-right:24px}.num{width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--ind);color:var(--indd);display:grid;place-items:center;font-weight:600;margin-bottom:14px;position:relative}.hs p{margin:0;max-width:240px}
 footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-top:1px solid var(--bd)}
-/* roles + login */
-.center{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(700px 380px at 50% -8%,var(--lav),transparent 70%)}
-.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;width:100%;max-width:900px}
-.role{display:flex;flex-direction:column;gap:6px;padding:22px;border-radius:18px}.role p{margin:0 0 12px;color:var(--slate);font-size:13px;flex:1}.role .ico{margin-bottom:10px}.role.t0{background:var(--ice)}.role.t1{background:var(--lav)}.role.t2{background:var(--bg2)}
-.role.sel{border-color:var(--ind);box-shadow:0 0 0 4px rgba(113,135,201,.18),var(--sh2)}
-.split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}.brandp{background:linear-gradient(160deg,var(--lav),var(--ice));padding:36px max(28px,4vw);display:flex;flex-direction:column;justify-content:space-between;gap:24px}.brandp p{color:var(--slate);max-width:380px}.brandp ul{padding:0;margin:20px 0 0;list-style:none;display:grid;gap:10px}.brandp li{display:flex;gap:10px;align-items:center;color:var(--navy)}.brandp li svg{color:var(--indd)}
-.formside{display:grid;place-items:center;padding:28px}.formbox{width:100%;max-width:380px}
-.demo{border:1px dashed #c3cde9;background:var(--ice);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--slate);margin:16px 0 2px}.demo b{color:var(--navy);font-weight:600}
+/* login page - matching attached visual identity */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 20px 40px;background:radial-gradient(1100px 520px at 50% -10%,var(--lav),transparent 72%),#ffffff}
+.login-header{text-align:center;max-width:540px;margin-bottom:28px}
+.login-card{width:100%;max-width:440px;background:#ffffff;border:1px solid var(--bd);border-radius:22px;padding:32px 28px;box-shadow:var(--sh);position:relative}
+.demo-section{width:100%;max-width:960px;margin-top:44px}
+.demo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
+.demo-card{background:#ffffff;border:1px solid var(--bd);border-radius:20px;padding:22px 18px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s}
+.demo-card:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--ind)}
+.demo-card.t-lav{background:var(--lav);border-color:#d5cef7}
+.demo-card.t-ice{background:var(--ice);border-color:#cddaf5}
+.demo-card h3{font-size:16px;font-weight:600;color:var(--navy);margin-top:6px}
+.demo-card p{font-size:13px;color:var(--slate);line-height:1.45;margin:0;flex:1}
+.demo-card .demo-badge{font-size:11.5px;color:var(--slate);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(38,54,83,.05);padding:3px 8px;border-radius:6px;width:fit-content;margin:4px 0}
+.demo-card .btn{background:#ffffff;border:1px solid var(--bd);color:var(--navy);font-weight:500;margin-top:8px}
+.demo-card:hover .btn{border-color:var(--ind);background:linear-gradient(180deg,#ffffff,var(--ice))}
+.demo-card.t-lav .btn{background:#ffffff}
+@media(max-width:860px){.demo-grid{grid-template-columns:repeat(2,1fr)}.login-wrap{padding:32px 16px}}
+@media(max-width:520px){.demo-grid{grid-template-columns:1fr}}
 /* app shell */
 .app{display:flex;height:100vh;height:100dvh}
 .side{width:262px;background:#fff;border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:16px 12px;flex:none;transition:transform .22s}.side .logo{padding:2px 8px 18px}
@@ -133,9 +143,14 @@ const STG=['Submitted','Assigned','In Progress','Resolved'];
 const ROLES={student:['user','Student','Ask questions and track your tickets.'],faculty:['book','Faculty','Review and answer student tickets.'],authority:['shield','Authority','Placeholder in this prototype.'],management:['bld','Management','Placeholder in this prototype.']};
 const KB=[{k:['internal'],a:'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance.',s:'Exam Schedule Circular',p:'p. 2'},{k:['scholarship'],a:'Scholarship applications open at the start of each semester through the student portal, with income and marks documents attached.',s:'Scholarship Guidelines',p:'p. 5'},{k:['timetable','schedule'],a:'The academic timetable is published on the department notice board and the student portal before each semester begins.',s:'Academic Calendar',p:'p. 1'},{k:['contact','faculty'],a:'Faculty office hours and email addresses are listed in the department directory. You may also forward a question as a ticket.',s:'Department Directory',p:'p. 4'},{k:['fee','tuition','payment'],a:'Semester fee payment closes on the last working day of the second week. Late payments may carry a fine.',s:'Fee Policy Handbook',p:'p. 12'},{k:['attendance','75'],a:'A minimum of 75% attendance is generally required to sit semester exams, with medical-leave exceptions.',s:'Academic Regulations',p:'p. 8'},{k:['library','facilit'],a:'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Other facilities are listed in the campus guide.',s:'Campus Facilities Guide',p:'p. 3'}];
 const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
+const defaultTickets=[{id:'UB-2041',subj:'Re-evaluation of lab marks',dept:'Computer Science',fac:'Dr. Mehta',date:'02 Nov 2026',pri:'High',st:1,q:'Can I request a re-evaluation of my Data Structures lab marks?',desc:'Marks look lower than expected.',reply:'',tl:['02 Nov','03 Nov']},{id:'UB-2036',subj:'Hostel fee receipt',dept:'Accounts',fac:'Ms. Rao',date:'28 Oct 2026',pri:'Medium',st:3,q:'I did not receive my hostel fee receipt.',desc:'',reply:'Your receipt has been emailed again. Please check your spam folder. (Demo reply)',tl:['28 Oct','28 Oct','29 Oct','30 Oct']}];
+const defaultNotifs=[{t:'Ticket UB-2041 was assigned to Dr. Mehta (demo).',u:1,tk:'UB-2041'},{t:'Ticket UB-2036 was resolved (demo).',u:0,tk:'UB-2036'}];
+let initTickets=defaultTickets,initNotifs=defaultNotifs;
+try{const st=JSON.parse(localStorage.getItem('ub-tickets'));if(Array.isArray(st)&&st.length)initTickets=st}catch(e){}
+try{const sn=JSON.parse(localStorage.getItem('ub-notifs'));if(Array.isArray(sn))initNotifs=sn}catch(e){}
+const saveTickets=()=>{try{localStorage.setItem('ub-tickets',JSON.stringify(S.tickets));localStorage.setItem('ub-notifs',JSON.stringify(S.notifs))}catch(e){}};
 const S={scr:'landing',role:null,pick:null,user:null,view:'chat',sel:'UB-2041',modal:null,bell:false,nav:false,chat:[],hist:[],fq:'',fs:'All',toast:'',fx:'screen',
-tickets:[{id:'UB-2041',subj:'Re-evaluation of lab marks',dept:'Computer Science',fac:'Dr. Mehta',date:'02 Nov 2026',pri:'High',st:1,q:'Can I request a re-evaluation of my Data Structures lab marks?',desc:'Marks look lower than expected.',reply:'',tl:['02 Nov','03 Nov']},{id:'UB-2036',subj:'Hostel fee receipt',dept:'Accounts',fac:'Ms. Rao',date:'28 Oct 2026',pri:'Medium',st:3,q:'I did not receive my hostel fee receipt.',desc:'',reply:'Your receipt has been emailed again. Please check your spam folder. (Demo reply)',tl:['28 Oct','28 Oct','29 Oct','30 Oct']}],
-notifs:[{t:'Ticket UB-2041 was assigned to Dr. Mehta (demo).',u:1,tk:'UB-2041'},{t:'Ticket UB-2036 was resolved (demo).',u:0,tk:'UB-2036'}]};
+tickets:initTickets,notifs:initNotifs};
 const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${t.st}">${STG[t.st]}</span>`;
 const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
 const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2600)};
@@ -156,12 +171,35 @@ function landing(){return `<div class="land"><div class="nav">${logo}<div class=
 <section id="how" class="how"><h2 class="ed">How it works</h2><div class="hsteps">${['Ask your question.','Get an instant verified answer or forward it to the right department.','Track your query until resolution.'].map((s,i)=>`<div class="hs"><span class="num">${i+1}</span><p>${s}</p></div>`).join('')}</div></section></div>
 <footer>© 2026 UniBuddy · Prototype with demo data. No real university systems or AI services are connected.</footer></div>`}
 
-function login(){let em='';try{em=localStorage.getItem('ub-email')||''}catch(e){}return `<div class="split"><div class="brandp"><div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div><div><h1 class="ed" style="font-size:40px">Your campus assistant is ready.</h1><p style="margin-top:14px">Sign in with your university email. UniBuddy opens the right portal for you automatically.</p><ul><li>${I('check')} Verified answers with sources</li><li>${I('check')} Tickets tracked to resolution</li><li>${I('check')} Live notifications</li></ul></div><div class="mut" style="font-size:12.5px">Prototype with demo data</div></div>
-<div class="formside"><div class="formbox"><button class="lnk" data-a="home" style="padding:0 0 14px">← Back to home</button><h2>Sign in</h2><div class="mut" style="font-size:13.5px;margin-top:2px">Your role is detected from your email.</div>
-<label>Email</label><input id="em" type="email" placeholder="you@university.edu" autocomplete="off" value="${em}"><label>Password</label><div style="position:relative"><input id="pw" type="password" placeholder="Password"><button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Show or hide password">${I('eye')}</button></div>
-<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:14px 0"><input id="rm" type="checkbox" style="width:auto;height:auto" ${em?'checked':''}> Remember me</label><div id="err" role="alert" style="color:#b4445a;font-size:13px;min-height:20px"></div>
-<button class="btn p w" data-a="login">Login</button>
-<div class="demo"><b>Demo accounts</b> · tap one to fill the form<div class="dlist">${Object.entries(ACC).map(([m,a])=>`<button class="dacc" data-a="fill" data-v="${m}"><span class="ico" style="width:34px;height:34px;border-radius:10px">${I(ROLES[a.role][0])}</span><span><b>${ROLES[a.role][1]}</b><small>${m}</small></span></button>`).join('')}</div><div style="margin-top:8px;font-size:12px">Demo only. Password for every demo account: <b>${DPW}</b>. No real authentication.</div></div></div></div></div>`}
+function login(){let em='';try{em=localStorage.getItem('ub-email')||''}catch(e){}return `<div class="login-wrap fx">
+<div class="login-header">
+<div class="logo" style="justify-content:center;margin-bottom:16px;cursor:pointer" data-a="home"><span class="mark" style="width:34px;height:34px;border-radius:10px;font-size:16px">U</span><span style="font-size:19px;font-weight:700;color:var(--navy)">UniBuddy</span></div>
+<h1 class="ed" style="font-size:clamp(30px,4.5vw,42px);color:var(--navy);margin-bottom:8px">Welcome to UniBuddy</h1>
+<p class="mut" style="font-size:15px;margin:0">Sign in to access your personalised university workspace.</p>
+</div>
+<div class="login-card">
+<h2 style="font-size:19px;color:var(--navy);font-weight:600;margin-bottom:2px">Sign in</h2>
+<div class="mut" style="font-size:13px;margin-bottom:20px">Your role is detected automatically from your email.</div>
+<label style="margin-top:0">Email address</label>
+<input id="em" type="email" placeholder="student@unibuddy.demo" autocomplete="off" value="${em}">
+<div class="row sp" style="margin-top:14px"><label style="margin:0">Password</label><button class="lnk" data-a="forgot" style="padding:0;font-size:12.5px;color:var(--indd)">Forgot password?</button></div>
+<div style="position:relative;margin-top:6px"><input id="pw" type="password" placeholder="Password"><button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Show or hide password">${I('eye')}</button></div>
+<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:16px 0 12px;cursor:pointer"><input id="rm" type="checkbox" style="width:auto;height:auto" ${em?'checked':''}><span>Remember me</span></label>
+<div id="err" role="alert" style="color:#b4445a;font-size:13px;min-height:20px;margin-bottom:6px"></div>
+<button class="btn p w" data-a="login" style="height:44px;font-size:15px;font-weight:600">Sign In</button>
+<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--slate)">Universal demo password: <b>${DPW}</b></div>
+</div>
+<div style="text-align:center;margin-top:14px"><button class="lnk" data-a="home" style="font-size:13.5px">← Back to home</button></div>
+<div class="demo-section">
+<div style="text-align:center;margin-bottom:18px"><h2 style="font-size:18px;font-weight:600;color:var(--navy)">Explore Demo Accounts</h2><p class="mut" style="font-size:13.5px;margin:3px 0 0">Click any demo account to autofill credentials and explore that role.</p></div>
+<div class="demo-grid">
+<div class="demo-card lift t-ice" data-a="fill" data-v="student@unibuddy.demo" title="Student Demo"><div class="ico">${I('user')}</div><h3>Student</h3><p>Ask questions and track your tickets.</p><div class="demo-badge">student@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="student@unibuddy.demo">Use Demo Account</button></div>
+<div class="demo-card lift t-lav" data-a="fill" data-v="faculty@unibuddy.demo" title="Faculty Demo"><div class="ico">${I('chat')}</div><h3>Faculty</h3><p>Review and answer student tickets.</p><div class="demo-badge">faculty@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="faculty@unibuddy.demo">Use Demo Account</button></div>
+<div class="demo-card lift" data-a="fill" data-v="authority@unibuddy.demo" title="Authority Demo"><div class="ico">${I('shield')}</div><h3>Authority</h3><p>Review and oversee university issues.</p><div class="demo-badge">authority@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="authority@unibuddy.demo">Use Demo Account</button></div>
+<div class="demo-card lift" data-a="fill" data-v="management@unibuddy.demo" title="Management Demo"><div class="ico">${I('bld')}</div><h3>Management</h3><p>University-level query & resolution overview.</p><div class="demo-badge">management@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="management@unibuddy.demo">Use Demo Account</button></div>
+</div>
+<div style="text-align:center;color:var(--slate);font-size:12.5px;margin:24px 0 12px">Demo accounts: no real credentials exist. Password for all accounts: <b>${DPW}</b>.</div>
+</div></div>`}
 function side(items){const f=S.role=='student';return `<aside class="side ${S.nav?'open':''}">${logo}${f?`<button class="si nc" data-a="new">${I('plus')}New Chat</button>`:''}${items.map(i=>`<button class="si ${S.view==i[0]?'on':''}" data-a="view" data-v="${i[0]}">${I(i[2])}${i[1]}</button>`).join('')}
 ${f?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${h.title}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
 <div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="Edit profile"><span class="av">${ini()}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${pn()}</div><div class="mut" style="font-size:12px">${S.role=='student'?(prof().course||'Student'):'Demo account'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
@@ -203,7 +241,7 @@ function profileView(){const p=prof(),st=S.role=='student';return `<div class="p
 function helpView(){return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
 function student(){const v=S.view;return `<div class="app">${side(SN)}<main class="main">${hd(TT[v],v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
 function faculty(){const t=T(S.sel);return `<div class="app">${side([['tix','Tickets','inbox'],['profile','Profile','user']])}<main class="main">${hd(TT[S.view])}<div class="page">${S.view=='profile'?profileView():`<div class="pg"><div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div>${t?detail(t,true):''}</div>`}</div></main></div>`}
-function placeholder(){const r=ROLES[S.role];return `<div class="app">${side([['x',r[1]+' home','home'],['profile','Profile','user']])}<main class="main">${hd(S.view=='profile'?'Profile':r[1])}<div class="page">${S.view=='profile'?profileView():`<div class="pg"><div class="card" style="max-width:480px;margin:50px auto;text-align:center"><div style="display:grid;justify-items:center;margin-bottom:12px">${IC(r[0])}</div><h2>${r[1]} workspace</h2><p class="mut">Welcome, ${pn()}. The wireframe does not define this role’s dashboard, so this is a placeholder. Student and Faculty flows are fully interactive.</p></div></div>`}</div></main></div>`}
+function placeholder(){const r=ROLES[S.role],isAuth=S.role=='authority';return `<div class="app">${side([['x',r[1]+' home','home'],['profile','Profile','user']])}<main class="main">${hd(S.view=='profile'?'Profile':r[1])}<div class="page">${S.view=='profile'?profileView():`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">${isAuth?'University-wide oversight, departmental escalations, and grievance tracking.':'Executive overview of campus query volumes, department response rates, and student engagement.'}</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length+14}</b><span>Total Inquiries</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length+12}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length+2}</b><span>Pending Review</span></div></div></div><div class="card" style="margin-top:20px;padding:20px"><div class="row sp" style="margin-bottom:12px"><h3 style="font-size:16px;font-weight:600">${isAuth?'Escalated & High-Priority University Issues':'Department Resolution Summary'}</h3><span class="pill s1">Live Demo Data</span></div><div class="tw"><table><tr><th>Ticket ID</th><th>Department</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.dept}</td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`}</div></main></div>`}
 function modal(){const m=S.modal,q=S.chat[m.i-1]?.t||'',o=m.out?' out':'';if(m.done)return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Demo ticket. Faculty will review it shortly.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
 return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink)">${q}</div><div class="g2"><div><label>Department</label><select id="md">${['Computer Science','Accounts','Examinations','Hostel','Library'].map(d=>`<option>${d}</option>`).join('')}</select></div><div><label>Priority</label><select id="mp"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful details"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`}
 function R(){const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
@@ -211,12 +249,14 @@ if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else if(S.scr==
 a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${S.toast}</div>`:'');
 const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
 if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
-const notify=(t,tk)=>S.notifs.unshift({t,u:1,tk});
+const notify=(t,tk)=>{S.notifs.unshift({t,u:1,tk});saveTickets()};
 function sendChat(){const ci=$('#ci');if(!ci)return;const v=ci.value.trim();if(!v)return;ci.value='';ask(v)}
 function sendDash(){const dq=$('#dq');if(!dq)return;const v=dq.value.trim();if(!v)return;dq.value='';ask(v)}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el){if(S.bell&&!e.target.closest('.drop')){S.bell=false;R()}return}const a=el.dataset.a,v=el.dataset.v;
 if(a=='home')go(S.user?'app':'landing');else if(a=='roles')go('login');else if(a=='scroll')$('#'+v)?.scrollIntoView({behavior:'smooth'});
-else if(a=='fill'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password'}
+else if(a=='fill'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';$('#em').focus()}
+else if(a=='login-demo'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';doLogin()}
+else if(a=='forgot'){toast('Universal demo password: '+DPW)}
 else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
 else if(a=='login')doLogin()
 else if(a=='onsave'){const n=$('#on').value,ag=$('#oa').value,c=$('#oc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);if(er){$('#oerr').textContent=er;return}PR[S.user.email]={name:n.trim().replace(/\s+/g,' '),age:Number(ag),course:st?c:''};savePR();go('app')}
@@ -225,16 +265,16 @@ else if(a=='resetprof'){delete PR[S.user.email];savePR();go('onboard')}
 else if(a=='logout'){try{localStorage.removeItem('ub-current-user')}catch(x){}S.user=null;S.role=null;go('landing')}
 else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R()}else if(a=='navo'){S.nav=true;R()}else if(a=='navx'){S.nav=false;R()}
 else if(a=='new')newChat();else if(a=='hist'){const h=S.hist.splice(+v,1)[0];if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=h.msgs;S.view='chat';S.nav=false;S.fx='view';R()}
-else if(a=='bell'){S.bell=!S.bell;R()}else if(a=='readall'){S.notifs.forEach(n=>n.u=0);R()}
-else if(a=='nt'){const n=S.notifs[v];n.u=0;S.sel=n.tk;S.view='queries';S.bell=false;S.fx='view';R()}
+else if(a=='bell'){S.bell=!S.bell;R()}else if(a=='readall'){S.notifs.forEach(n=>n.u=0);saveTickets();R()}
+else if(a=='nt'){const n=S.notifs[v];n.u=0;saveTickets();S.sel=n.tk;S.view='queries';S.bell=false;S.fx='view';R()}
 else if(a=='open'){S.sel=v;if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}R()}
 else if(a=='dask')sendDash();else if(a=='sq')ask(v);else if(a=='send')sendChat();
 else if(a=='attach')toast('Attachments are not enabled in this demo.')
 else if(a=='vs'){const x=S.chat[v];toast(`Demo source: ${x.s}, ${x.p}. No real document is connected.`)}
 else if(a=='fwd'){S.modal={i:+v,q:S.chat[+v-1]?.t||'Question'};R()}else if(a=='mc'){S.modal.out=1;R();setTimeout(()=>{S.modal=null;R()},160)}
-else if(a=='ms'){const m=S.modal,q=m.q||S.chat[m.i-1]?.t||'Question',id='UB-'+(2100+Math.floor(Math.random()*900));S.tickets.unshift({id,subj:q.slice(0,40),dept:$('#md').value,fac:'Unassigned',date:today(),pri:$('#mp').value,st:0,q,desc:$('#mx').value,reply:'',tl:[today().slice(0,6)]});S.chat[m.i].fw=id;S.sel=id;notify(`Ticket ${id} was submitted (demo).`,id);S.modal={done:id};R()}
+else if(a=='ms'){const m=S.modal,q=m.q||S.chat[m.i-1]?.t||'Question',id='UB-'+(2100+Math.floor(Math.random()*900));S.tickets.unshift({id,subj:q.slice(0,40),dept:$('#md').value,fac:'Unassigned',date:today(),pri:$('#mp').value,st:0,q,desc:$('#mx').value,reply:'',tl:[today().slice(0,6)]});saveTickets();S.chat[m.i].fw=id;S.sel=id;notify(`Ticket ${id} was submitted (demo).`,id);S.modal={done:id};R()}
 else if(a=='vt'){S.modal=null;S.sel=v;S.view='queries';S.fx='view';R()}
-else if(a=='respond'||a=='resolve'){const t=T(S.sel),r=$('#rp').value.trim();if(a=='respond'&&!r){toast('Write a response first.');return}if(r)t.reply=r;const d=today().slice(0,6);t.fac=pn();while(t.tl.length<3)t.tl.push(d);if(a=='resolve'){t.st=3;t.tl[3]=d}else if(t.st<2)t.st=2;
+else if(a=='respond'||a=='resolve'){const t=T(S.sel),r=$('#rp').value.trim();if(a=='respond'&&!r){toast('Write a response first.');return}if(r)t.reply=r;const d=today().slice(0,6);t.fac=pn();while(t.tl.length<3)t.tl.push(d);if(a=='resolve'){t.st=3;t.tl[3]=d}else if(t.st<2)t.st=2;saveTickets();
 notify(a=='resolve'?`Ticket ${t.id} was resolved by ${t.fac} (demo).`:`${t.fac} replied to ${t.id} (demo).`,t.id);toast(a=='resolve'?'Ticket resolved.':'Response sent.')}
 });
 document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='ci'){e.preventDefault();sendChat()}if(e.key=='Enter'&&e.target.id=='dq'){e.preventDefault();sendDash()}if(e.key=='Enter'&&(e.target.id=='em'||e.target.id=='pw')){e.preventDefault();doLogin()}if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}});
