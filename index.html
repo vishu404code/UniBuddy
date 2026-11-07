@@ -1,280 +1,2185 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UniBuddy</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#FFFFFF;--ice:#EAF1FC;--lav:#F0EDFF;--bg2:#F4F6FA;--ind:#7187C9;--indd:#5a70b4;--navy:#263653;--deep:#263653;--ink:#263653;--slate:#687386;--bd:#E3E8F0;--sh:0 1px 2px rgba(38,54,83,.05),0 8px 22px -10px rgba(38,54,83,.14);--sh2:0 2px 4px rgba(38,54,83,.05),0 18px 38px -14px rgba(38,54,83,.24);--grad:linear-gradient(180deg,#6b81c3,#4f66a8);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-*{box-sizing:border-box}html,body{margin:0;height:100%}
-body{font:14.5px/1.55 Inter,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.02em}h2{font-size:22px}h3{font-size:15.5px}
-.ed{font-family:Fraunces,Georgia,serif;font-weight:500;letter-spacing:-.02em;line-height:1.1}h1.ed{font-size:clamp(34px,5vw,54px)}h2.ed{font-size:clamp(26px,3.4vw,34px)}
-button,input,select,textarea{font:inherit;color:inherit}
-.btn{height:40px;padding:0 18px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);box-shadow:0 1px 2px rgba(38,54,83,.06);cursor:pointer;font-weight:500;transition:transform .2s,box-shadow .2s,border-color .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.btn:hover{transform:translateY(-1px);box-shadow:var(--sh);border-color:var(--ind)}.btn:active{transform:scale(.97)}
-.btn.p{background:var(--grad);color:#fff;border-color:#4a60a0;box-shadow:0 8px 16px -8px rgba(79,102,168,.8),inset 0 1px 0 rgba(255,255,255,.28)}
-.btn.sm{height:32px;padding:0 13px;font-size:13px;border-radius:10px}.btn.w{width:100%}
-.ib{width:36px;height:36px;border-radius:10px;border:0;background:none;cursor:pointer;display:grid;place-items:center;color:var(--slate);transition:background .2s,color .2s,transform .2s;position:relative}.ib:hover{background:var(--lav);color:var(--navy)}.ib:active{transform:scale(.93)}
-:focus-visible{outline:2px solid var(--ind);outline-offset:2px}
-svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
-input,select,textarea{width:100%;height:42px;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:0 14px;transition:border-color .2s,box-shadow .2s}textarea{height:auto;padding:11px 14px;resize:vertical}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ind);box-shadow:0 0 0 4px rgba(113,135,201,.18)}
-label{display:block;font-size:13px;font-weight:500;margin:14px 0 6px}
-.mut{color:var(--slate)}.row{display:flex;align-items:center;gap:10px}.sp{justify-content:space-between}
-.mark{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#8ea2db,#5f76bb);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;box-shadow:0 5px 10px -4px rgba(113,135,201,.8),inset 0 1px 0 rgba(255,255,255,.4)}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;cursor:pointer;letter-spacing:-.02em}
-.ico{width:42px;height:42px;border-radius:13px;background:linear-gradient(180deg,#fff,var(--ice));border:1px solid var(--bd);display:grid;place-items:center;color:var(--indd);box-shadow:0 5px 10px -5px rgba(38,54,83,.25),inset 0 1px 0 #fff;flex:none}
-.card{background:var(--bg);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh);padding:20px}
-.tint{background:linear-gradient(180deg,var(--ice),#fff)}
-.lift{transition:transform .22s,box-shadow .22s,border-color .22s;cursor:pointer}.lift:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:#cdd8ee}
-.fx{animation:fx .25s ease both}@keyframes fx{from{opacity:0;transform:translateY(6px)}}.in{animation:fx .25s ease both}
-.lnk{background:none;border:0;cursor:pointer;color:var(--slate);padding:6px 10px;font-weight:500;transition:color .2s}.lnk:hover{color:var(--navy)}
-.badge{display:inline-flex;align-items:center;gap:7px;border-radius:99px;background:var(--lav);border:1px solid #e1dbfa;color:var(--indd);font-size:12.5px;font-weight:500;padding:4px 12px}
-/* landing */
-.land{position:relative;overflow:hidden;min-height:100vh}.land:before,.land:after{content:"";position:absolute;border-radius:50%;pointer-events:none}
-.land:before{width:560px;height:560px;right:-160px;top:-180px;background:radial-gradient(circle,var(--lav),transparent 68%)}.land:after{width:520px;height:520px;left:-200px;top:260px;background:radial-gradient(circle,var(--ice),transparent 68%)}
-.land>*{position:relative;z-index:1}
-.nav{display:flex;align-items:center;justify-content:space-between;padding:16px max(20px,5vw);gap:10px}.wrap{max-width:1060px;margin:auto;padding:0 max(20px,4vw)}
-.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:56px 0 72px}.hero p{color:var(--slate);font-size:17px;max-width:470px;margin:18px 0 28px}
-.stage{position:relative;padding:28px 0 28px 18px}.prev{transform:perspective(1100px) rotateY(-6deg) rotateX(2deg);box-shadow:var(--sh2),0 40px 60px -34px rgba(38,54,83,.3);padding:18px;max-width:430px;margin-left:auto}
-.chipf{position:absolute;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:8px 12px;font-size:12.5px;font-weight:500;box-shadow:var(--sh2);display:flex;gap:6px;align-items:center;color:var(--navy)}.c1{left:-6px;bottom:6px}.c2{right:6px;top:0;background:var(--lav)}
-.bento{display:grid;grid-template-columns:1.1fr 1fr 1fr;grid-template-rows:auto auto;gap:14px;padding-bottom:72px}.bt{border-radius:20px;padding:24px;border:1px solid var(--bd);transition:transform .22s,box-shadow .22s;cursor:default}.bt:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
-.bt p{margin:6px 0 0;color:var(--slate);font-size:14px}.bt .ico{margin-bottom:16px}.bt.tall{grid-row:span 2;background:linear-gradient(160deg,var(--lav),#fff 75%)}.bt.tall h3{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:26px;line-height:1.15;margin-top:6px}.bt.tall p{font-size:15px}
-.bt.b{background:var(--ice);grid-column:span 2}.bt.m{background:var(--bg2)}.bt.w{background:#fff}
-.how{padding:0 0 72px}.hsteps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:26px;position:relative}.hsteps:before{content:"";position:absolute;left:18px;right:18px;top:18px;height:2px;background:linear-gradient(90deg,var(--ind),#d5dcf1)}
-.hs{position:relative;padding-right:24px}.num{width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--ind);color:var(--indd);display:grid;place-items:center;font-weight:600;margin-bottom:14px;position:relative}.hs p{margin:0;max-width:240px}
-footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-top:1px solid var(--bd)}
-/* login page - matching attached visual identity */
-.login-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 20px 40px;background:radial-gradient(1100px 520px at 50% -10%,var(--lav),transparent 72%),#ffffff}
-.login-header{text-align:center;max-width:540px;margin-bottom:28px}
-.login-card{width:100%;max-width:440px;background:#ffffff;border:1px solid var(--bd);border-radius:22px;padding:32px 28px;box-shadow:var(--sh);position:relative}
-.demo-section{width:100%;max-width:960px;margin-top:44px}
-.demo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
-.demo-card{background:#ffffff;border:1px solid var(--bd);border-radius:20px;padding:22px 18px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s}
-.demo-card:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--ind)}
-.demo-card.t-lav{background:var(--lav);border-color:#d5cef7}
-.demo-card.t-ice{background:var(--ice);border-color:#cddaf5}
-.demo-card h3{font-size:16px;font-weight:600;color:var(--navy);margin-top:6px}
-.demo-card p{font-size:13px;color:var(--slate);line-height:1.45;margin:0;flex:1}
-.demo-card .demo-badge{font-size:11.5px;color:var(--slate);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(38,54,83,.05);padding:3px 8px;border-radius:6px;width:fit-content;margin:4px 0}
-.demo-card .btn{background:#ffffff;border:1px solid var(--bd);color:var(--navy);font-weight:500;margin-top:8px}
-.demo-card:hover .btn{border-color:var(--ind);background:linear-gradient(180deg,#ffffff,var(--ice))}
-.demo-card.t-lav .btn{background:#ffffff}
-@media(max-width:860px){.demo-grid{grid-template-columns:repeat(2,1fr)}.login-wrap{padding:32px 16px}}
-@media(max-width:520px){.demo-grid{grid-template-columns:1fr}}
-/* app shell */
-.app{display:flex;height:100vh;height:100dvh}
-.side{width:262px;background:#fff;border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:16px 12px;flex:none;transition:transform .22s}.side .logo{padding:2px 8px 18px}
-.si{display:flex;align-items:center;gap:11px;width:100%;height:40px;padding:0 12px;border:0;background:none;border-radius:12px;cursor:pointer;color:var(--slate);text-align:left;transition:background .2s,color .2s,transform .2s;position:relative}
-.si:hover{background:var(--bg2);color:var(--navy)}.si:active{transform:scale(.98)}.si.on{background:var(--lav);color:var(--indd);font-weight:600}.si.on:before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--ind)}
-.si.nc{background:var(--grad);color:#fff;font-weight:500;margin-bottom:14px;box-shadow:0 8px 16px -8px rgba(79,102,168,.9),inset 0 1px 0 rgba(255,255,255,.3);justify-content:center}.si.nc:hover{filter:brightness(1.06);color:#fff}
-.sh{font-size:12px;color:var(--slate);padding:16px 12px 6px;font-weight:500}.hist{overflow:auto;flex:1;min-height:60px}.hist .si{height:34px;font-size:13.5px}.hist .si span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prof{border-top:1px solid var(--bd);padding-top:12px;margin-top:10px}.prof .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#8ea2db,#5f76bb);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
-.main{flex:1;display:flex;flex-direction:column;min-width:0;background:radial-gradient(800px 280px at 75% -80px,var(--lav),transparent 70%),#fff}
-.hd{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex:none;position:relative;border-bottom:1px solid var(--bd);background:rgba(255,255,255,.7);backdrop-filter:blur(8px)}
-.menu{display:none}.on-ind{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--slate)}.pu{width:8px;height:8px;border-radius:50%;background:#58b394;animation:pu 2.4s ease-in-out infinite}@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(88,179,148,.45)}50%{box-shadow:0 0 0 5px rgba(88,179,148,0)}}
-.page{flex:1;overflow:auto;padding:30px max(16px,3vw)}.pg{max-width:880px;margin:auto}.pg.wide{max-width:980px}
-/* chat */
-.chatw{flex:1;display:flex;flex-direction:column;min-height:0}.msgs{flex:1;overflow:auto;padding:24px 16px}.col{max-width:740px;margin:auto}
-.empty{min-height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-bottom:30px}
-.welcome{position:relative;padding:34px 30px 30px;border-radius:28px;background:radial-gradient(closest-side at 50% 30%,var(--lav),transparent),radial-gradient(closest-side at 80% 90%,var(--ice),transparent);width:100%}.welcome .mark{width:54px;height:54px;border-radius:17px;font-size:23px;margin:0 auto 16px}.welcome p{color:var(--slate);margin:8px 0 22px;font-size:15.5px}
-.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:520px;margin:auto}.chip{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--bd);border-radius:99px;padding:9px 16px 9px 12px;font-weight:500;font-size:13.5px;cursor:pointer;box-shadow:var(--sh);transition:transform .2s,box-shadow .2s,border-color .2s,background .2s}.chip svg{color:var(--indd)}.chip:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--ind);background:var(--lav)}.chip:active{transform:scale(.97)}
-.u{display:flex;justify-content:flex-end;margin:20px 0 4px}.ub{background:var(--lav);border:1px solid #e1dbfa;color:var(--navy);padding:10px 15px;border-radius:16px 16px 4px 16px;max-width:80%}
-.ts{font-size:11.5px;color:var(--slate);margin-top:4px;opacity:.85}.tsr{text-align:right}
-.a{display:flex;gap:12px;margin:18px 0}.a .body{flex:1;min-width:0}.a .who{font-weight:600;font-size:13.5px;margin-bottom:2px}
-.vb{display:inline-flex;align-items:center;gap:5px;background:var(--ice);color:var(--indd);border:1px solid #d3e0f6;border-radius:99px;padding:2px 10px 2px 8px;font-size:12px;font-weight:600}
-.src{margin-top:10px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;background:var(--bg2);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--slate);border-left:3px solid var(--ind)}.src button{color:var(--indd);font-weight:600;background:none;border:0;cursor:pointer;padding:0;text-decoration:underline}
-.nf{margin-top:12px;background:var(--lav);border:1px solid #e1dbfa;border-radius:14px;padding:14px}
-.ld{display:inline-flex;gap:5px;padding:10px 0}.ld span{width:7px;height:7px;border-radius:50%;background:var(--ind);animation:bl 1.2s infinite}.ld span:nth-child(2){animation-delay:.18s}.ld span:nth-child(3){animation-delay:.36s}@keyframes bl{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
-.comp{padding:0 16px 14px}.cbox{max-width:740px;margin:auto;border:1px solid var(--bd);border-radius:20px;display:flex;align-items:center;gap:4px;padding:8px 8px 8px 6px;background:#fff;box-shadow:var(--sh2);transition:border-color .2s,box-shadow .2s}.cbox:focus-within{border-color:var(--ind);box-shadow:0 0 0 4px rgba(113,135,201,.16),var(--sh2)}
-.cbox input{border:0;height:42px;flex:1;box-shadow:none!important;background:none}.send{width:40px;height:40px;border-radius:13px;border:0;background:var(--grad);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 12px -5px rgba(79,102,168,.8),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .2s}.send:hover{transform:translateY(-1px)}.send:active{transform:scale(.92)}
-.note{text-align:center;font-size:12px;color:var(--slate);margin-top:8px;opacity:.85}
-/* dashboard editorial */
-.sub{color:var(--slate);margin:8px 0 0;font-size:15.5px}
-.askp{display:grid;grid-template-columns:1fr 1.2fr;gap:20px;align-items:center;margin:26px 0 8px;padding:22px 24px;border-radius:22px;background:linear-gradient(120deg,var(--lav),var(--ice));border:1px solid #e1e6f7;box-shadow:var(--sh)}.askp p{margin:4px 0 0;color:var(--slate);font-size:13.5px}
-.strip{display:flex;margin:22px 0 10px;border-bottom:1px solid var(--bd);padding-bottom:20px}.sti{flex:1;display:flex;gap:12px;align-items:center;padding:0 20px;border-left:1px solid var(--bd);cursor:pointer;transition:transform .2s}.sti:first-child{border:0;padding-left:0}.sti:hover{transform:translateY(-2px)}.sti b{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:32px;line-height:1;display:block}.sti span{font-size:12.5px;color:var(--slate)}.sti .ic{width:34px;height:34px;border-radius:10px;background:var(--ice);display:grid;place-items:center;color:var(--indd)}
-.dgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:36px;margin:22px 0}.sh2{font-size:12.5px;font-weight:600;color:var(--slate);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.feat1{border-radius:16px;padding:18px;background:linear-gradient(150deg,var(--lav),#fff);border:1px solid #e1dbfa;margin-bottom:6px;transition:transform .2s,box-shadow .2s;cursor:pointer}.feat1:hover{transform:translateY(-2px);box-shadow:var(--sh)}.feat1 h3{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:19px;margin:8px 0 2px}
-.cat{font-size:12px;font-weight:600;color:var(--indd)}.dt{font-size:12px;color:var(--slate)}
-.hrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--bd)}.hrow:last-child{border:0}.hrow span:first-child{display:flex;flex-direction:column}
-.dl{position:relative;padding-left:20px}.dl:before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--ind),#dfe5f5)}.dli{position:relative;padding:0 0 16px}.dli:before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--ind)}.dli b{font-weight:600;display:block}.dli small{color:var(--slate);font-size:12.5px}
-.qp{background:var(--bg2);border-radius:18px;padding:6px 18px}.qr{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:padding .2s}.qr:last-child{border:0}.qr:hover{padding-left:6px}.qr small{color:var(--slate);font-weight:500}
-/* announcements magazine */
-.mag{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:24px}.am{border-radius:20px;padding:22px;border:1px solid var(--bd);grid-column:span 2;transition:transform .22s,box-shadow .22s;display:flex;flex-direction:column;gap:6px}.am:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
-.am.big{grid-column:span 4;grid-row:span 2;padding:30px;justify-content:flex-end;min-height:260px}.am.big h3{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:30px;line-height:1.12}.am:nth-child(4),.am:nth-child(5){grid-column:span 3}
-.am.lav{background:linear-gradient(150deg,var(--lav),#fff 85%)}.am.blue{background:linear-gradient(150deg,var(--ice),#fff 85%)}.am.mist{background:var(--bg2)}.am p{margin:0;color:var(--slate);font-size:13.5px}
-.imp{align-self:flex-start;background:var(--indd);color:#fff;font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 10px}
-/* tickets */
-table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;font-weight:500;font-size:12.5px;color:var(--slate);padding:10px 12px;background:var(--bg2);white-space:nowrap}th:first-child{border-radius:10px 0 0 10px}th:last-child{border-radius:0 10px 10px 0}td{padding:12px;border-bottom:1px solid var(--bd)}
-table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transition:background .2s}tr.rw:hover,tr.rw.on{background:var(--lav)}.tw{overflow-x:auto}
-.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--bg2);color:var(--slate)}.pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.pill.s1{background:var(--ice);color:#4a68a8}.pill.s2{background:var(--lav);color:#6a58b8}.pill.s3{background:#e3f3ec;color:#2f7d62}
-.pri{font-size:12.5px;font-weight:500}.pri.High{color:var(--indd);font-weight:700}
-.two{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:18px}.two>div{display:grid;gap:16px;align-content:start}.lab{font-size:12.5px;color:var(--slate)}
-.prog{height:6px;border-radius:9px;background:var(--bg2);overflow:hidden;margin:0 0 6px}.prog i{display:block;height:100%;width:var(--p);border-radius:9px;background:linear-gradient(90deg,#8ea2db,var(--indd));animation:gr .7s ease-out both}@keyframes gr{from{width:0}}
-.tl{padding-left:24px;margin-top:16px}.tl>div{position:relative;padding-bottom:18px;color:var(--slate)}.tl>div:before{content:"";position:absolute;left:-24px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bd);background:#fff}
-.tl>div:after{content:"";position:absolute;left:-18px;top:18px;bottom:-4px;width:2px;background:var(--bd)}.tl>div:last-child:after{display:none}.tl>div.d{color:var(--ink);font-weight:500}.tl>div.d:before{background:var(--ind);border-color:var(--ind);box-shadow:0 0 0 4px rgba(113,135,201,.2)}.tl>div.d:after{background:var(--ind)}.tl small{display:block;color:var(--slate);font-size:12px;font-weight:400}
-.drop{position:absolute;right:14px;top:54px;width:330px;max-width:calc(100vw - 28px);background:#fff;border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh2);padding:8px;z-index:30;animation:fx .2s ease both}
-.n{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;font-size:13.5px;transition:background .2s}.n:hover{background:var(--lav)}.n i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}.n.un i{background:var(--ind)}
-.dot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--ind);border:2px solid #fff;animation:pop .3s cubic-bezier(.2,1.5,.4,1) both}@keyframes pop{from{transform:scale(0)}}
-.ov{position:fixed;inset:0;background:rgba(38,54,83,.28);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:50;padding:16px;animation:fi .2s both}.ov.out{animation:fo .16s both}@keyframes fi{from{opacity:0}}@keyframes fo{to{opacity:0}}
-.modal{width:100%;max-width:490px;max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--bd);border-radius:22px;padding:24px;box-shadow:var(--sh2),0 30px 60px -24px rgba(38,54,83,.35);animation:mi .25s cubic-bezier(.2,1,.4,1) both}.out .modal{animation:mo .16s both}@keyframes mi{from{opacity:0;transform:translateY(12px) scale(.97)}}@keyframes mo{to{opacity:0;transform:translateY(8px) scale(.98)}}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#fff;color:var(--navy);border:1px solid var(--bd);padding:11px 18px;border-radius:12px;z-index:99;font-size:13.5px;max-width:90vw;box-shadow:var(--sh2);animation:tin .25s both}@keyframes tin{from{opacity:0;transform:translate(-50%,10px)}}
-.scrim{display:none}
-.avb{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8ea2db,#5f76bb);color:#fff;display:grid;place-items:center;font-weight:600;font-size:20px;flex:none}.dlist{display:grid;gap:8px;margin-top:10px}.dacc{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:8px 10px;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s}.dacc:hover{transform:translateY(-1px);box-shadow:var(--sh);border-color:var(--ind)}.dacc:active{transform:scale(.98)}.dacc b{display:block;color:var(--ink);font-size:13.5px}.dacc small{color:var(--slate);font-size:12.5px}
-@media(max-width:860px){.hero{grid-template-columns:1fr;padding-top:28px}.prev{transform:none;margin:0}.chipf{display:none}.bento{grid-template-columns:1fr}.bt.tall{grid-row:auto}.bt.b{grid-column:auto}.hsteps{grid-template-columns:1fr;gap:20px}.hsteps:before{display:none}.split{grid-template-columns:1fr}.brandp{display:none}
-.side{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%);width:280px;box-shadow:var(--sh2)}.side.open{transform:none}.scrim.open{display:block;position:fixed;inset:0;background:rgba(38,54,83,.3);z-index:35}.menu{display:grid}
-.two,.dgrid,.askp{grid-template-columns:1fr}.strip{flex-wrap:wrap;gap:14px}.sti{flex:1 1 40%;padding:0 10px}.g2{grid-template-columns:1fr}.mag{grid-template-columns:1fr}.am,.am.big,.am:nth-child(4),.am:nth-child(5){grid-column:auto;grid-row:auto}.am.big{min-height:200px}.qr{grid-template-columns:1fr auto}.qr small{display:none}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style></head><body><div id="app"></div>
-<script>
-const P={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',bld:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',clip:'<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',chat:'<path d="M4 4h16v12H8l-4 4z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',mega:'<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',out:'<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',inbox:'<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',cap:'<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',tick:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
-const I=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`,IC=n=>`<div class="ico">${I(n)}</div>`;
-const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-const DPW='demo123';const ACC={'student@unibuddy.demo':{role:'student',name:'Aarav'},'faculty@unibuddy.demo':{role:'faculty',name:'Dr. Mehta'},'authority@unibuddy.demo':{role:'authority',name:'Authority Office'},'management@unibuddy.demo':{role:'management',name:'Management Office'}};
-const COURSES=['B.Tech CS & AI','B.Tech CS & DS'];let PR={};try{PR=JSON.parse(localStorage.getItem('ub-profiles')||'{}')}catch(e){}
-const savePR=()=>{try{localStorage.setItem('ub-profiles',JSON.stringify(PR))}catch(e){}};
-const prof=()=>PR[S.user.email]||{},pn=()=>prof().name||S.user.name,ini=()=>pn()[0].toUpperCase();
-const stu=()=>{const p=PR['student@unibuddy.demo']||{};return {n:p.name||'Aarav',c:p.course||COURSES[0]}};
-function vProf(n,a,c,st){n=n.trim().replace(/\s+/g,' ');if(n.length<2)return 'Please enter your full name (at least 2 characters).';if(!/^[\p{L}][\p{L}\s.'’-]*$/u.test(n))return 'Name can only contain letters, spaces, dots, hyphens and apostrophes.';a=Number(a);if(!Number.isInteger(a)||a<16||a>80)return 'Please enter a valid age between 16 and 80.';if(st&&!COURSES.includes(c))return 'Please select your course.';return ''}
-const courseSel=(id,v)=>`<select id="${id}"><option value="">Select your course</option>${COURSES.map(c=>`<option ${c==v?'selected':''}>${c}</option>`).join('')}</select>`;
-const STG=['Submitted','Assigned','In Progress','Resolved'];
-const ROLES={student:['user','Student','Ask questions and track your tickets.'],faculty:['book','Faculty','Review and answer student tickets.'],authority:['shield','Authority','Placeholder in this prototype.'],management:['bld','Management','Placeholder in this prototype.']};
-const KB=[{k:['internal'],a:'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance.',s:'Exam Schedule Circular',p:'p. 2'},{k:['scholarship'],a:'Scholarship applications open at the start of each semester through the student portal, with income and marks documents attached.',s:'Scholarship Guidelines',p:'p. 5'},{k:['timetable','schedule'],a:'The academic timetable is published on the department notice board and the student portal before each semester begins.',s:'Academic Calendar',p:'p. 1'},{k:['contact','faculty'],a:'Faculty office hours and email addresses are listed in the department directory. You may also forward a question as a ticket.',s:'Department Directory',p:'p. 4'},{k:['fee','tuition','payment'],a:'Semester fee payment closes on the last working day of the second week. Late payments may carry a fine.',s:'Fee Policy Handbook',p:'p. 12'},{k:['attendance','75'],a:'A minimum of 75% attendance is generally required to sit semester exams, with medical-leave exceptions.',s:'Academic Regulations',p:'p. 8'},{k:['library','facilit'],a:'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Other facilities are listed in the campus guide.',s:'Campus Facilities Guide',p:'p. 3'}];
-const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
-const S={scr:'landing',role:null,pick:null,user:null,view:'chat',sel:'UB-2041',modal:null,bell:false,nav:false,chat:[],hist:[],fq:'',fs:'All',toast:'',fx:'screen',
-tickets:[{id:'UB-2041',subj:'Re-evaluation of lab marks',dept:'Computer Science',fac:'Dr. Mehta',date:'02 Nov 2026',pri:'High',st:1,q:'Can I request a re-evaluation of my Data Structures lab marks?',desc:'Marks look lower than expected.',reply:'',tl:['02 Nov','03 Nov']},{id:'UB-2036',subj:'Hostel fee receipt',dept:'Accounts',fac:'Ms. Rao',date:'28 Oct 2026',pri:'Medium',st:3,q:'I did not receive my hostel fee receipt.',desc:'',reply:'Your receipt has been emailed again. Please check your spam folder. (Demo reply)',tl:['28 Oct','28 Oct','29 Oct','30 Oct']}],
-notifs:[{t:'Ticket UB-2041 was assigned to Dr. Mehta (demo).',u:1,tk:'UB-2041'},{t:'Ticket UB-2036 was resolved (demo).',u:0,tk:'UB-2036'}]};
-const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${t.st}">${STG[t.st]}</span>`;
-const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
-const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2600)};
-function doLogin(){const e=($('#em').value||'').trim().toLowerCase(),p=$('#pw').value,er=$('#err'),a=ACC[e];
-if(!e||!p){er.textContent='Enter your email and password.';return}
-if(!a){er.textContent='No demo account found for this email. Tap one of the demo accounts below.';return}
-if(p!==DPW&&p!=='UniBuddy@123'){er.textContent='Incorrect password. Universal demo password is '+DPW+'.';return}
-try{if($('#rm').checked)localStorage.setItem('ub-email',e);else localStorage.removeItem('ub-email');localStorage.setItem('ub-current-user',e)}catch(x){}
-S.user={...a,email:e};S.role=a.role;S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x';go(PR[e]?'app':'onboard')}
-const logo=`<div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>`;
-function landing(){return `<div class="land"><div class="nav">${logo}<div class="row"><button class="lnk" data-a="scroll" data-v="features">Features</button><button class="lnk" data-a="scroll" data-v="how">How it Works</button><button class="btn p sm" data-a="roles">Get Started</button></div></div>
-<div class="wrap"><section class="hero"><div><span class="badge">${I('spark')} AI assistant for your campus</span><h1 class="ed" style="margin-top:18px">One campus. One intelligent assistant.</h1><p>UniBuddy gives students verified answers from university documents and sends everything else to the right faculty, tracked until it’s resolved.</p><div class="row"><button class="btn p" data-a="roles">Get Started</button><button class="btn" data-a="scroll" data-v="features">Explore Features</button></div></div>
-<div class="stage"><div class="card prev"><div class="row" style="margin-bottom:14px"><span class="mark">U</span><div><b>UniBuddy</b><div class="on-ind"><span class="pu"></span>Online</div></div></div><div class="u" style="margin-top:0"><div class="ub">When is the next internal examination?</div></div><div class="a" style="margin-bottom:0"><div class="body"><p style="margin:0">Internal examinations are held in the seventh week of the semester.</p><div class="src">Exam Schedule Circular · p. 2 <span>Demo</span></div></div></div></div><div class="chipf c1"><span class="vb">${I('check')} Verified Answer</span></div><div class="chipf c2">${I('tick')} UB-2041 · Assigned</div></div></section>
-<section id="features" class="bento"><div class="bt tall">${IC('spark')}<h3>Answers you can trust</h3><p>AI-powered replies grounded in verified university documents, with the source always one tap away.</p></div>
-<div class="bt b">${IC('inbox')}<h3>Smart Query Management</h3><p>Every forwarded question becomes a trackable ticket.</p></div>
-<div class="bt m">${IC('book')}<h3>Faculty Support</h3><p>Unanswered questions reach the right department.</p></div>
-<div class="bt w">${IC('zap')}<h3>Real-Time Updates</h3><p>Get notified the moment a ticket changes.</p></div></section>
-<section id="how" class="how"><h2 class="ed">How it works</h2><div class="hsteps">${['Ask your question.','Get an instant verified answer or forward it to the right department.','Track your query until resolution.'].map((s,i)=>`<div class="hs"><span class="num">${i+1}</span><p>${s}</p></div>`).join('')}</div></section></div>
-<footer>© 2026 UniBuddy · Prototype with demo data. No real university systems or AI services are connected.</footer></div>`}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UniBuddy · AI Campus Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --ice: #EAF1FC;
+      --lav: #F0EDFF;
+      --bg2: #F4F6FA;
+      --ind: #7187C9;
+      --indd: #5a70b4;
+      --navy: #263653;
+      --deep: #263653;
+      --ink: #263653;
+      --slate: #687386;
+      --bd: #E3E8F0;
+      --sh: 0 1px 2px rgba(38,54,83,.05), 0 8px 22px -10px rgba(38,54,83,.14);
+      --sh2: 0 2px 4px rgba(38,54,83,.05), 0 18px 38px -14px rgba(38,54,83,.24);
+      --grad: linear-gradient(180deg, #6b81c3, #4f66a8);
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font: 14.5px/1.55 Inter, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.02em; }
+    h2 { font-size: 22px; }
+    h3 { font-size: 15.5px; }
+    .ed { font-family: Fraunces, Georgia, serif; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+    h1.ed { font-size: clamp(34px, 5vw, 54px); }
+    h2.ed { font-size: clamp(26px, 3.4vw, 34px); }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    .btn {
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 12px;
+      border: 1px solid var(--bd);
+      background: var(--bg);
+      box-shadow: 0 1px 2px rgba(38,54,83,.06);
+      cursor: pointer;
+      font-weight: 500;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--sh); border-color: var(--ind); }
+    .btn:active { transform: scale(.97); }
+    .btn.p {
+      background: var(--grad);
+      color: #fff;
+      border-color: #4a60a0;
+      box-shadow: 0 8px 16px -8px rgba(79,102,168,.8), inset 0 1px 0 rgba(255,255,255,.28);
+    }
+    .btn.sm { height: 32px; padding: 0 13px; font-size: 13px; border-radius: 10px; }
+    .btn.w { width: 100%; }
+    .ib {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--slate);
+      transition: background .2s, color .2s, transform .2s;
+      position: relative;
+    }
+    .ib:hover { background: var(--lav); color: var(--navy); }
+    .ib:active { transform: scale(.93); }
+    :focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
+    svg.i {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: none;
+    }
+    input, select, textarea {
+      width: 100%;
+      height: 42px;
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 0 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    textarea { height: auto; padding: 11px 14px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--ind);
+      box-shadow: 0 0 0 4px rgba(113,135,201,.18);
+    }
+    label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
+    .mut { color: var(--slate); }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .sp { justify-content: space-between; }
+    .mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #8ea2db, #5f76bb);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex: none;
+      box-shadow: 0 5px 10px -4px rgba(113,135,201,.8), inset 0 1px 0 rgba(255,255,255,.4);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 17px;
+      cursor: pointer;
+      letter-spacing: -.02em;
+    }
+    .ico {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #fff, var(--ice));
+      border: 1px solid var(--bd);
+      display: grid;
+      place-items: center;
+      color: var(--indd);
+      box-shadow: 0 5px 10px -5px rgba(38,54,83,.25), inset 0 1px 0 #fff;
+      flex: none;
+    }
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      box-shadow: var(--sh);
+      padding: 20px;
+    }
+    .tint { background: linear-gradient(180deg, var(--ice), #fff); }
+    .lift { transition: transform .22s, box-shadow .22s, border-color .22s; cursor: pointer; }
+    .lift:hover { transform: translateY(-3px); box-shadow: var(--sh2); border-color: #cdd8ee; }
+    .fx { animation: fx .25s ease both; }
+    @keyframes fx { from { opacity: 0; transform: translateY(6px); } }
+    .in { animation: fx .25s ease both; }
+    .lnk {
+      background: none;
+      border: 0;
+      cursor: pointer;
+      color: var(--slate);
+      padding: 6px 10px;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    .lnk:hover { color: var(--navy); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 99px;
+      background: var(--lav);
+      border: 1px solid #e1dbfa;
+      color: var(--indd);
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 4px 12px;
+    }
+    /* landing */
+    .land { position: relative; overflow: hidden; min-height: 100vh; }
+    .land:before, .land:after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .land:before {
+      width: 560px;
+      height: 560px;
+      right: -160px;
+      top: -180px;
+      background: radial-gradient(circle, var(--lav), transparent 68%);
+    }
+    .land:after {
+      width: 520px;
+      height: 520px;
+      left: -200px;
+      top: 260px;
+      background: radial-gradient(circle, var(--ice), transparent 68%);
+    }
+    .land > * { position: relative; z-index: 1; }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px max(20px, 5vw);
+      gap: 10px;
+    }
+    .wrap { max-width: 1060px; margin: auto; padding: 0 max(20px, 4vw); }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 40px;
+      align-items: center;
+      padding: 56px 0 72px;
+    }
+    .hero p { color: var(--slate); font-size: 17px; max-width: 470px; margin: 18px 0 28px; }
+    .stage { position: relative; padding: 28px 0 28px 18px; }
+    .prev {
+      transform: perspective(1100px) rotateY(-6deg) rotateX(2deg);
+      box-shadow: var(--sh2), 0 40px 60px -34px rgba(38,54,83,.3);
+      padding: 18px;
+      max-width: 430px;
+      margin-left: auto;
+    }
+    .chipf {
+      position: absolute;
+      background: #fff;
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      box-shadow: var(--sh2);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      color: var(--navy);
+    }
+    .c1 { left: -6px; bottom: 6px; }
+    .c2 { right: 6px; top: 0; background: var(--lav); }
+    .bento {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 14px;
+      padding-bottom: 72px;
+    }
+    .bt {
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--bd);
+      transition: transform .22s, box-shadow .22s;
+      cursor: default;
+    }
+    .bt:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
+    .bt p { margin: 6px 0 0; color: var(--slate); font-size: 14px; }
+    .bt .ico { margin-bottom: 16px; }
+    .bt.tall {
+      grid-row: span 2;
+      background: linear-gradient(160deg, var(--lav), #fff 75%);
+    }
+    .bt.tall h3 {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 500;
+      font-size: 26px;
+      line-height: 1.15;
+      margin-top: 6px;
+    }
+    .bt.tall p { font-size: 15px; }
+    .bt.b { background: var(--ice); grid-column: span 2; }
+    .bt.m { background: var(--bg2); }
+    .bt.w { background: #fff; }
+    .how { padding: 0 0 72px; }
+    .hsteps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 26px;
+      position: relative;
+    }
+    .hsteps:before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ind), #d5dcf1);
+    }
+    .hs { position: relative; padding-right: 24px; }
+    .num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--ind);
+      color: var(--indd);
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .hs p { margin: 0; max-width: 240px; }
+    footer {
+      padding: 24px;
+      text-align: center;
+      color: var(--slate);
+      font-size: 13px;
+      border-top: 1px solid var(--bd);
+    }
+    /* roles + login */
+    .center {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(700px 380px at 50% -8%, var(--lav), transparent 70%);
+    }
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      width: 100%;
+      max-width: 900px;
+    }
+    .role {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 22px;
+      border-radius: 18px;
+    }
+    .role p { margin: 0 0 12px; color: var(--slate); font-size: 13px; flex: 1; }
+    .role .ico { margin-bottom: 10px; }
+    .role.t0 { background: var(--ice); }
+    .role.t1 { background: var(--lav); }
+    .role.t2 { background: var(--bg2); }
+    .role.t3 { background: #fbfbfd; }
+    .role.sel {
+      border-color: var(--ind);
+      box-shadow: 0 0 0 4px rgba(113,135,201,.18), var(--sh2);
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+    .brandp {
+      background: linear-gradient(160deg, var(--lav), var(--ice));
+      padding: 36px max(28px, 4vw);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brandp p { color: var(--slate); max-width: 380px; }
+    .brandp ul {
+      padding: 0;
+      margin: 20px 0 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .brandp li { display: flex; gap: 10px; align-items: center; color: var(--navy); }
+    .brandp li svg { color: var(--indd); }
+    .formside { display: grid; place-items: center; padding: 28px; }
+    .formbox { width: 100%; max-width: 380px; }
+    .demo {
+      border: 1px dashed #c3cde9;
+      background: var(--ice);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--slate);
+      margin: 16px 0 2px;
+    }
+    .demo b { color: var(--navy); font-weight: 600; }
+    /* app shell */
+    .app { display: flex; height: 100vh; height: 100dvh; }
+    .side {
+      width: 262px;
+      background: #fff;
+      border-right: 1px solid var(--bd);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+      flex: none;
+      transition: transform .22s;
+    }
+    .side .logo { padding: 2px 8px 18px; }
+    .si {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 0;
+      background: none;
+      border-radius: 12px;
+      cursor: pointer;
+      color: var(--slate);
+      text-align: left;
+      transition: background .2s, color .2s, transform .2s;
+      position: relative;
+    }
+    .si:hover { background: var(--bg2); color: var(--navy); }
+    .si:active { transform: scale(.98); }
+    .si.on {
+      background: var(--lav);
+      color: var(--indd);
+      font-weight: 600;
+    }
+    .si.on:before {
+      content: "";
+      position: absolute;
+      left: -12px;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--ind);
+    }
+    .si.nc {
+      background: var(--grad);
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 16px -8px rgba(79,102,168,.9), inset 0 1px 0 rgba(255,255,255,.3);
+      justify-content: center;
+    }
+    .si.nc:hover { filter: brightness(1.06); color: #fff; }
+    .sh {
+      font-size: 12px;
+      color: var(--slate);
+      padding: 16px 12px 6px;
+      font-weight: 500;
+    }
+    .hist { overflow: auto; flex: 1; min-height: 60px; }
+    .hist .si { height: 34px; font-size: 13.5px; }
+    .hist .si span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prof {
+      border-top: 1px solid var(--bd);
+      padding-top: 12px;
+      margin-top: 10px;
+    }
+    .prof .av {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8ea2db, #5f76bb);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      flex: none;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: radial-gradient(800px 280px at 75% -80px, var(--lav), transparent 70%), #fff;
+    }
+    .hd {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      flex: none;
+      position: relative;
+      border-bottom: 1px solid var(--bd);
+      background: rgba(255,255,255,.7);
+      backdrop-filter: blur(8px);
+    }
+    .menu { display: none; }
+    .on-ind {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--slate);
+    }
+    .pu {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #58b394;
+      animation: pu 2.4s ease-in-out infinite;
+    }
+    @keyframes pu {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(88,179,148,.45); }
+      50% { box-shadow: 0 0 0 5px rgba(88,179,148,0); }
+    }
+    .page { flex: 1; overflow: auto; padding: 30px max(16px, 3vw); }
+    .pg { max-width: 880px; margin: auto; }
+    .pg.wide { max-width: 980px; }
+    /* chat */
+    .chatw { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .msgs { flex: 1; overflow: auto; padding: 24px 16px; }
+    .col { max-width: 740px; margin: auto; }
+    .empty {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding-bottom: 30px;
+    }
+    .welcome {
+      position: relative;
+      padding: 34px 30px 30px;
+      border-radius: 28px;
+      background: radial-gradient(420px 220px at 50% 0%, var(--lav), transparent 75%),
+                  radial-gradient(360px 200px at 85% 100%, var(--ice), transparent 75%);
+      width: 100%;
+    }
+    .welcome .mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 17px;
+      font-size: 23px;
+      margin: 0 auto 16px;
+    }
+    .welcome p { color: var(--slate); margin: 8px 0 22px; font-size: 15.5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .chip {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: #fff;
+      border: 1px solid var(--bd);
+      border-radius: 99px;
+      padding: 9px 16px 9px 12px;
+      font-weight: 500;
+      font-size: 13.5px;
+      cursor: pointer;
+      box-shadow: var(--sh);
+      transition: transform .2s, box-shadow .2s, border-color .2s, background .2s;
+    }
+    .chip svg { color: var(--indd); }
+    .chip:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--sh2);
+      border-color: var(--ind);
+      background: var(--lav);
+    }
+    .chip:active { transform: scale(.97); }
+    .u { display: flex; justify-content: flex-end; margin: 20px 0 4px; }
+    .ub {
+      background: var(--lav);
+      border: 1px solid #e1dbfa;
+      color: var(--navy);
+      padding: 10px 15px;
+      border-radius: 16px 16px 4px 16px;
+      max-width: 80%;
+      word-break: break-word;
+    }
+    .ts { font-size: 11.5px; color: var(--slate); margin-top: 4px; opacity: .85; }
+    .tsr { text-align: right; }
+    .a { display: flex; gap: 12px; margin: 18px 0; }
+    .a .body { flex: 1; min-width: 0; }
+    .a .who { font-weight: 600; font-size: 13.5px; margin-bottom: 2px; }
+    .vb {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--ice);
+      color: var(--indd);
+      border: 1px solid #d3e0f6;
+      border-radius: 99px;
+      padding: 2px 10px 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .src {
+      margin-top: 10px;
+      display: flex;
+      gap: 6px 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: var(--bg2);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--slate);
+      border-left: 3px solid var(--ind);
+    }
+    .src button {
+      color: var(--indd);
+      font-weight: 600;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+    .nf {
+      margin-top: 12px;
+      background: var(--lav);
+      border: 1px solid #e1dbfa;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .ld { display: inline-flex; gap: 5px; padding: 10px 0; }
+    .ld span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ind);
+      animation: bl 1.2s infinite;
+    }
+    .ld span:nth-child(2) { animation-delay: .18s; }
+    .ld span:nth-child(3) { animation-delay: .36s; }
+    @keyframes bl {
+      0%, 100% { opacity: .3; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(-3px); }
+    }
+    .comp { padding: 0 16px 14px; }
+    .cbox {
+      max-width: 740px;
+      margin: auto;
+      border: 1px solid var(--bd);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 8px 8px 6px;
+      background: #fff;
+      box-shadow: var(--sh2);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .cbox:focus-within {
+      border-color: var(--ind);
+      box-shadow: 0 0 0 4px rgba(113,135,201,.16), var(--sh2);
+    }
+    .cbox input {
+      border: 0;
+      height: 42px;
+      flex: 1;
+      box-shadow: none !important;
+      background: none;
+    }
+    .send {
+      width: 40px;
+      height: 40px;
+      border-radius: 13px;
+      border: 0;
+      background: var(--grad);
+      color: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 12px -5px rgba(79,102,168,.8), inset 0 1px 0 rgba(255,255,255,.3);
+      transition: transform .2s;
+    }
+    .send:hover { transform: translateY(-1px); }
+    .send:active { transform: scale(.92); }
+    .note { text-align: center; font-size: 12px; color: var(--slate); margin-top: 8px; opacity: .85; }
+    /* dashboard editorial */
+    .sub { color: var(--slate); margin: 8px 0 0; font-size: 15.5px; }
+    .askp {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+      align-items: center;
+      margin: 26px 0 8px;
+      padding: 22px 24px;
+      border-radius: 22px;
+      background: linear-gradient(120deg, var(--lav), var(--ice));
+      border: 1px solid #e1e6f7;
+      box-shadow: var(--sh);
+    }
+    .askp p { margin: 4px 0 0; color: var(--slate); font-size: 13.5px; }
+    .strip {
+      display: flex;
+      margin: 22px 0 10px;
+      border-bottom: 1px solid var(--bd);
+      padding-bottom: 20px;
+    }
+    .sti {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 0 20px;
+      border-left: 1px solid var(--bd);
+      cursor: pointer;
+      transition: transform .2s;
+    }
+    .sti:first-child { border: 0; padding-left: 0; }
+    .sti:hover { transform: translateY(-2px); }
+    .sti b {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 1;
+      display: block;
+    }
+    .sti span { font-size: 12.5px; color: var(--slate); }
+    .sti .ic {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--ice);
+      display: grid;
+      place-items: center;
+      color: var(--indd);
+    }
+    .dgrid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 36px; margin: 22px 0; }
+    .sh2 {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--slate);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .feat1 {
+      border-radius: 16px;
+      padding: 18px;
+      background: linear-gradient(150deg, var(--lav), #fff);
+      border: 1px solid #e1dbfa;
+      margin-bottom: 6px;
+      transition: transform .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .feat1:hover { transform: translateY(-2px); box-shadow: var(--sh); }
+    .feat1 h3 { font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 19px; margin: 8px 0 2px; }
+    .cat { font-size: 12px; font-weight: 600; color: var(--indd); }
+    .dt { font-size: 12px; color: var(--slate); }
+    .hrow {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--bd);
+    }
+    .hrow:last-child { border: 0; }
+    .hrow span:first-child { display: flex; flex-direction: column; }
+    .dl { position: relative; padding-left: 20px; }
+    .dl:before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(var(--ind), #dfe5f5);
+    }
+    .dli { position: relative; padding: 0 0 16px; }
+    .dli:before {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--ind);
+    }
+    .dli b { font-weight: 600; display: block; }
+    .dli small { color: var(--slate); font-size: 12.5px; }
+    .qp { background: var(--bg2); border-radius: 18px; padding: 6px 18px; }
+    .qr {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--bd);
+      cursor: pointer;
+      transition: padding .2s;
+    }
+    .qr:last-child { border: 0; }
+    .qr:hover { padding-left: 6px; }
+    .qr small { color: var(--slate); font-weight: 500; }
+    /* announcements magazine */
+    .mag {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .am {
+      border-radius: 20px;
+      padding: 22px;
+      border: 1px solid var(--bd);
+      grid-column: span 2;
+      transition: transform .22s, box-shadow .22s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .am:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
+    .am.big {
+      grid-column: span 4;
+      grid-row: span 2;
+      padding: 30px;
+      justify-content: flex-end;
+      min-height: 260px;
+    }
+    .am.big h3 {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 500;
+      font-size: 30px;
+      line-height: 1.12;
+    }
+    .am:nth-child(4), .am:nth-child(5) { grid-column: span 3; }
+    .am.lav { background: linear-gradient(150deg, var(--lav), #fff 85%); }
+    .am.blue { background: linear-gradient(150deg, var(--ice), #fff 85%); }
+    .am.mist { background: var(--bg2); }
+    .am p { margin: 0; color: var(--slate); font-size: 13.5px; }
+    .imp {
+      align-self: flex-start;
+      background: var(--indd);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 99px;
+      padding: 2px 10px;
+    }
+    /* tickets */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      text-align: left;
+      font-weight: 500;
+      font-size: 12.5px;
+      color: var(--slate);
+      padding: 10px 12px;
+      background: var(--bg2);
+      white-space: nowrap;
+    }
+    th:first-child { border-radius: 10px 0 0 10px; }
+    th:last-child { border-radius: 0 10px 10px 0; }
+    td { padding: 12px; border-bottom: 1px solid var(--bd); }
+    tr.rw { cursor: pointer; transition: background .2s; }
+    tr.rw:hover, tr.rw.on { background: var(--lav); }
+    .tw { overflow-x: auto; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 99px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: var(--bg2);
+      color: var(--slate);
+    }
+    .pill:before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .pill.s0 { background: var(--bg2); color: var(--slate); }
+    .pill.s1 { background: var(--ice); color: #4a68a8; }
+    .pill.s2 { background: var(--lav); color: #6a58b8; }
+    .pill.s3 { background: #e3f3ec; color: #2f7d62; }
+    .pri { font-size: 12.5px; font-weight: 500; }
+    .pri.High { color: var(--indd); font-weight: 700; }
+    .two {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .two > div { display: grid; gap: 16px; align-content: start; }
+    .lab { font-size: 12.5px; color: var(--slate); }
+    .prog {
+      height: 6px;
+      border-radius: 9px;
+      background: var(--bg2);
+      overflow: hidden;
+      margin: 0 0 6px;
+    }
+    .prog i {
+      display: block;
+      height: 100%;
+      width: var(--p);
+      border-radius: 9px;
+      background: linear-gradient(90deg, #8ea2db, var(--indd));
+      animation: gr .7s ease-out both;
+    }
+    @keyframes gr { from { width: 0; } }
+    .tl { padding-left: 24px; margin-top: 16px; }
+    .tl > div { position: relative; padding-bottom: 18px; color: var(--slate); }
+    .tl > div:before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bd);
+      background: #fff;
+    }
+    .tl > div:after {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 18px;
+      bottom: -4px;
+      width: 2px;
+      background: var(--bd);
+    }
+    .tl > div:last-child:after { display: none; }
+    .tl > div.d { color: var(--ink); font-weight: 500; }
+    .tl > div.d:before {
+      background: var(--ind);
+      border-color: var(--ind);
+      box-shadow: 0 0 0 4px rgba(113,135,201,.2);
+    }
+    .tl > div.d:after { background: var(--ind); }
+    .tl small { display: block; color: var(--slate); font-size: 12px; font-weight: 400; }
+    .drop {
+      position: absolute;
+      right: 14px;
+      top: 54px;
+      width: 330px;
+      max-width: calc(100vw - 28px);
+      background: #fff;
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      box-shadow: var(--sh2);
+      padding: 8px;
+      z-index: 30;
+      animation: fx .2s ease both;
+    }
+    .n {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13.5px;
+      transition: background .2s;
+    }
+    .n:hover { background: var(--lav); }
+    .n i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex: none;
+    }
+    .n.un i { background: var(--ind); }
+    .dot {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--ind);
+      border: 2px solid #fff;
+      animation: pop .3s cubic-bezier(.2,1.5,.4,1) both;
+    }
+    @keyframes pop { from { transform: scale(0); } }
+    .ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(38,54,83,.28);
+      backdrop-filter: blur(4px);
+      display: grid;
+      place-items: center;
+      z-index: 50;
+      padding: 16px;
+      animation: fi .2s both;
+    }
+    .ov.out { animation: fo .16s both; }
+    @keyframes fi { from { opacity: 0; } }
+    @keyframes fo { to { opacity: 0; } }
+    .modal {
+      width: 100%;
+      max-width: 490px;
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--bd);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: var(--sh2), 0 30px 60px -24px rgba(38,54,83,.35);
+      animation: mi .25s cubic-bezier(.2,1,.4,1) both;
+    }
+    .out .modal { animation: mo .16s both; }
+    @keyframes mi { from { opacity: 0; transform: translateY(12px) scale(.97); } }
+    @keyframes mo { to { opacity: 0; transform: translateY(8px) scale(.98); } }
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      color: var(--navy);
+      border: 1px solid var(--bd);
+      padding: 11px 18px;
+      border-radius: 12px;
+      z-index: 99;
+      font-size: 13.5px;
+      max-width: 90vw;
+      box-shadow: var(--sh2);
+      animation: tin .25s both;
+    }
+    @keyframes tin { from { opacity: 0; transform: translate(-50%, 10px); } }
+    .scrim { display: none; }
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; padding-top: 28px; }
+      .prev { transform: none; margin: 0; }
+      .chipf { display: none; }
+      .bento { grid-template-columns: 1fr; }
+      .bt.tall { grid-row: auto; }
+      .bt.b { grid-column: auto; }
+      .hsteps { grid-template-columns: 1fr; gap: 20px; }
+      .hsteps:before { display: none; }
+      .split { grid-template-columns: 1fr; }
+      .brandp { display: none; }
+      .side {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 40;
+        transform: translateX(-100%);
+        width: 280px;
+        box-shadow: var(--sh2);
+      }
+      .side.open { transform: none; }
+      .scrim.open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(38,54,83,.3);
+        z-index: 35;
+      }
+      .menu { display: grid; }
+      .two, .dgrid, .askp { grid-template-columns: 1fr; }
+      .strip { flex-wrap: wrap; gap: 14px; }
+      .sti { flex: 1 1 40%; padding: 0 10px; }
+      .g2 { grid-template-columns: 1fr; }
+      .mag { grid-template-columns: 1fr; }
+      .am, .am.big, .am:nth-child(4), .am:nth-child(5) { grid-column: auto; grid-row: auto; }
+      .am.big { min-height: 200px; }
+      .qr { grid-template-columns: 1fr auto; }
+      .qr small { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
 
-function login(){let em='';try{em=localStorage.getItem('ub-email')||''}catch(e){}return `<div class="login-wrap fx">
-<div class="login-header">
-<div class="logo" style="justify-content:center;margin-bottom:16px;cursor:pointer" data-a="home"><span class="mark" style="width:34px;height:34px;border-radius:10px;font-size:16px">U</span><span style="font-size:19px;font-weight:700;color:var(--navy)">UniBuddy</span></div>
-<h1 class="ed" style="font-size:clamp(30px,4.5vw,42px);color:var(--navy);margin-bottom:8px">Welcome to UniBuddy</h1>
-<p class="mut" style="font-size:15px;margin:0">Sign in to access your personalised university workspace.</p>
-</div>
-<div class="login-card">
-<h2 style="font-size:19px;color:var(--navy);font-weight:600;margin-bottom:2px">Sign in</h2>
-<div class="mut" style="font-size:13px;margin-bottom:20px">Your role is detected automatically from your email.</div>
-<label style="margin-top:0">Email address</label>
-<input id="em" type="email" placeholder="student@unibuddy.demo" autocomplete="off" value="${em}">
-<div class="row sp" style="margin-top:14px"><label style="margin:0">Password</label><button class="lnk" data-a="forgot" style="padding:0;font-size:12.5px;color:var(--indd)">Forgot password?</button></div>
-<div style="position:relative;margin-top:6px"><input id="pw" type="password" placeholder="Password"><button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Show or hide password">${I('eye')}</button></div>
-<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:16px 0 12px;cursor:pointer"><input id="rm" type="checkbox" style="width:auto;height:auto" ${em?'checked':''}><span>Remember me</span></label>
-<div id="err" role="alert" style="color:#b4445a;font-size:13px;min-height:20px;margin-bottom:6px"></div>
-<button class="btn p w" data-a="login" style="height:44px;font-size:15px;font-weight:600">Sign In</button>
-<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--slate)">Demo password for all accounts: <b>${DPW}</b></div>
-</div>
-<div style="text-align:center;margin-top:14px"><button class="lnk" data-a="home" style="font-size:13.5px">← Back to home</button></div>
-<div class="demo-section">
-<div style="text-align:center;margin-bottom:18px"><h2 style="font-size:18px;font-weight:600;color:var(--navy)">Explore Demo Accounts</h2><p class="mut" style="font-size:13.5px;margin:3px 0 0">Select any role to autofill credentials and test the portal.</p></div>
-<div class="demo-grid">
-<div class="demo-card lift t-ice" data-a="fill" data-v="student@unibuddy.demo" title="Student Demo"><div class="ico">${I('user')}</div><h3>Student</h3><p>Ask questions and track your tickets.</p><div class="demo-badge">student@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="student@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift t-lav" data-a="fill" data-v="faculty@unibuddy.demo" title="Faculty Demo"><div class="ico">${I('chat')}</div><h3>Faculty</h3><p>Review and answer student tickets.</p><div class="demo-badge">faculty@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="faculty@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift" data-a="fill" data-v="authority@unibuddy.demo" title="Authority Demo"><div class="ico">${I('shield')}</div><h3>Authority</h3><p>Review and oversee university issues.</p><div class="demo-badge">authority@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="authority@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift" data-a="fill" data-v="management@unibuddy.demo" title="Management Demo"><div class="ico">${I('bld')}</div><h3>Management</h3><p>University-level query & resolution overview.</p><div class="demo-badge">management@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="management@unibuddy.demo">Use Demo Account</button></div>
-</div>
-<div style="text-align:center;color:var(--slate);font-size:12.5px;margin:24px 0 12px">Demo accounts: no real credentials exist. Use Demo login to explore any role.</div>
-</div></div>`}
-function side(items){const f=S.role=='student';return `<aside class="side ${S.nav?'open':''}">${logo}${f?`<button class="si nc" data-a="new">${I('plus')}New Chat</button>`:''}${items.map(i=>`<button class="si ${S.view==i[0]?'on':''}" data-a="view" data-v="${i[0]}">${I(i[2])}${i[1]}</button>`).join('')}
-${f?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${h.title}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
-<div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="Edit profile"><span class="av">${ini()}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${pn()}</div><div class="mut" style="font-size:12px">${S.role=='student'?(prof().course||'Student'):'Demo account'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
-const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
-function hd(title,ai){const u=S.notifs.filter(n=>n.u).length,st=S.role=='student';return `<div class="hd"><div class="row"><button class="ib menu" data-a="navo" aria-label="Menu">${I('menu')}</button><b style="font-weight:600">${title}</b>${ai?'<span class="on-ind" style="margin-left:6px"><span class="pu"></span>Online</span>':''}</div>${st?`<button class="ib" data-a="bell" aria-label="Notifications">${I('bell')}${u?'<span class="dot"></span>':''}</button>`:''}${S.bell?`<div class="drop">${S.notifs.length?S.notifs.map((n,i)=>`<div class="n ${n.u?'un':''}" data-a="nt" data-v="${i}"><i></i><span>${n.t}</span></div>`).join(''):'<div class="n mut">No notifications</div>'}<button class="lnk" data-a="readall" style="font-size:13px">Mark all as read</button></div>`:''}</div>`}
-function chat(){const m=S.chat;return `<div class="chatw"><div class="msgs" id="msgs"><div class="col">${m.length?m.map((x,i)=>msg(x,i)).join(''):`<div class="empty"><div class="welcome"><span class="mark">U</span><h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1><p>Your university, your questions, one intelligent assistant.</p><div class="chips">${SUG.map(s=>`<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}</div></div></div>`}</div></div>
-<div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Demo answers only. Sources are sample content.</div></div></div>`}
-function msg(x,i){const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
-if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
-if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><span class="vb">${I('check')} Verified Answer</span><p style="margin:8px 0 0">${x.t}</p><div class="src"><span>${x.s} · ${x.p}</span><button data-a="vs" data-v="${i}">View source</button><span>Demo content</span></div><div class="ts">${x.time}</div></div></div>`;
-return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>I couldn’t find a verified answer to your question. Would you like me to forward it to the appropriate faculty or department?<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${x.fw}</span>`:`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}</div><div class="ts">${x.time}</div></div></div>`}
-function ask(q){if(!q||!q.trim())return;const cleanQ=q.trim();S.chat.push({r:'u',t:cleanQ.replace(/</g,'&lt;'),time:now(),n:1});S.chat.push({r:'a',k:'ty',n:1});S.view='chat';R();const l=cleanQ.toLowerCase(),h=KB.find(e=>e.k.some(k=>l.includes(k)));setTimeout(()=>{S.chat.pop();S.chat.push(h?{r:'a',k:'ok',t:h.a,s:h.s,p:h.p,time:now(),n:1}:{r:'a',k:'nf',time:now(),n:1});R()},1000)}
-const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
-function newChat(){if(S.chat.length)S.hist.unshift({title:ttl(),msgs:[...S.chat]});S.chat=[];S.view='chat';S.nav=false;S.fx='view';R()}
-const ANN=[{c:'Exams',t:'Internal exam timetable released',d:'4 Nov',b:'Seventh-week internal examinations are scheduled. Check your department notice board for the full timetable.',big:1,tone:'lav',imp:1},{c:'Library',t:'Library extends weekday hours',d:'2 Nov',b:'Open until 20:00 on weekdays.',tone:'blue'},{c:'Scholarships',t:'Scholarship applications open',d:'1 Nov',b:'Apply through the student portal.',tone:'mist'},{c:'Events',t:'Hackathon registrations open',d:'30 Oct',b:'Teams of up to four. Open to all years.',tone:'blue'},{c:'Campus',t:'Hostel maintenance window',d:'28 Oct',b:'Water supply paused Saturday 10:00 to 14:00.',tone:'lav'}];
-function dash(){const t=S.tickets,res=t.filter(x=>x.st==3).length,f=ANN[0];return `<div class="pg"><h1 class="ed">Welcome back, ${pn()}</h1><p class="sub">Here’s what is happening on campus today. Demo data.</p>
-<div class="askp"><div><h3>Ask UniBuddy</h3><p>Get an instant verified answer, or send it on to faculty.</p></div><div class="row"><input id="dq" placeholder="Ask UniBuddy anything..."><button class="btn p" data-a="dask">Ask</button></div></div>
-<div class="strip">${[['list','Total queries',t.length+6],['tick','Resolved',res+5],['clock','Pending',t.length-res+1]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
-<div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div><div class="feat1" data-a="view" data-v="ann"><span class="cat">${f.c} · ${f.d}</span><h3>${f.t}</h3><p class="mut" style="margin:0;font-size:13.5px">${f.b}</p></div>${ANN.slice(1,3).map(a=>`<div class="hrow"><span><b style="font-weight:500">${a.t}</b><span class="cat">${a.c}</span></span><span class="dt">${a.d}</span></div>`).join('')}</section>
-<section><div class="sh2">Upcoming deadlines</div><div class="dl">${[['Fee payment','12 Nov','Accounts'],['Assignment 3','15 Nov','Data Structures'],['Exam form','20 Nov','Examinations']].map(d=>`<div class="dli"><b>${d[0]}</b><small>${d[1]} · ${d[2]}</small></div>`).join('')}</div></section></div>
-<section><div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div><div class="qp">${t.slice(0,3).map(x=>`<div class="qr" data-a="open" data-v="${x.id}"><small>${x.id}</small><span>${x.subj}</span>${stl(x)}</div>`).join('')}</div></section></div>`}
-function tlh(t){return `<div class="prog"><i style="--p:${Math.max(8,t.st/3*100)}%"></i></div><div class="lab">Step ${t.st+1} of 4 · ${STG[t.st]}</div><div class="tl">${STG.map((s,i)=>`<div class="${i<=t.st?'d':''}">${s}<small>${i<=t.st?(t.tl[i]||'Updated'):'Pending'}</small></div>`).join('')}</div>`}
-function detail(t,fac){return `<div class="two fx"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${t.id} · ${t.subj}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${t.pri}">${t.pri}</span> · Submitted ${t.date}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${t.q}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${t.desc}</p>`:''}</div>
-${fac?`<div class="card tint"><div class="lab">Student information</div><div style="font-weight:500">${stu().n} · ${stu().c}</div><div class="mut" style="font-size:12px">Demo student. Only permitted details are shown.</div></div>`:''}
-<div class="card"><h3 style="margin-bottom:10px">${fac?'Reply':'Faculty response'}</h3>${fac?`<textarea id="rp" rows="6" placeholder="Write your response...">${t.reply}</textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:t.reply?`<p style="margin:0;background:var(--ice);border-radius:12px;padding:12px 14px">${t.reply}</p>`:`<p class="mut" style="margin:0">No response yet. You will be notified as soon as ${t.fac=='Unassigned'?'a faculty member':t.fac} replies.</p>`}</div></div>
-<div class="card"><h3 style="margin-bottom:16px">${fac?'Status timeline':'Status updates'}</h3>${tlh(t)}</div></div>`}
-function queries(){const f=S.tickets.filter(t=>(S.fs=='All'||STG[t.st]==S.fs)&&(t.subj+t.id+t.dept).toLowerCase().includes(S.fq.toLowerCase())),t=T(S.sel);return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${S.fq}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td>${x.dept}</td><td>${x.fac}</td><td>${x.date}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
-const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',x:'Workspace'};
-function annView(){return `<div class="pg wide"><h1 class="ed">Announcements</h1><p class="sub">The latest from your university. Sample content for this demo.</p><div class="mag">${ANN.map(a=>`<article class="am ${a.tone} ${a.big?'big':''}"><div class="row sp"><span class="cat">${a.c}</span><span class="dt">${a.d}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${a.t}</h3><p>${a.b}</p></article>`).join('')}</div></div>`}
-function onboard(){const st=S.role=='student';return `<div class="center"><div style="display:grid;justify-items:center;gap:20px;width:100%"><div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div><div class="card formbox" style="max-width:440px;padding:28px"><h2 class="ed">${st?'Welcome! Tell us about you':'Set up your profile'}</h2><p class="mut" style="margin:6px 0 0">This is how UniBuddy will address you across the portal. You can edit it any time from Profile.</p>
-<label>Full name</label><input id="on" placeholder="Your full name" maxlength="40" autocomplete="off"><div class="g2"><div><label>Age</label><input id="oa" type="number" min="16" max="80" placeholder="e.g. 19"></div>${st?`<div><label>Course</label>${courseSel('oc','')}</div>`:''}</div>
-<div id="oerr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div><button class="btn p w" data-a="onsave">Continue</button><button class="lnk" data-a="logout" style="width:100%;margin-top:8px">Sign out</button></div></div></div>`}
-function profileView(){const p=prof(),st=S.role=='student';return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4vw,44px)">Your profile</h1><p class="sub">Changes appear across the whole portal straight away.</p>
-<div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:6px"><span class="avb">${ini()}</span><div><h3>${pn()}</h3><div class="mut" style="font-size:13px">${ROLES[S.role][1]}${st?' · '+p.course:''}</div></div></div>
-<label>Full name</label><input id="pn" value="${pn()}" maxlength="40"><div class="g2"><div><label>Age</label><input id="pa" type="number" min="16" max="80" value="${p.age||''}"></div>${st?`<div><label>Course</label>${courseSel('pc',p.course)}</div>`:`<div><label>Role</label><input value="${ROLES[S.role][1]}" disabled></div>`}</div>
-<label>Email</label><input value="${S.user.email}" disabled><div id="perr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div>
-<div class="row" style="justify-content:flex-end"><button class="btn" data-a="resetprof">Reset profile</button><button class="btn p" data-a="saveprof">Save changes</button></div></div></div>`}
-function helpView(){return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
-function student(){const v=S.view;return `<div class="app">${side(SN)}<main class="main">${hd(TT[v],v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
-function faculty(){const t=T(S.sel);return `<div class="app">${side([['tix','Tickets','inbox'],['profile','Profile','user']])}<main class="main">${hd(TT[S.view])}<div class="page">${S.view=='profile'?profileView():`<div class="pg"><div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div>${t?detail(t,true):''}</div>`}</div></main></div>`}
-function placeholder(){const r=ROLES[S.role],isAuth=S.role=='authority';return `<div class="app">${side([['x',r[1]+' home','home'],['profile','Profile','user']])}<main class="main">${hd(S.view=='profile'?'Profile':r[1])}<div class="page">${S.view=='profile'?profileView():`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">${isAuth?'University-wide oversight, departmental escalations, and grievance tracking.':'Executive overview of campus query volumes, department response rates, and student engagement.'}</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length+14}</b><span>Total Inquiries</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length+12}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length+2}</b><span>Pending Review</span></div></div></div><div class="card" style="margin-top:20px;padding:20px"><div class="row sp" style="margin-bottom:12px"><h3 style="font-size:16px;font-weight:600">${isAuth?'Escalated & High-Priority University Issues':'Department Resolution Summary'}</h3><span class="pill s1">Live Demo Data</span></div><div class="tw"><table><tr><th>Ticket ID</th><th>Department</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.dept}</td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`}</div></main></div>`}
-function modal(){const m=S.modal,q=S.chat[m.i-1]?.t||'',o=m.out?' out':'';if(m.done)return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Demo ticket. Faculty will review it shortly.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
-return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink)">${q}</div><div class="g2"><div><label>Department</label><select id="md">${['Computer Science','Accounts','Examinations','Hostel','Library'].map(d=>`<option>${d}</option>`).join('')}</select></div><div><label>Priority</label><select id="mp"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful details"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`}
-function R(){const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
-if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else if(S.scr=='onboard')h=onboard();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
-a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${S.toast}</div>`:'');
-const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
-if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
-const notify=(t,tk)=>S.notifs.unshift({t,u:1,tk});
-function sendChat(){const ci=$('#ci');if(!ci)return;const v=ci.value.trim();if(!v)return;ci.value='';ask(v)}
-function sendDash(){const dq=$('#dq');if(!dq)return;const v=dq.value.trim();if(!v)return;dq.value='';ask(v)}
-document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el){if(S.bell&&!e.target.closest('.drop')){S.bell=false;R()}return}const a=el.dataset.a,v=el.dataset.v;
-if(a=='home')go(S.user?'app':'landing');else if(a=='roles')go('login');else if(a=='scroll')$('#'+v)?.scrollIntoView({behavior:'smooth'});
-else if(a=='fill'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';$('#em').focus()}
-else if(a=='login-demo'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';doLogin()}
-else if(a=='forgot'){toast('Universal demo password: '+DPW)}
-else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
-else if(a=='login')doLogin()
-else if(a=='onsave'){const n=$('#on').value,ag=$('#oa').value,c=$('#oc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);if(er){$('#oerr').textContent=er;return}PR[S.user.email]={name:n.trim().replace(/\s+/g,' '),age:Number(ag),course:st?c:''};savePR();go('app')}
-else if(a=='saveprof'){const n=$('#pn').value,ag=$('#pa').value,c=$('#pc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);if(er){$('#perr').textContent=er;return}PR[S.user.email]={name:n.trim().replace(/\s+/g,' '),age:Number(ag),course:st?c:''};savePR();toast('Profile updated.')}
-else if(a=='resetprof'){delete PR[S.user.email];savePR();go('onboard')}
-else if(a=='logout'){try{localStorage.removeItem('ub-current-user')}catch(x){}S.user=null;S.role=null;go('landing')}
-else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R()}else if(a=='navo'){S.nav=true;R()}else if(a=='navx'){S.nav=false;R()}
-else if(a=='new')newChat();else if(a=='hist'){const h=S.hist.splice(+v,1)[0];if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=h.msgs;S.view='chat';S.nav=false;S.fx='view';R()}
-else if(a=='bell'){S.bell=!S.bell;R()}else if(a=='readall'){S.notifs.forEach(n=>n.u=0);R()}
-else if(a=='nt'){const n=S.notifs[v];n.u=0;S.sel=n.tk;S.view='queries';S.bell=false;S.fx='view';R()}
-else if(a=='open'){S.sel=v;if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}R()}
-else if(a=='dask')sendDash();else if(a=='sq')ask(v);else if(a=='send')sendChat();
-else if(a=='attach')toast('Attachments are not enabled in this demo.')
-else if(a=='vs'){const x=S.chat[v];toast(`Demo source: ${x.s}, ${x.p}. No real document is connected.`)}
-else if(a=='fwd'){S.modal={i:+v,q:S.chat[+v-1]?.t||'Question'};R()}else if(a=='mc'){S.modal.out=1;R();setTimeout(()=>{S.modal=null;R()},160)}
-else if(a=='ms'){const m=S.modal,q=m.q||S.chat[m.i-1]?.t||'Question',id='UB-'+(2100+Math.floor(Math.random()*900));S.tickets.unshift({id,subj:q.slice(0,40),dept:$('#md').value,fac:'Unassigned',date:today(),pri:$('#mp').value,st:0,q,desc:$('#mx').value,reply:'',tl:[today().slice(0,6)]});S.chat[m.i].fw=id;S.sel=id;notify(`Ticket ${id} was submitted (demo).`,id);S.modal={done:id};R()}
-else if(a=='vt'){S.modal=null;S.sel=v;S.view='queries';S.fx='view';R()}
-else if(a=='respond'||a=='resolve'){const t=T(S.sel),r=$('#rp').value.trim();if(a=='respond'&&!r){toast('Write a response first.');return}if(r)t.reply=r;const d=today().slice(0,6);t.fac=pn();while(t.tl.length<3)t.tl.push(d);if(a=='resolve'){t.st=3;t.tl[3]=d}else if(t.st<2)t.st=2;
-notify(a=='resolve'?`Ticket ${t.id} was resolved by ${t.fac} (demo).`:`${t.fac} replied to ${t.id} (demo).`,t.id);toast(a=='resolve'?'Ticket resolved.':'Response sent.')}
-});
-document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='ci'){e.preventDefault();sendChat()}if(e.key=='Enter'&&e.target.id=='dq'){e.preventDefault();sendDash()}if(e.key=='Enter'&&(e.target.id=='em'||e.target.id=='pw')){e.preventDefault();doLogin()}if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}});
-document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
-document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
-try{const savedUser=localStorage.getItem('ub-current-user');if(savedUser&&ACC[savedUser]){const a=ACC[savedUser];S.user={...a,email:savedUser};S.role=a.role;S.scr=PR[savedUser]?'app':'onboard';S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x'}}catch(e){}
-R();
-</script></body></html>
+  <script>
+    const P = {
+      user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+      book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
+      shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+      bld: '<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',
+      bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+      up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+      clip: '<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',
+      check: '<path d="M5 12l5 5 9-10"/>',
+      home: '<path d="M3 11l9-8 9 8v10H3z"/>',
+      chat: '<path d="M4 4h16v12H8l-4 4z"/>',
+      list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+      mega: '<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',
+      help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+      menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+      eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+      out: '<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',
+      inbox: '<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',
+      spark: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
+      cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+      edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+      cap: '<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',
+      zap: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+      tick: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+    };
+    const I = n => `<svg class="i" viewBox="0 0 24 24">${P[n] || ''}</svg>`;
+    const IC = n => `<div class="ico">${I(n)}</div>`;
+    const $ = s => document.querySelector(s);
+    const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const STG = ['Submitted', 'Assigned', 'In Progress', 'Resolved'];
+    const ROLES = {
+      student: ['user', 'Student', 'Ask questions and track your tickets.'],
+      faculty: ['book', 'Faculty', 'Review and answer student tickets.'],
+      authority: ['shield', 'Authority', 'Oversee departmental escalations.'],
+      management: ['bld', 'Management', 'Campus-wide performance & reports.']
+    };
+
+    const KB = [
+      { k: ['internal', 'exam', 'midterm', 'test'], a: 'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance.', s: 'Exam Schedule Circular', p: 'p. 2' },
+      { k: ['scholarship', 'financial', 'aid', 'grant'], a: 'Scholarship applications open at the start of each semester through the student portal, with income certificate and previous marksheets attached.', s: 'Scholarship Guidelines', p: 'p. 5' },
+      { k: ['timetable', 'schedule', 'class', 'routine'], a: 'The academic timetable is published on the department notice board and the student portal before each semester begins.', s: 'Academic Calendar', p: 'p. 1' },
+      { k: ['contact', 'faculty', 'professor', 'teacher', 'office hour'], a: 'Faculty office hours and email addresses are listed in the department directory. You may also forward a question directly as a ticket.', s: 'Department Directory', p: 'p. 4' },
+      { k: ['fee', 'tuition', 'payment', 'due', 'fine', 'receipt'], a: 'Semester fee payment closes on the last working day of the second week. Late payments carry a nominal fine of ₹50/day.', s: 'Fee Policy Handbook', p: 'p. 12' },
+      { k: ['attendance', '75', 'absent', 'medical'], a: 'A minimum of 75% attendance is mandatory to sit for semester examinations, with up to 10% relaxation permitted on approved medical grounds.', s: 'Academic Regulations', p: 'p. 8' },
+      { k: ['library', 'facilit', 'book', 'borrow', 'reading room'], a: 'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Digital access is available 24/7 on campus intranet.', s: 'Campus Facilities Guide', p: 'p. 3' },
+      { k: ['hostel', 'mess', 'room', 'gate pass'], a: 'Hostel gate timings are strictly 21:30 on weekdays and 22:30 on weekends. Leave passes must be applied online 24 hours prior via the warden portal.', s: 'Hostel Code of Conduct', p: 'p. 7' },
+      { k: ['wifi', 'internet', 'network', 'login'], a: 'Connect to UniNet-Secure using your university roll number and portal credentials. Contact IT Helpdesk in Block B if MAC registration fails.', s: 'IT Services Manual', p: 'p. 4' }
+    ];
+
+    const SUG = [
+      ['cal', 'Academic Timetable', 'Where can I find the academic timetable?'],
+      ['edit', 'Examination Information', 'When is the next internal examination?'],
+      ['cap', 'Scholarships', 'How can I apply for a scholarship?'],
+      ['bld', 'Campus Facilities', 'What are the library hours and campus facilities?']
+    ];
+
+    const S = {
+      scr: 'landing',
+      role: null,
+      pick: null,
+      user: null,
+      userName: 'Aarav S.',
+      userRoleText: 'Student',
+      view: 'chat',
+      sel: 'UB-2041',
+      modal: null,
+      bell: false,
+      nav: false,
+      chat: [],
+      hist: [],
+      fq: '',
+      fs: 'All',
+      toast: '',
+      fx: 'screen',
+      tickets: [
+        {
+          id: 'UB-2041',
+          subj: 'Re-evaluation of lab marks',
+          dept: 'Computer Science',
+          fac: 'Dr. Mehta',
+          date: '02 Nov 2026',
+          pri: 'High',
+          st: 1,
+          q: 'Can I request a re-evaluation of my Data Structures lab marks?',
+          desc: 'Marks look lower than expected compared to the checked rubric.',
+          reply: '',
+          tl: ['02 Nov', '03 Nov']
+        },
+        {
+          id: 'UB-2036',
+          subj: 'Hostel fee receipt',
+          dept: 'Accounts',
+          fac: 'Ms. Rao',
+          date: '28 Oct 2026',
+          pri: 'Medium',
+          st: 3,
+          q: 'I did not receive my hostel fee receipt after online netbanking payment.',
+          desc: 'Transaction reference TXN-98421.',
+          reply: 'Your receipt has been verified and emailed again. Please check your spam folder.',
+          tl: ['28 Oct', '28 Oct', '29 Oct', '30 Oct']
+        }
+      ],
+      notifs: [
+        { t: 'Ticket UB-2041 was assigned to Dr. Mehta.', u: 1, tk: 'UB-2041' },
+        { t: 'Ticket UB-2036 was marked as Resolved.', u: 0, tk: 'UB-2036' }
+      ]
+    };
+
+    const T = id => S.tickets.find(t => t.id == id);
+    const stl = t => `<span class="pill s${t.st}">${STG[t.st]}</span>`;
+    const go = (s, o = {}) => {
+      Object.assign(S, { scr: s, bell: false, nav: false, fx: 'screen' }, o);
+      R();
+      window.scrollTo(0, 0);
+    };
+    const toast = m => {
+      S.toast = m;
+      R();
+      setTimeout(() => {
+        S.toast = '';
+        R();
+      }, 2600);
+    };
+
+    const logo = `<div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>`;
+
+    function landing() {
+      return `
+      <div class="land">
+        <div class="nav">
+          ${logo}
+          <div class="row">
+            <button class="lnk" data-a="scroll" data-v="features">Features</button>
+            <button class="lnk" data-a="scroll" data-v="how">How it Works</button>
+            <button class="btn p sm" data-a="roles">Get Started</button>
+          </div>
+        </div>
+        <div class="wrap">
+          <section class="hero">
+            <div>
+              <span class="badge">${I('spark')} AI assistant for your campus</span>
+              <h1 class="ed" style="margin-top:18px">One campus. One intelligent assistant.</h1>
+              <p>UniBuddy gives students verified answers from university documents and seamlessly routes unresolved issues to the right faculty, tracked till resolution.</p>
+              <div class="row">
+                <button class="btn p" data-a="roles">Get Started</button>
+                <button class="btn" data-a="scroll" data-v="features">Explore Features</button>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="card prev">
+                <div class="row" style="margin-bottom:14px">
+                  <span class="mark">U</span>
+                  <div>
+                    <b>UniBuddy</b>
+                    <div class="on-ind"><span class="pu"></span>Online</div>
+                  </div>
+                </div>
+                <div class="u" style="margin-top:0">
+                  <div class="ub">When is the next internal examination?</div>
+                </div>
+                <div class="a" style="margin-bottom:0">
+                  <div class="body">
+                    <p style="margin:0">Internal examinations are held in the seventh week of the semester.</p>
+                    <div class="src">Exam Schedule Circular · p. 2 <span>Official Document</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="chipf c1"><span class="vb">${I('check')} Verified Answer</span></div>
+              <div class="chipf c2">${I('tick')} UB-2041 · Assigned</div>
+            </div>
+          </section>
+
+          <section id="features" class="bento">
+            <div class="bt tall">
+              ${IC('spark')}
+              <h3>Answers you can trust</h3>
+              <p>AI-powered replies grounded in verified university documents, with page and section sources always one tap away.</p>
+            </div>
+            <div class="bt b">
+              ${IC('inbox')}
+              <h3>Smart Query Management</h3>
+              <p>Every forwarded question automatically becomes a trackable, prioritized ticket routed directly to the department desk.</p>
+            </div>
+            <div class="bt m">
+              ${IC('book')}
+              <h3>Faculty Support</h3>
+              <p>Clear dashboards for professors and administrators to reply, re-assign, and resolve queries without endless email threads.</p>
+            </div>
+            <div class="bt w">
+              ${IC('zap')}
+              <h3>Real-Time Updates</h3>
+              <p>Get notified the moment a ticket moves forward or faculty replies to your query.</p>
+            </div>
+          </section>
+
+          <section id="how" class="how">
+            <h2 class="ed">How it works</h2>
+            <div class="hsteps">
+              ${['Ask your question to the AI assistant.', 'Get an instant verified answer or forward it to faculty.', 'Track your ticket step-by-step until resolved.'].map((s, i) => `
+                <div class="hs">
+                  <span class="num">${i + 1}</span>
+                  <p>${s}</p>
+                </div>
+              `).join('')}
+            </div>
+          </section>
+        </div>
+        <footer>© 2026 UniBuddy · Intelligent Campus Helpdesk Platform</footer>
+      </div>`;
+    }
+
+    function roles() {
+      return `
+      <div class="center">
+        <div style="width:100%;display:grid;justify-items:center;gap:28px">
+          <div style="text-align:center">
+            <div class="logo" style="justify-content:center;margin-bottom:22px" data-a="home">
+              <span class="mark">U</span>UniBuddy
+            </div>
+            <h2 class="ed">Choose your role</h2>
+            <p class="mut" style="margin:8px 0 0">Select your university portal view to continue.</p>
+          </div>
+          <div class="roles">
+            ${Object.entries(ROLES).map(([k, v], i) => `
+              <div class="card lift role t${i} ${S.pick == k ? 'sel' : ''}" data-a="pick" data-v="${k}">
+                ${IC(v[0])}
+                <h3>${v[1]}</h3>
+                <p>${v[2]}</p>
+                <button class="btn ${S.pick == k ? 'p' : ''} w" data-a="cont" data-v="${k}">Continue</button>
+              </div>
+            `).join('')}
+          </div>
+          <p class="mut" style="font-size:13px;text-align:center;max-width:460px;margin:0">
+            Quick access: Select Student or Faculty to test full interactive workflows. Click Continue or use one-click demo login.
+          </p>
+        </div>
+      </div>`;
+    }
+
+    function login() {
+      const r = ROLES[S.role] || ROLES.student;
+      return `
+      <div class="split">
+        <div class="brandp">
+          <div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>
+          <div>
+            <h1 class="ed" style="font-size:40px">Your campus assistant is ready.</h1>
+            <p style="margin-top:14px">Verified answers, tracked tickets, and instant department updates in one clean workspace.</p>
+            <ul>
+              <li>${I('check')} Verified answers with document sources</li>
+              <li>${I('check')} Tickets tracked to resolution</li>
+              <li>${I('check')} Live notifications & alerts</li>
+            </ul>
+          </div>
+          <div class="mut" style="font-size:12.5px">UniBuddy Portal 2.0</div>
+        </div>
+        <div class="formside">
+          <div class="formbox">
+            <button class="lnk" data-a="roles" style="padding:0 0 14px">← Back to role selection</button>
+            <div class="row" style="margin-bottom:4px">
+              ${IC(r[0])}
+              <div>
+                <h2>${r[1]} login</h2>
+                <div class="mut" style="font-size:13px">Sign in to your university workspace.</div>
+              </div>
+            </div>
+            <div class="demo">
+              <b>Fast Demo Access</b><br>
+              Click <b>Demo login</b> for instant access, or type your university email below.
+            </div>
+            <label>University Email</label>
+            <input id="em" type="email" placeholder="${S.role == 'faculty' ? 'dr.mehta@university.edu' : 'aarav.sharma@university.edu'}">
+            <label>Password</label>
+            <div style="position:relative">
+              <input id="pw" type="password" placeholder="••••••••">
+              <button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Toggle password">${I('eye')}</button>
+            </div>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:14px 0">
+              <input type="checkbox" style="width:auto;height:auto" checked> Remember this device
+            </label>
+            <div id="err" style="font-size:13px;min-height:20px;color:#d33833;margin-bottom:8px"></div>
+            <button class="btn p w" data-a="login">Sign In</button>
+            <button class="btn w" style="margin-top:10px" data-a="demo">Instant Demo Login</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function side(items) {
+      const isStudent = S.role == 'student';
+      return `
+      <aside class="side ${S.nav ? 'open' : ''}">
+        ${logo}
+        ${isStudent ? `<button class="si nc" data-a="new">${I('plus')}New Chat</button>` : ''}
+        ${items.map(i => `
+          <button class="si ${S.view == i[0] ? 'on' : ''}" data-a="view" data-v="${i[0]}">
+            ${I(i[2])}${i[1]}
+          </button>
+        `).join('')}
+        ${isStudent ? `
+          <div class="sh">Chat History</div>
+          <div class="hist">
+            ${S.hist.length ? S.hist.map((h, i) => `
+              <button class="si" data-a="hist" data-v="${i}">
+                ${I('chat')}<span>${h.title}</span>
+              </button>
+            `).join('') : '<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}
+          </div>
+        ` : '<div style="flex:1"></div>'}
+        <div class="prof row sp">
+          <div class="row" style="min-width:0">
+            <span class="av">${S.userName ? S.userName[0] : 'U'}</span>
+            <div style="line-height:1.3">
+              <div style="font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${S.userName}</div>
+              <div class="mut" style="font-size:12px">${S.userRoleText}</div>
+            </div>
+          </div>
+          <button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button>
+        </div>
+      </aside>
+      <div class="scrim ${S.nav ? 'open' : ''}" data-a="navx"></div>`;
+    }
+
+    const SN = [
+      ['chat', 'AI Assistant', 'spark'],
+      ['dash', 'Dashboard', 'home'],
+      ['queries', 'My Queries', 'list'],
+      ['ann', 'Announcements', 'mega'],
+      ['help', 'Help & Support', 'help']
+    ];
+
+    function hd(title, ai) {
+      const u = S.notifs.filter(n => n.u).length;
+      const isStudent = S.role == 'student';
+      return `
+      <div class="hd">
+        <div class="row">
+          <button class="ib menu" data-a="navo" aria-label="Menu">${I('menu')}</button>
+          <b style="font-weight:600">${title}</b>
+          ${ai ? '<span class="on-ind" style="margin-left:6px"><span class="pu"></span>Online</span>' : ''}
+        </div>
+        ${isStudent ? `
+          <button class="ib" data-a="bell" aria-label="Notifications">
+            ${I('bell')}${u ? '<span class="dot"></span>' : ''}
+          </button>
+        ` : ''}
+        ${S.bell ? `
+          <div class="drop">
+            ${S.notifs.length ? S.notifs.map((n, i) => `
+              <div class="n ${n.u ? 'un' : ''}" data-a="nt" data-v="${i}">
+                <i></i><span>${n.t}</span>
+              </div>
+            `).join('') : '<div class="n mut">No notifications</div>'}
+            <button class="lnk" data-a="readall" style="font-size:13px;width:100%;text-align:center;display:block">Mark all as read</button>
+          </div>
+        ` : ''}
+      </div>`;
+    }
+
+    function chat() {
+      const m = S.chat;
+      return `
+      <div class="chatw">
+        <div class="msgs" id="msgs">
+          <div class="col">
+            ${m.length ? m.map((x, i) => msg(x, i)).join('') : `
+              <div class="empty">
+                <div class="welcome">
+                  <span class="mark">U</span>
+                  <h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1>
+                  <p>Ask anything about courses, exams, campus rules, or forward questions directly to faculty.</p>
+                  <div class="chips">
+                    ${SUG.map(s => `<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}
+                  </div>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+        <div class="comp">
+          <div class="cbox">
+            <button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button>
+            <input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off">
+            <button class="send" data-a="send" aria-label="Send">${I('up')}</button>
+          </div>
+          <div class="note">Answers are verified against published university handbooks and circulars.</div>
+        </div>
+      </div>`;
+    }
+
+    function msg(x, i) {
+      const c = x.n ? ' in' : '';
+      if (x.r == 'u') {
+        return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;
+      }
+      const L = '<span class="mark">U</span>';
+      if (x.k == 'ty') {
+        return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
+      }
+      if (x.k == 'ok') {
+        return `
+        <div class="a${c}">${L}
+          <div class="body">
+            <div class="who">UniBuddy</div>
+            <span class="vb">${I('check')} Verified Answer</span>
+            <p style="margin:8px 0 0">${x.t}</p>
+            <div class="src">
+              <span>${x.s} · ${x.p}</span>
+              <button data-a="vs" data-v="${i}">View source</button>
+            </div>
+            <div class="ts">${x.time}</div>
+          </div>
+        </div>`;
+      }
+      return `
+      <div class="a${c}">${L}
+        <div class="body">
+          <div class="who">UniBuddy</div>
+          <p style="margin:0">I couldn’t locate a verified answer for this specific query in the active handbook. Would you like me to create and forward a ticket to the relevant faculty or department?</p>
+          <div class="nf">
+            ${x.fw ? `
+              <span class="vb">${I('check')} Forwarded as ticket ${x.fw}</span>
+            ` : `
+              <button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>
+            `}
+          </div>
+          <div class="ts">${x.time}</div>
+        </div>
+      </div>`;
+    }
+
+    function ask(q) {
+      if (!q || !q.trim()) return;
+      const cleanQ = q.trim();
+      S.chat.push({ r: 'u', t: cleanQ.replace(/</g, '&lt;'), time: now(), n: 1 });
+      S.chat.push({ r: 'a', k: 'ty', n: 1 });
+      S.view = 'chat';
+      R();
+
+      const l = cleanQ.toLowerCase();
+      const h = KB.find(e => e.k.some(k => l.includes(k)));
+
+      setTimeout(() => {
+        S.chat.pop();
+        if (h) {
+          S.chat.push({ r: 'a', k: 'ok', t: h.a, s: h.s, p: h.p, time: now(), n: 1 });
+        } else {
+          S.chat.push({ r: 'a', k: 'nf', time: now(), n: 1, origQ: cleanQ });
+        }
+        R();
+      }, 700);
+    }
+
+    const ttl = () => {
+      const u = S.chat.find(x => x.r == 'u');
+      return u && u.t ? u.t.slice(0, 30) : 'Campus Query';
+    };
+
+    function newChat() {
+      if (S.chat.length) {
+        S.hist.unshift({ title: ttl(), msgs: [...S.chat] });
+      }
+      S.chat = [];
+      S.view = 'chat';
+      S.nav = false;
+      S.fx = 'view';
+      R();
+    }
+
+    const ANN = [
+      { c: 'Exams', t: 'Internal exam timetable released', d: '4 Nov', b: 'Seventh-week internal examinations are scheduled. Check your department notice board for the detailed schedule.', big: 1, tone: 'lav', imp: 1 },
+      { c: 'Library', t: 'Library extends weekday hours', d: '2 Nov', b: 'Central library reading room open until 20:00 on all weekdays.', tone: 'blue' },
+      { c: 'Scholarships', t: 'Scholarship applications open', d: '1 Nov', b: 'Merit and means scholarships now accepting online applications via the student portal.', tone: 'mist' },
+      { c: 'Events', t: 'Annual Campus Hackathon registrations', d: '30 Oct', b: 'Teams of up to four. Prizes worth ₹1,00,000. Open to all engineering branches.', tone: 'blue' },
+      { c: 'Campus', t: 'Hostel maintenance schedule', d: '28 Oct', b: 'Scheduled water supply maintenance on Saturday 10:00 to 14:00.', tone: 'lav' }
+    ];
+
+    function dash() {
+      const t = S.tickets;
+      const res = t.filter(x => x.st == 3).length;
+      const pending = t.length - res;
+      const f = ANN[0];
+      return `
+      <div class="pg">
+        <h1 class="ed">Welcome back, ${S.userName}</h1>
+        <p class="sub">Here’s what is happening on campus today.</p>
+        <div class="askp">
+          <div>
+            <h3>Ask UniBuddy</h3>
+            <p>Get an instant verified answer, or forward queries directly to faculty desks.</p>
+          </div>
+          <div class="row">
+            <input id="dq" placeholder="Ask UniBuddy anything...">
+            <button class="btn p" data-a="dask">Ask</button>
+          </div>
+        </div>
+        <div class="strip">
+          ${[
+            ['list', 'Total queries', t.length],
+            ['tick', 'Resolved', res],
+            ['clock', 'In Progress / Open', pending]
+          ].map(s => `
+            <div class="sti" data-a="view" data-v="queries">
+              <span class="ic">${I(s[0])}</span>
+              <div>
+                <b>${s[2]}</b>
+                <span>${s[1]}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="dgrid">
+          <section>
+            <div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div>
+            <div class="feat1" data-a="view" data-v="ann">
+              <span class="cat">${f.c} · ${f.d}</span>
+              <h3>${f.t}</h3>
+              <p class="mut" style="margin:0;font-size:13.5px">${f.b}</p>
+            </div>
+            ${ANN.slice(1, 3).map(a => `
+              <div class="hrow">
+                <span>
+                  <b style="font-weight:500">${a.t}</b>
+                  <span class="cat">${a.c}</span>
+                </span>
+                <span class="dt">${a.d}</span>
+              </div>
+            `).join('')}
+          </section>
+          <section>
+            <div class="sh2">Upcoming Academic Deadlines</div>
+            <div class="dl">
+              ${[
+                ['Semester Fee Payment', '12 Nov', 'Accounts Desk'],
+                ['Data Structures Assignment 3', '15 Nov', 'Computer Science'],
+                ['Semester Examination Form', '20 Nov', 'Examination Cell']
+              ].map(d => `
+                <div class="dli">
+                  <b>${d[0]}</b>
+                  <small>${d[1]} · ${d[2]}</small>
+                </div>
+              `).join('')}
+            </div>
+          </section>
+        </div>
+        <section>
+          <div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div>
+          <div class="qp">
+            ${t.slice(0, 4).map(x => `
+              <div class="qr" data-a="open" data-v="${x.id}">
+                <small>${x.id}</small>
+                <span>${x.subj}</span>
+                ${stl(x)}
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      </div>`;
+    }
+
+    function tlh(t) {
+      return `
+      <div class="prog"><i style="--p:${Math.max(10, ((t.st + 1) / 4) * 100)}%"></i></div>
+      <div class="lab">Step ${t.st + 1} of 4 · ${STG[t.st]}</div>
+      <div class="tl">
+        ${STG.map((s, i) => `
+          <div class="${i <= t.st ? 'd' : ''}">
+            ${s}
+            <small>${i <= t.st ? (t.tl[i] || 'Completed') : 'Pending'}</small>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    function detail(t, fac) {
+      return `
+      <div class="two fx">
+        <div>
+          <div class="card">
+            <div class="row sp" style="flex-wrap:wrap">
+              <h3>${t.id} · ${t.subj}</h3>
+              ${stl(t)}
+            </div>
+            <div class="mut" style="font-size:13px;margin:4px 0 14px">
+              Priority: <span class="pri ${t.pri}">${t.pri}</span> · Department: <b>${t.dept}</b> · Submitted: ${t.date}
+            </div>
+            <div class="lab">${fac ? 'Student Question' : 'Original Query'}</div>
+            <p style="margin:2px 0 0;font-weight:500">${t.q}</p>
+            ${t.desc ? `<p class="mut" style="margin:8px 0 0;font-size:13.5px">${t.desc}</p>` : ''}
+          </div>
+          ${fac ? `
+            <div class="card tint">
+              <div class="lab">Student information</div>
+              <div style="font-weight:500">Aarav S. · B.Tech CSE Year 2</div>
+              <div class="mut" style="font-size:12px">Roll: 2024-CS-084 · Verified Student</div>
+            </div>
+          ` : ''}
+          <div class="card">
+            <h3 style="margin-bottom:10px">${fac ? 'Compose Response' : 'Faculty Response'}</h3>
+            ${fac ? `
+              <textarea id="rp" rows="5" placeholder="Write your official response to the student...">${t.reply}</textarea>
+              <div class="row" style="justify-content:flex-end;margin-top:12px">
+                <button class="btn" data-a="resolve">${t.st == 3 ? 'Update & Keep Resolved' : 'Mark as Resolved'}</button>
+                <button class="btn p" data-a="respond">Send Response</button>
+              </div>
+            ` : t.reply ? `
+              <div style="margin:0;background:var(--ice);border-radius:12px;padding:14px 16px;border:1px solid #d4e3fa">
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;color:var(--navy)">${t.fac} (${t.dept}):</div>
+                <div>${t.reply}</div>
+              </div>
+            ` : `
+              <p class="mut" style="margin:0">No faculty response has been posted yet. You will receive an instant notification when ${t.fac} updates your ticket.</p>
+            `}
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:16px">${fac ? 'Ticket Timeline & Assignment' : 'Status Timeline'}</h3>
+          <div style="margin-bottom:12px;font-size:13px">
+            <b>Assigned To:</b> ${t.fac}
+          </div>
+          ${tlh(t)}
+        </div>
+      </div>`;
+    }
+
+    function queries() {
+      const f = S.tickets.filter(t => 
+        (S.fs == 'All' || STG[t.st] == S.fs) && 
+        (t.subj + t.id + t.dept + t.fac).toLowerCase().includes(S.fq.toLowerCase())
+      );
+      const t = T(S.sel) || S.tickets[0];
+      return `
+      <div class="pg">
+        <div class="row sp" style="margin-bottom:16px;flex-wrap:wrap">
+          <h2>My Queries</h2>
+          <div class="row">
+            <input id="gs" placeholder="Search tickets..." value="${S.fq}" style="width:190px">
+            <select id="fs" style="width:auto">
+              ${['All', ...STG].map(s => `<option ${S.fs == s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="card" style="padding:8px 8px 4px">
+          <div class="tw">
+            <table>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Subject</th>
+                <th>Department</th>
+                <th>Faculty</th>
+                <th>Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+              </tr>
+              ${f.map(x => `
+                <tr class="rw ${x.id == S.sel ? 'on' : ''}" data-a="open" data-v="${x.id}">
+                  <td><b>${x.id}</b></td>
+                  <td>${x.subj}</td>
+                  <td>${x.dept}</td>
+                  <td>${x.fac}</td>
+                  <td>${x.date}</td>
+                  <td><span class="pri ${x.pri}">${x.pri}</span></td>
+                  <td>${stl(x)}</td>
+                </tr>
+              `).join('')}
+            </table>
+            ${f.length ? '' : '<p class="mut" style="text-align:center;padding:24px">No tickets match your filter criteria. Ask UniBuddy a query to forward one.</p>'}
+          </div>
+        </div>
+        ${t ? detail(t, false) : ''}
+      </div>`;
+    }
+
+    const TT = {
+      chat: 'AI Assistant',
+      dash: 'Dashboard',
+      queries: 'My Queries',
+      ann: 'Announcements',
+      help: 'Help & Support'
+    };
+
+    function annView() {
+      return `
+      <div class="pg wide">
+        <h1 class="ed">Announcements</h1>
+        <p class="sub">The latest updates, official circulars, and notices from university departments.</p>
+        <div class="mag">
+          ${ANN.map(a => `
+            <article class="am ${a.tone} ${a.big ? 'big' : ''}">
+              <div class="row sp">
+                <span class="cat">${a.c}</span>
+                <span class="dt">${a.d}</span>
+              </div>
+              ${a.imp ? '<span class="imp">Important</span>' : ''}
+              <h3>${a.t}</h3>
+              <p>${a.b}</p>
+            </article>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+
+    function student() {
+      const v = S.view;
+      return `
+      <div class="app">
+        ${side(SN)}
+        <main class="main">
+          ${hd(TT[v], v == 'chat')}
+          ${v == 'chat' ? chat() : `
+            <div class="page">
+              ${v == 'dash' ? dash() : v == 'queries' ? queries() : v == 'ann' ? annView() : `
+                <div class="pg">
+                  <div class="card tint" style="max-width:560px">
+                    <h2 class="ed">Help & Support</h2>
+                    <p class="mut">UniBuddy is designed to resolve questions instantly using campus documents. If a query requires human intervention, simply forward it to faculty from the AI chat.</p>
+                    <div style="margin-top:16px;display:flex;gap:10px">
+                      <button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button>
+                      <button class="btn" data-a="view" data-v="queries">Track My Tickets</button>
+                    </div>
+                  </div>
+                </div>
+              `}
+            </div>
+          `}
+        </main>
+      </div>`;
+    }
+
+    function faculty() {
+      const t = T(S.sel) || S.tickets[0];
+      return `
+      <div class="app">
+        ${side([['tix', 'Tickets Desk', 'inbox']])}
+        <main class="main">
+          ${hd('Faculty · Student Query Desk')}
+          <div class="page">
+            <div class="pg">
+              <div class="card" style="padding:8px 8px 4px">
+                <div class="tw">
+                  <table>
+                    <tr>
+                      <th>Ticket ID</th>
+                      <th>Subject</th>
+                      <th>Department</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                    </tr>
+                    ${S.tickets.map(x => `
+                      <tr class="rw ${x.id == S.sel ? 'on' : ''}" data-a="open" data-v="${x.id}">
+                        <td><b>${x.id}</b></td>
+                        <td>${x.subj}</td>
+                        <td>${x.dept}</td>
+                        <td><span class="pri ${x.pri}">${x.pri}</span></td>
+                        <td>${stl(x)}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+              </div>
+              ${t ? detail(t, true) : ''}
+            </div>
+          </div>
+        </main>
+      </div>`;
+    }
+
+    function placeholder() {
+      const r = ROLES[S.role] || ROLES.authority;
+      return `
+      <div class="app">
+        ${side([['x', r[1] + ' Overview', 'home']])}
+        <main class="main">
+          ${hd(r[1] + ' Portal')}
+          <div class="page">
+            <div class="pg">
+              <div class="card" style="max-width:520px;margin:50px auto;text-align:center">
+                <div style="display:grid;justify-items:center;margin-bottom:12px">${IC(r[0])}</div>
+                <h2>${r[1]} Workspace</h2>
+                <p class="mut" style="margin:10px 0 20px">The ${r[1]} escalation and metrics portal. For full interactive student and faculty ticket workflows, switch to the Student or Faculty view.</p>
+                <div class="row" style="justify-content:center">
+                  <button class="btn p" data-a="switchRole" data-v="student">Switch to Student View</button>
+                  <button class="btn" data-a="switchRole" data-v="faculty">Faculty Desk</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>`;
+    }
+
+    function modal() {
+      const m = S.modal;
+      const q = m.q || (S.chat[m.i - 1]?.t) || 'General Student Query';
+      const o = m.out ? ' out' : '';
+
+      if (m.done) {
+        return `
+        <div class="ov${o}">
+          <div class="modal" style="text-align:center">
+            <div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div>
+            <h2>Ticket Submitted Successfully</h2>
+            <p class="mut" style="margin:6px 0">Your ticket tracking ID is:</p>
+            <div style="font-size:26px;font-weight:700;margin:6px 0 12px;color:var(--navy);letter-spacing:.02em">${m.done}</div>
+            <p class="mut" style="font-size:13px;margin-bottom:20px">Your inquiry has been assigned to the department faculty. You will be notified as soon as an update is posted.</p>
+            <button class="btn p w" data-a="vt" data-v="${m.done}">View Ticket in My Queries</button>
+          </div>
+        </div>`;
+      }
+
+      return `
+      <div class="ov${o}">
+        <div class="modal">
+          <h2>Forward Query to Faculty</h2>
+          <label>Original Query</label>
+          <div class="demo" style="margin:0;color:var(--ink)">${q}</div>
+          <div class="g2">
+            <div>
+              <label>Target Department</label>
+              <select id="md">
+                ${['Computer Science', 'Accounts', 'Examinations', 'Hostel Office', 'Library'].map(d => `<option>${d}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label>Priority</label>
+              <select id="mp">
+                <option>Low</option>
+                <option selected>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+          </div>
+          <label>Additional Context / Details</label>
+          <textarea id="mx" rows="3" placeholder="Add course code, roll number, or other helpful details..."></textarea>
+          <div class="row" style="justify-content:flex-end;margin-top:20px">
+            <button class="btn" data-a="mc">Cancel</button>
+            <button class="btn p" data-a="ms">Submit Ticket</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function R() {
+      const a = $('#app');
+      const activeEl = document.activeElement;
+      const activeId = activeEl?.id;
+      const activeVal = activeEl ? activeEl.value : '';
+
+      let h = '';
+      if (S.scr == 'landing') h = landing();
+      else if (S.scr == 'roles') h = roles();
+      else if (S.scr == 'login') h = login();
+      else h = S.role == 'student' ? student() : S.role == 'faculty' ? faculty() : placeholder();
+
+      a.innerHTML = h + (S.modal ? modal() : '') + (S.toast ? `<div class="toast">${S.toast}</div>` : '');
+
+      const t = S.fx == 'screen' ? a.firstElementChild : S.fx == 'view' ? $('.main > :last-child') : null;
+      if (t) t.classList.add('fx');
+      S.fx = 0;
+      S.chat.forEach(x => x.n = 0);
+
+      // Preserve active input focus if not chat inputs
+      if (activeId && $('#' + activeId) && activeId !== 'ci' && activeId !== 'dq') {
+        $('#' + activeId).value = activeVal;
+        $('#' + activeId).focus();
+      }
+
+      const m = $('#msgs');
+      if (m) m.scrollTop = m.scrollHeight;
+    }
+
+    const notify = (t, tk) => S.notifs.unshift({ t, u: 1, tk });
+
+    function handleChatSend() {
+      const ci = $('#ci');
+      if (!ci) return;
+      const v = ci.value;
+      if (!v || !v.trim()) return;
+      ci.value = '';
+      ask(v);
+    }
+
+    function handleDashSend() {
+      const dq = $('#dq');
+      if (!dq) return;
+      const v = dq.value;
+      if (!v || !v.trim()) return;
+      dq.value = '';
+      ask(v);
+    }
+
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-a]');
+      if (!el) {
+        if (S.bell && !e.target.closest('.drop')) {
+          S.bell = false;
+          R();
+        }
+        return;
+      }
+      const a = el.dataset.a;
+      const v = el.dataset.v;
+
+      if (a == 'home') go(S.user ? 'app' : 'landing');
+      else if (a == 'roles') go('roles');
+      else if (a == 'scroll') {
+        const target = $('#' + v);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      }
+      else if (a == 'pick') { S.pick = v; R(); }
+      else if (a == 'cont') { S.pick = v; S.role = v; go('login'); }
+      else if (a == 'pw') {
+        const p = $('#pw');
+        if (p) p.type = p.type == 'password' ? 'text' : 'password';
+      }
+      else if (a == 'login') {
+        const em = $('#em')?.value.trim();
+        if (em) {
+          S.user = 1;
+          const namePart = em.split('@')[0].replace(/[._]/g, ' ');
+          S.userName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+          S.userRoleText = ROLES[S.role][1];
+          S.view = S.role == 'student' ? 'chat' : S.role == 'faculty' ? 'tix' : 'x';
+          if (S.role == 'faculty') S.sel = 'UB-2041';
+          go('app');
+        } else {
+          const err = $('#err');
+          if (err) err.textContent = 'Please enter an email, or click Instant Demo Login.';
+        }
+      }
+      else if (a == 'demo') {
+        S.user = 1;
+        S.userName = S.role == 'faculty' ? 'Dr. Mehta' : S.role == 'authority' ? 'Dean Office' : S.role == 'management' ? 'Campus Registrar' : 'Aarav S.';
+        S.userRoleText = ROLES[S.role][1];
+        S.view = S.role == 'student' ? 'chat' : S.role == 'faculty' ? 'tix' : 'x';
+        if (S.role == 'faculty') S.sel = 'UB-2041';
+        go('app');
+      }
+      else if (a == 'switchRole') {
+        S.role = v;
+        S.userName = v == 'faculty' ? 'Dr. Mehta' : 'Aarav S.';
+        S.userRoleText = ROLES[v][1];
+        S.view = v == 'student' ? 'chat' : 'tix';
+        go('app');
+      }
+      else if (a == 'logout') {
+        S.user = null;
+        go('landing');
+      }
+      else if (a == 'view') {
+        if (S.view != v) S.fx = 'view';
+        S.view = v;
+        S.bell = false;
+        S.nav = false;
+        R();
+      }
+      else if (a == 'navo') { S.nav = true; R(); }
+      else if (a == 'navx') { S.nav = false; R(); }
+      else if (a == 'new') newChat();
+      else if (a == 'hist') {
+        const h = S.hist.splice(+v, 1)[0];
+        if (S.chat.length) S.hist.unshift({ title: ttl(), msgs: [...S.chat] });
+        S.chat = h.msgs;
+        S.view = 'chat';
+        S.nav = false;
+        S.fx = 'view';
+        R();
+      }
+      else if (a == 'bell') { S.bell = !S.bell; R(); }
+      else if (a == 'readall') {
+        S.notifs.forEach(n => n.u = 0);
+        R();
+      }
+      else if (a == 'nt') {
+        const n = S.notifs[+v];
+        if (n) {
+          n.u = 0;
+          if (n.tk) S.sel = n.tk;
+          S.view = 'queries';
+          S.bell = false;
+          S.fx = 'view';
+          R();
+        }
+      }
+      else if (a == 'open') {
+        S.sel = v;
+        if (S.role == 'student' && S.view != 'queries') {
+          S.view = 'queries';
+          S.fx = 'view';
+        }
+        R();
+      }
+      else if (a == 'dask') handleDashSend();
+      else if (a == 'sq') ask(v);
+      else if (a == 'send') handleChatSend();
+      else if (a == 'attach') {
+        toast('Attachment support: PDF / Document upload is ready for campus backend integration.');
+      }
+      else if (a == 'vs') {
+        const x = S.chat[+v];
+        if (x) toast(`Verified Document Source: ${x.s}, ${x.p}`);
+      }
+      else if (a == 'fwd') {
+        const questionText = S.chat[+v - 1]?.t || S.chat[+v]?.origQ || 'Campus inquiry';
+        S.modal = { i: +v, q: questionText };
+        R();
+      }
+      else if (a == 'mc') {
+        S.modal.out = 1;
+        R();
+        setTimeout(() => {
+          S.modal = null;
+          R();
+        }, 160);
+      }
+      else if (a == 'ms') {
+        const m = S.modal;
+        const q = m.q || S.chat[m.i - 1]?.t || 'Campus Inquiry';
+        const id = 'UB-' + (2100 + Math.floor(Math.random() * 900));
+        const dept = $('#md')?.value || 'Computer Science';
+        const pri = $('#mp')?.value || 'Medium';
+        const desc = $('#mx')?.value || '';
+        const facultyAssigned = dept == 'Computer Science' ? 'Dr. Mehta' : dept == 'Accounts' ? 'Ms. Rao' : 'Department Faculty';
+
+        S.tickets.unshift({
+          id,
+          subj: q.slice(0, 40) + (q.length > 40 ? '...' : ''),
+          dept,
+          fac: facultyAssigned,
+          date: today(),
+          pri,
+          st: 0,
+          q,
+          desc,
+          reply: '',
+          tl: [today().slice(0, 6)]
+        });
+
+        if (S.chat[m.i]) {
+          S.chat[m.i].fw = id;
+        }
+        S.sel = id;
+        notify(`Ticket ${id} was submitted and routed to ${dept}.`, id);
+        S.modal = { done: id };
+        R();
+      }
+      else if (a == 'vt') {
+        S.modal = null;
+        S.sel = v;
+        S.view = 'queries';
+        S.fx = 'view';
+        R();
+      }
+      else if (a == 'respond' || a == 'resolve') {
+        const t = T(S.sel);
+        if (!t) return;
+        const rp = $('#rp')?.value.trim() || '';
+        if (a == 'respond' && !rp) {
+          toast('Please write a response first.');
+          return;
+        }
+        if (rp) t.reply = rp;
+        const d = today().slice(0, 6);
+        if (t.fac == 'Unassigned') t.fac = 'Dr. Mehta';
+        while (t.tl.length < 3) t.tl.push(d);
+
+        if (a == 'resolve') {
+          t.st = 3;
+          t.tl[3] = d;
+          notify(`Ticket ${t.id} was marked as Resolved by ${t.fac}.`, t.id);
+          toast('Ticket marked as Resolved.');
+        } else {
+          if (t.st < 2) t.st = 2; // In Progress
+          notify(`${t.fac} sent a response to Ticket ${t.id}.`, t.id);
+          toast('Response sent successfully.');
+        }
+        R();
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (e.target.id === 'ci') {
+          e.preventDefault();
+          handleChatSend();
+        } else if (e.target.id === 'dq') {
+          e.preventDefault();
+          handleDashSend();
+        }
+      }
+    });
+
+    document.addEventListener('input', e => {
+      if (e.target.id === 'gs') {
+        S.fq = e.target.value;
+        R();
+      }
+    });
+
+    document.addEventListener('change', e => {
+      if (e.target.id === 'fs') {
+        S.fs = e.target.value;
+        R();
+      }
+    });
+
+    // Initial render
+    R();
+  </script>
+</body>
+</html>
