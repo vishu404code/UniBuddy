@@ -3,10 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>UniBuddy · AI Campus Assistant</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>UniBuddy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #FFFFFF;
@@ -57,7 +55,6 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      text-decoration: none;
     }
     .btn:hover { transform: translateY(-1px); box-shadow: var(--sh); border-color: var(--ind); }
     .btn:active { transform: scale(.97); }
@@ -318,147 +315,67 @@
       border-top: 1px solid var(--bd);
     }
 
-    /* REDESIGNED LOGIN PAGE (matching user visual reference) */
-    .login-wrap {
+    /* login & split */
+    .center {
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-      background: radial-gradient(850px 480px at 50% -10%, var(--lav), transparent 75%), #FFFFFF;
-    }
-    .login-container {
-      width: 100%;
-      max-width: 860px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 26px;
-    }
-    .login-header {
-      text-align: center;
-      max-width: 480px;
-    }
-    .login-header .mark {
-      margin: 0 auto 16px;
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      font-size: 18px;
-    }
-    .login-card {
-      width: 100%;
-      max-width: 440px;
-      background: #fff;
-      border: 1px solid var(--bd);
-      border-radius: 20px;
-      padding: 28px 30px;
-      box-shadow: var(--sh2);
-    }
-    .auth-error {
-      display: none;
-      margin-top: 10px;
-      padding: 9px 12px;
-      border-radius: 10px;
-      font-size: 12.5px;
-      background: #fdf2f2;
-      border: 1px solid #f8d7da;
-      color: #b02a37;
-      animation: fx .2s ease;
-    }
-    .auth-error.visible { display: block; }
-    
-    /* Demo accounts shelf matching the visual screenshot */
-    .demo-shelf {
-      width: 100%;
-      margin-top: 8px;
-    }
-    .demo-divider {
-      display: flex;
-      align-items: center;
-      text-align: center;
-      margin: 18px 0;
-      color: var(--slate);
-      font-size: 12.5px;
-      font-weight: 500;
-    }
-    .demo-divider::before, .demo-divider::after {
-      content: '';
-      flex: 1;
-      border-bottom: 1px solid var(--bd);
-    }
-    .demo-divider span {
-      padding: 0 12px;
-    }
-    .demo-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(700px 380px at 50% -8%, var(--lav), transparent 70%);
     }
-    .demo-card {
-      border-radius: 16px;
-      padding: 16px 14px;
-      border: 1px solid var(--bd);
-      background: #fff;
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+    .brandp {
+      background: linear-gradient(160deg, var(--lav), var(--ice));
+      padding: 36px max(28px, 4vw);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brandp p { color: var(--slate); max-width: 380px; }
+    .brandp ul {
+      padding: 0;
+      margin: 20px 0 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .brandp li { display: flex; gap: 10px; align-items: center; color: var(--navy); }
+    .brandp li svg { color: var(--indd); }
+    .formside { display: grid; place-items: center; padding: 28px; }
+    .formbox { width: 100%; max-width: 380px; }
+    .demo {
+      border: 1px dashed #c3cde9;
+      background: var(--ice);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--slate);
+      margin: 16px 0 2px;
+    }
+    .demo b { color: var(--navy); font-weight: 600; }
+    .dlist { display: grid; gap: 8px; margin-top: 10px; }
+    .dacc {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      background: #fff;
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 8px 10px;
       cursor: pointer;
       transition: transform .2s, box-shadow .2s, border-color .2s;
-      position: relative;
     }
-    .demo-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--sh2);
-      border-color: var(--ind);
-    }
-    .demo-card.selected {
-      border-color: var(--ind);
-      box-shadow: 0 0 0 3px rgba(113,135,201,.25), var(--sh);
-      background: #fbfbfe;
-    }
-    .demo-card.t0 { background: var(--ice); }
-    .demo-card.t1 { background: var(--lav); }
-    .demo-card.t2 { background: var(--bg2); }
-    .demo-card.t3 { background: #FFFFFF; }
-    .demo-card .ico {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      margin-bottom: 2px;
-    }
-    .demo-card h4 {
-      margin: 0;
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--navy);
-    }
-    .demo-card p {
-      margin: 0;
-      font-size: 12px;
-      color: var(--slate);
-      line-height: 1.35;
-      flex: 1;
-    }
-    .demo-card .email-tag {
-      font-size: 11px;
-      font-family: monospace;
-      color: var(--indd);
-      background: rgba(255,255,255,.8);
-      border: 1px solid var(--bd);
-      border-radius: 6px;
-      padding: 2px 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .demo-card button {
-      margin-top: 6px;
-      height: 30px;
-      font-size: 12px;
-      border-radius: 8px;
-    }
+    .dacc:hover { transform: translateY(-1px); box-shadow: var(--sh); border-color: var(--ind); }
+    .dacc:active { transform: scale(.98); }
+    .dacc b { display: block; color: var(--ink); font-size: 13.5px; }
+    .dacc small { color: var(--slate); font-size: 12.5px; }
 
     /* app shell */
     .app { display: flex; height: 100vh; height: 100dvh; }
@@ -540,6 +457,18 @@
       font-weight: 600;
       flex: none;
     }
+    .avb {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8ea2db, #5f76bb);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 20px;
+      flex: none;
+    }
     .main {
       flex: 1;
       display: flex;
@@ -599,8 +528,8 @@
       position: relative;
       padding: 34px 30px 30px;
       border-radius: 28px;
-      background: radial-gradient(420px 220px at 50% 0%, var(--lav), transparent 75%),
-                  radial-gradient(360px 200px at 85% 100%, var(--ice), transparent 75%);
+      background: radial-gradient(closest-side at 50% 30%, var(--lav), transparent),
+                  radial-gradient(closest-side at 80% 90%, var(--ice), transparent);
       width: 100%;
     }
     .welcome .mark {
@@ -611,7 +540,7 @@
       margin: 0 auto 16px;
     }
     .welcome p { color: var(--slate); margin: 8px 0 22px; font-size: 15.5px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 520px; margin: auto; }
     .chip {
       display: inline-flex;
       gap: 8px;
@@ -782,7 +711,7 @@
     .sti b {
       font-family: Fraunces, Georgia, serif;
       font-weight: 500;
-      font-size: 30px;
+      font-size: 32px;
       line-height: 1;
       display: block;
     }
@@ -915,7 +844,7 @@
     }
 
     /* tickets */
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
     th {
       text-align: left;
       font-weight: 500;
@@ -928,6 +857,7 @@
     th:first-child { border-radius: 10px 0 0 10px; }
     th:last-child { border-radius: 0 10px 10px 0; }
     td { padding: 12px; border-bottom: 1px solid var(--bd); }
+    .card .tw { padding-bottom: 6px; }
     tr.rw { cursor: pointer; transition: background .2s; }
     tr.rw:hover, tr.rw.on { background: var(--lav); }
     .tw { overflow-x: auto; }
@@ -1108,7 +1038,6 @@
     @keyframes tin { from { opacity: 0; transform: translate(-50%, 10px); } }
     .scrim { display: none; }
 
-    /* Responsiveness */
     @media (max-width: 860px) {
       .hero { grid-template-columns: 1fr; padding-top: 28px; }
       .prev { transform: none; margin: 0; }
@@ -1118,7 +1047,8 @@
       .bt.b { grid-column: auto; }
       .hsteps { grid-template-columns: 1fr; gap: 20px; }
       .hsteps:before { display: none; }
-      .demo-grid { grid-template-columns: 1fr 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .brandp { display: none; }
       .side {
         position: fixed;
         inset: 0 auto 0 0;
@@ -1146,10 +1076,6 @@
       .qr { grid-template-columns: 1fr auto; }
       .qr small { display: none; }
     }
-    @media (max-width: 520px) {
-      .demo-grid { grid-template-columns: 1fr; }
-      .login-card { padding: 22px 18px; }
-    }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
     }
@@ -1159,58 +1085,6 @@
   <div id="app"></div>
 
   <script>
-    /* Demo accounts registry with passwords and portal targets */
-    const DEMO_PASSWORD = 'UniBuddy@123';
-    const DEMO_ACCOUNTS = {
-      'student@unibuddy.demo': {
-        email: 'student@unibuddy.demo',
-        password: DEMO_PASSWORD,
-        role: 'student',
-        name: 'Aarav Sharma',
-        roleTitle: 'Student',
-        dept: 'Computer Science · B.Tech Year 2',
-        avatar: 'A',
-        startView: 'chat'
-      },
-      'faculty@unibuddy.demo': {
-        email: 'faculty@unibuddy.demo',
-        password: DEMO_PASSWORD,
-        role: 'faculty',
-        name: 'Dr. Mehta',
-        roleTitle: 'Faculty',
-        dept: 'Computer Science Department',
-        avatar: 'M',
-        startView: 'tix'
-      },
-      'authority@unibuddy.demo': {
-        email: 'authority@unibuddy.demo',
-        password: DEMO_PASSWORD,
-        role: 'authority',
-        name: 'Dean Academic Affairs',
-        roleTitle: 'Authority',
-        dept: 'Academic Affairs & Escalations Cell',
-        avatar: 'D',
-        startView: 'overview'
-      },
-      'management@unibuddy.demo': {
-        email: 'management@unibuddy.demo',
-        password: DEMO_PASSWORD,
-        role: 'management',
-        name: 'Campus Registrar',
-        roleTitle: 'Management',
-        dept: 'Campus Operations & Institutional Governance',
-        avatar: 'R',
-        startView: 'overview'
-      }
-    };
-
-    const ROLES = {
-      student: { name: 'Student', icon: 'user', desc: 'Ask questions & track verified tickets.', email: 'student@unibuddy.demo' },
-      faculty: { name: 'Faculty', icon: 'book', desc: 'Review, respond & resolve student tickets.', email: 'faculty@unibuddy.demo' },
-      authority: { name: 'Authority', icon: 'shield', desc: 'Departmental escalation review & SLA oversight.', email: 'authority@unibuddy.demo' },
-      management: { name: 'Management', icon: 'bld', desc: 'Campus-wide operations & resolution metrics.', email: 'management@unibuddy.demo' }
-    };
-
     const P = {
       user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
       book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
@@ -1236,9 +1110,7 @@
       cap: '<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',
       zap: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
       tick: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
-      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-      chart: '<path d="M18 20V10M12 20V4M6 20v-6"/>',
-      alert: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>'
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
     };
     const I = n => `<svg class="i" viewBox="0 0 24 24">${P[n] || ''}</svg>`;
     const IC = n => `<div class="ico">${I(n)}</div>`;
@@ -1246,18 +1118,62 @@
     const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const today = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+    const DPW = 'demo123';
+    const ACC = {
+      'student@unibuddy.demo': { role: 'student', name: 'Aarav' },
+      'faculty@unibuddy.demo': { role: 'faculty', name: 'Dr. Mehta' },
+      'authority@unibuddy.demo': { role: 'authority', name: 'Authority Office' },
+      'management@unibuddy.demo': { role: 'management', name: 'Management Office' }
+    };
+
+    const COURSES = ['B.Tech CS & AI', 'B.Tech CS & DS'];
+    let PR = {};
+    try {
+      PR = JSON.parse(localStorage.getItem('ub-profiles') || '{}');
+    } catch (e) {}
+
+    const savePR = () => {
+      try {
+        localStorage.setItem('ub-profiles', JSON.stringify(PR));
+      } catch (e) {}
+    };
+
+    const prof = () => (S.user && PR[S.user.email]) || {};
+    const pn = () => prof().name || (S.user && S.user.name) || 'User';
+    const ini = () => (pn()[0] || 'U').toUpperCase();
+    const stu = () => {
+      const p = PR['student@unibuddy.demo'] || {};
+      return { n: p.name || 'Aarav', c: p.course || COURSES[0] };
+    };
+
+    function vProf(n, a, c, st) {
+      n = n.trim().replace(/\s+/g, ' ');
+      if (n.length < 2) return 'Please enter your full name (at least 2 characters).';
+      if (!/^[\p{L}][\p{L}\s.'’-]*$/u.test(n)) return 'Name can only contain letters, spaces, dots, hyphens and apostrophes.';
+      a = Number(a);
+      if (!Number.isInteger(a) || a < 16 || a > 80) return 'Please enter a valid age between 16 and 80.';
+      if (st && !COURSES.includes(c)) return 'Please select your course.';
+      return '';
+    }
+
+    const courseSel = (id, v) => `<select id="${id}"><option value="">Select your course</option>${COURSES.map(c => `<option ${c == v ? 'selected' : ''}>${c}</option>`).join('')}</select>`;
+
     const STG = ['Submitted', 'Assigned', 'In Progress', 'Resolved'];
+    const ROLES = {
+      student: ['user', 'Student', 'Ask questions and track your tickets.'],
+      faculty: ['book', 'Faculty', 'Review and answer student tickets.'],
+      authority: ['shield', 'Authority', 'Placeholder in this prototype.'],
+      management: ['bld', 'Management', 'Placeholder in this prototype.']
+    };
 
     const KB = [
-      { k: ['internal', 'exam', 'midterm', 'test'], a: 'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance.', s: 'Exam Schedule Circular', p: 'p. 2' },
-      { k: ['scholarship', 'financial', 'aid', 'grant'], a: 'Scholarship applications open at the start of each semester through the student portal, with income certificate and previous marksheets attached.', s: 'Scholarship Guidelines', p: 'p. 5' },
-      { k: ['timetable', 'schedule', 'class', 'routine'], a: 'The academic timetable is published on the department notice board and the student portal before each semester begins.', s: 'Academic Calendar', p: 'p. 1' },
-      { k: ['contact', 'faculty', 'professor', 'teacher', 'office hour'], a: 'Faculty office hours and email addresses are listed in the department directory. You may also forward a question directly as a ticket.', s: 'Department Directory', p: 'p. 4' },
-      { k: ['fee', 'tuition', 'payment', 'due', 'fine', 'receipt'], a: 'Semester fee payment closes on the last working day of the second week. Late payments carry a nominal fine of ₹50/day.', s: 'Fee Policy Handbook', p: 'p. 12' },
-      { k: ['attendance', '75', 'absent', 'medical'], a: 'A minimum of 75% attendance is mandatory to sit for semester examinations, with up to 10% relaxation permitted on approved medical grounds.', s: 'Academic Regulations', p: 'p. 8' },
-      { k: ['library', 'facilit', 'book', 'borrow', 'reading room'], a: 'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Digital access is available 24/7 on campus intranet.', s: 'Campus Facilities Guide', p: 'p. 3' },
-      { k: ['hostel', 'mess', 'room', 'gate pass'], a: 'Hostel gate timings are strictly 21:30 on weekdays and 22:30 on weekends. Leave passes must be applied online 24 hours prior via the warden portal.', s: 'Hostel Code of Conduct', p: 'p. 7' },
-      { k: ['wifi', 'internet', 'network', 'login'], a: 'Connect to UniNet-Secure using your university roll number and portal credentials. Contact IT Helpdesk in Block B if MAC registration fails.', s: 'IT Services Manual', p: 'p. 4' }
+      { k: ['internal'], a: 'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance.', s: 'Exam Schedule Circular', p: 'p. 2' },
+      { k: ['scholarship'], a: 'Scholarship applications open at the start of each semester through the student portal, with income and marks documents attached.', s: 'Scholarship Guidelines', p: 'p. 5' },
+      { k: ['timetable', 'schedule'], a: 'The academic timetable is published on the department notice board and the student portal before each semester begins.', s: 'Academic Calendar', p: 'p. 1' },
+      { k: ['contact', 'faculty'], a: 'Faculty office hours and email addresses are listed in the department directory. You may also forward a question as a ticket.', s: 'Department Directory', p: 'p. 4' },
+      { k: ['fee', 'tuition', 'payment'], a: 'Semester fee payment closes on the last working day of the second week. Late payments may carry a fine.', s: 'Fee Policy Handbook', p: 'p. 12' },
+      { k: ['attendance', '75'], a: 'A minimum of 75% attendance is generally required to sit semester exams, with medical-leave exceptions.', s: 'Academic Regulations', p: 'p. 8' },
+      { k: ['library', 'facilit'], a: 'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Other facilities are listed in the campus guide.', s: 'Campus Facilities Guide', p: 'p. 3' }
     ];
 
     const SUG = [
@@ -1267,13 +1183,11 @@
       ['bld', 'Campus Facilities', 'What are the library hours and campus facilities?']
     ];
 
-    const SESSION_STORAGE_KEY = 'unibuddy_session_v2';
-
-    // Application state
     const S = {
-      scr: 'landing', // 'landing' | 'login' | 'app'
-      user: null, // authenticated account object
-      role: null, // 'student' | 'faculty' | 'authority' | 'management'
+      scr: 'landing',
+      role: null,
+      pick: null,
+      user: null,
       view: 'chat',
       sel: 'UB-2041',
       modal: null,
@@ -1285,13 +1199,6 @@
       fs: 'All',
       toast: '',
       fx: 'screen',
-      loginDraft: {
-        email: '',
-        password: '',
-        selectedRole: null,
-        error: '',
-        loading: false
-      },
       tickets: [
         {
           id: 'UB-2041',
@@ -1302,7 +1209,7 @@
           pri: 'High',
           st: 1,
           q: 'Can I request a re-evaluation of my Data Structures lab marks?',
-          desc: 'Marks look lower than expected compared to the checked rubric.',
+          desc: 'Marks look lower than expected.',
           reply: '',
           tl: ['02 Nov', '03 Nov']
         },
@@ -1314,99 +1221,25 @@
           date: '28 Oct 2026',
           pri: 'Medium',
           st: 3,
-          q: 'I did not receive my hostel fee receipt after online netbanking payment.',
-          desc: 'Transaction reference TXN-98421.',
-          reply: 'Your receipt has been verified and emailed again. Please check your spam folder.',
+          q: 'I did not receive my hostel fee receipt.',
+          desc: '',
+          reply: 'Your receipt has been emailed again. Please check your spam folder. (Demo reply)',
           tl: ['28 Oct', '28 Oct', '29 Oct', '30 Oct']
-        },
-        {
-          id: 'UB-2029',
-          subj: 'Medical attendance waiver for midterm',
-          dept: 'Examinations',
-          fac: 'Dean Office',
-          date: '25 Oct 2026',
-          pri: 'High',
-          st: 2,
-          q: 'Submitting hospital discharge slip for week 5 absenteeism.',
-          desc: 'Attached medical certificate from General Hospital.',
-          reply: 'Under verification with the Chief Medical Officer.',
-          tl: ['25 Oct', '26 Oct', '27 Oct']
         }
       ],
       notifs: [
-        { t: 'Ticket UB-2041 was assigned to Dr. Mehta.', u: 1, tk: 'UB-2041' },
-        { t: 'Ticket UB-2036 was marked as Resolved.', u: 0, tk: 'UB-2036' }
+        { t: 'Ticket UB-2041 was assigned to Dr. Mehta (demo).', u: 1, tk: 'UB-2041' },
+        { t: 'Ticket UB-2036 was resolved (demo).', u: 0, tk: 'UB-2036' }
       ]
     };
 
-    // Helper functions
     const T = id => S.tickets.find(t => t.id == id);
     const stl = t => `<span class="pill s${t.st}">${STG[t.st]}</span>`;
-    
-    function saveSession(account) {
-      try {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ email: account.email }));
-      } catch (e) {}
-    }
-
-    function clearSession() {
-      try {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-      } catch (e) {}
-    }
-
-    function restoreSession() {
-      try {
-        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-        if (!raw) return false;
-        const data = JSON.parse(raw);
-        if (data && data.email && DEMO_ACCOUNTS[data.email]) {
-          const acc = DEMO_ACCOUNTS[data.email];
-          authenticateUser(acc, false);
-          return true;
-        }
-      } catch (e) {}
-      return false;
-    }
-
-    function authenticateUser(account, persist = true) {
-      S.user = account;
-      S.role = account.role;
-      S.scr = 'app';
-      // Student first screen MUST be AI chat
-      S.view = account.role === 'student' ? 'chat' : account.startView;
-      S.bell = false;
-      S.nav = false;
-      S.fx = 'screen';
-      if (persist) saveSession(account);
-      R();
-      window.scrollTo(0, 0);
-    }
-
-    function logout() {
-      clearSession();
-      S.user = null;
-      S.role = null;
-      S.scr = 'login';
-      S.loginDraft.email = '';
-      S.loginDraft.password = '';
-      S.loginDraft.error = '';
-      S.loginDraft.selectedRole = null;
-      R();
-      window.scrollTo(0, 0);
-      toast('Signed out successfully.');
-    }
-
     const go = (s, o = {}) => {
-      // Direct protected screen protection
-      if (s === 'app' && !S.user) {
-        s = 'login';
-      }
       Object.assign(S, { scr: s, bell: false, nav: false, fx: 'screen' }, o);
       R();
       window.scrollTo(0, 0);
     };
-
     const toast = m => {
       S.toast = m;
       R();
@@ -1416,9 +1249,38 @@
       }, 2600);
     };
 
+    function doLogin() {
+      const e = ($('#em')?.value || '').trim().toLowerCase();
+      const p = $('#pw')?.value || '';
+      const er = $('#err');
+      const a = ACC[e];
+
+      if (!e || !p) {
+        if (er) er.textContent = 'Enter your email and password.';
+        return;
+      }
+      if (!a) {
+        if (er) er.textContent = 'No demo account found for this email. Tap one of the demo accounts below.';
+        return;
+      }
+      if (p !== DPW) {
+        if (er) er.textContent = 'Incorrect password. The demo password is shown below.';
+        return;
+      }
+      try {
+        if ($('#rm')?.checked) localStorage.setItem('ub-email', e);
+        else localStorage.removeItem('ub-email');
+        localStorage.setItem('ub-current-user', e);
+      } catch (x) {}
+
+      S.user = { ...a, email: e };
+      S.role = a.role;
+      S.view = a.role == 'student' ? 'chat' : a.role == 'faculty' ? 'tix' : 'x';
+      go(PR[e] ? 'app' : 'onboard');
+    }
+
     const logo = `<div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>`;
 
-    /* 1. LANDING PAGE */
     function landing() {
       return `
       <div class="land">
@@ -1427,7 +1289,7 @@
           <div class="row">
             <button class="lnk" data-a="scroll" data-v="features">Features</button>
             <button class="lnk" data-a="scroll" data-v="how">How it Works</button>
-            <button class="btn p sm" data-a="toLogin">Sign In</button>
+            <button class="btn p sm" data-a="roles">Get Started</button>
           </div>
         </div>
         <div class="wrap">
@@ -1435,9 +1297,9 @@
             <div>
               <span class="badge">${I('spark')} AI assistant for your campus</span>
               <h1 class="ed" style="margin-top:18px">One campus. One intelligent assistant.</h1>
-              <p>UniBuddy gives students verified answers from university documents and seamlessly routes unresolved issues to the right faculty, tracked till resolution.</p>
+              <p>UniBuddy gives students verified answers from university documents and sends everything else to the right faculty, tracked until it’s resolved.</p>
               <div class="row">
-                <button class="btn p" data-a="toLogin">Sign In to Workspace</button>
+                <button class="btn p" data-a="roles">Get Started</button>
                 <button class="btn" data-a="scroll" data-v="features">Explore Features</button>
               </div>
             </div>
@@ -1456,7 +1318,7 @@
                 <div class="a" style="margin-bottom:0">
                   <div class="body">
                     <p style="margin:0">Internal examinations are held in the seventh week of the semester.</p>
-                    <div class="src">Exam Schedule Circular · p. 2 <span>Official Document</span></div>
+                    <div class="src">Exam Schedule Circular · p. 2 <span>Demo</span></div>
                   </div>
                 </div>
               </div>
@@ -1469,29 +1331,29 @@
             <div class="bt tall">
               ${IC('spark')}
               <h3>Answers you can trust</h3>
-              <p>AI-powered replies grounded in verified university documents, with page and section sources always one tap away.</p>
+              <p>AI-powered replies grounded in verified university documents, with the source always one tap away.</p>
             </div>
             <div class="bt b">
               ${IC('inbox')}
               <h3>Smart Query Management</h3>
-              <p>Every forwarded question automatically becomes a trackable, prioritized ticket routed directly to the department desk.</p>
+              <p>Every forwarded question becomes a trackable ticket.</p>
             </div>
             <div class="bt m">
               ${IC('book')}
               <h3>Faculty Support</h3>
-              <p>Clear dashboards for professors and administrators to reply, re-assign, and resolve queries without endless email threads.</p>
+              <p>Unanswered questions reach the right department.</p>
             </div>
             <div class="bt w">
               ${IC('zap')}
               <h3>Real-Time Updates</h3>
-              <p>Get notified the moment a ticket moves forward or faculty replies to your query.</p>
+              <p>Get notified the moment a ticket changes.</p>
             </div>
           </section>
 
           <section id="how" class="how">
             <h2 class="ed">How it works</h2>
             <div class="hsteps">
-              ${['Sign in with your university account or demo role.', 'Ask your query to get instant answers or forward to faculty.', 'Track your ticket step-by-step until resolved.'].map((s, i) => `
+              ${['Ask your question.', 'Get an instant verified answer or forward it to the right department.', 'Track your query until resolution.'].map((s, i) => `
                 <div class="hs">
                   <span class="num">${i + 1}</span>
                   <p>${s}</p>
@@ -1500,98 +1362,79 @@
             </div>
           </section>
         </div>
-        <footer>© 2026 UniBuddy · Intelligent Campus Helpdesk Platform</footer>
+        <footer>© 2026 UniBuddy · Prototype with demo data. No real university systems or AI services are connected.</footer>
       </div>`;
     }
 
-    /* 2. REDESIGNED LOGIN PAGE (matching visual reference with email-based role detection) */
     function login() {
-      const draft = S.loginDraft;
-      const demoKeys = ['student', 'faculty', 'authority', 'management'];
+      let em = '';
+      try {
+        em = localStorage.getItem('ub-email') || '';
+      } catch (e) {}
 
       return `
-      <div class="login-wrap fx">
-        <div class="login-container">
-          <div class="login-header">
-            <div class="mark">U</div>
-            <div class="logo" style="justify-content:center;margin-bottom:8px" data-a="home">UniBuddy</div>
-            <h2 class="ed" style="font-size:32px;margin-bottom:6px">Welcome to UniBuddy</h2>
-            <p class="mut" style="font-size:14px;margin:0">Sign in to access your personalised university workspace.</p>
+      <div class="split">
+        <div class="brandp">
+          <div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>
+          <div>
+            <h1 class="ed" style="font-size:40px">Your campus assistant is ready.</h1>
+            <p style="margin-top:14px">Sign in with your university email. UniBuddy opens the right portal for you automatically.</p>
+            <ul>
+              <li>${I('check')} Verified answers with sources</li>
+              <li>${I('check')} Tickets tracked to resolution</li>
+              <li>${I('check')} Live notifications</li>
+            </ul>
           </div>
-
-          <div class="login-card">
-            <label style="margin-top:0">University Email</label>
-            <input id="loginEmail" type="email" placeholder="you@unibuddy.demo" value="${draft.email}" autocomplete="email">
-
+          <div class="mut" style="font-size:12.5px">Prototype with demo data</div>
+        </div>
+        <div class="formside">
+          <div class="formbox">
+            <button class="lnk" data-a="home" style="padding:0 0 14px">← Back to home</button>
+            <h2>Sign in</h2>
+            <div class="mut" style="font-size:13.5px;margin-top:2px">Your role is detected from your email.</div>
+            <label>Email</label>
+            <input id="em" type="email" placeholder="you@university.edu" autocomplete="off" value="${em}">
             <label>Password</label>
             <div style="position:relative">
-              <input id="loginPassword" type="password" placeholder="••••••••" value="${draft.password}" autocomplete="current-password">
-              <button class="ib" data-a="togglePw" style="position:absolute;right:3px;top:3px" aria-label="Toggle password visibility">${I('eye')}</button>
+              <input id="pw" type="password" placeholder="Password">
+              <button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Show or hide password">${I('eye')}</button>
             </div>
-
-            <div class="row sp" style="margin:14px 0 16px">
-              <label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;font-weight:400;cursor:pointer">
-                <input type="checkbox" id="rememberMe" style="width:auto;height:auto" checked> Remember me
-              </label>
-              <button class="lnk" data-a="forgotPw" style="font-size:12.5px;padding:0">Forgot password?</button>
-            </div>
-
-            <div id="authError" class="auth-error ${draft.error ? 'visible' : ''}">
-              ${I('alert')} <span id="authErrorMsg">${draft.error}</span>
-            </div>
-
-            <button class="btn p w" data-a="submitLogin" style="margin-top:14px" ${draft.loading ? 'disabled' : ''}>
-              ${draft.loading ? '<div class="ld"><span></span><span></span><span></span></div> Signing in...' : 'Sign In'}
-            </button>
-          </div>
-
-          <!-- Explore Demo Accounts Section styled after the visual screenshot -->
-          <div class="demo-shelf">
-            <div class="demo-divider">
-              <span>Explore Demo Accounts</span>
-            </div>
-
-            <div class="demo-grid">
-              ${demoKeys.map((key, i) => {
-                const r = ROLES[key];
-                const isSelected = draft.selectedRole === key;
-                return `
-                <div class="demo-card t${i} ${isSelected ? 'selected' : ''}" data-a="selectDemo" data-v="${key}">
-                  <div class="row sp">
-                    ${IC(r.icon)}
-                    <span class="badge" style="font-size:11px;padding:2px 8px">${r.name}</span>
-                  </div>
-                  <h4>${r.name} Demo</h4>
-                  <p>${r.desc}</p>
-                  <div class="email-tag" title="${r.email}">${r.email}</div>
-                  <button class="btn sm ${isSelected ? 'p' : ''} w" data-a="useDemo" data-v="${key}">
-                    Use Demo Account
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:14px 0">
+              <input id="rm" type="checkbox" style="width:auto;height:auto" ${em ? 'checked' : ''}> Remember me
+            </label>
+            <div id="err" role="alert" style="color:#b4445a;font-size:13px;min-height:20px"></div>
+            <button class="btn p w" data-a="login">Login</button>
+            <div class="demo">
+              <b>Demo accounts</b> · tap one to fill the form
+              <div class="dlist">
+                ${Object.entries(ACC).map(([m, a]) => `
+                  <button class="dacc" data-a="fill" data-v="${m}">
+                    <span class="ico" style="width:34px;height:34px;border-radius:10px">${I(ROLES[a.role][0])}</span>
+                    <span><b>${ROLES[a.role][1]}</b><small>${m}</small></span>
                   </button>
-                </div>`;
-              }).join('')}
+                `).join('')}
+              </div>
+              <div style="margin-top:8px;font-size:12px">
+                Demo only. Password for every demo account: <b>${DPW}</b>. No real authentication.
+              </div>
             </div>
-            <p class="mut" style="font-size:12px;text-align:center;margin-top:14px">
-              Demo password: <b>${DEMO_PASSWORD}</b> · Click any card above to auto-populate credentials and sign in.
-            </p>
           </div>
         </div>
       </div>`;
     }
 
-    /* 3. APP SHELL & SIDEBAR */
     function side(items) {
-      const u = S.user;
-      const isStudent = S.role == 'student';
+      const f = S.role == 'student';
       return `
       <aside class="side ${S.nav ? 'open' : ''}">
         ${logo}
-        ${isStudent ? `<button class="si nc" data-a="new">${I('plus')}New Chat</button>` : ''}
+        ${f ? `<button class="si nc" data-a="new">${I('plus')}New Chat</button>` : ''}
         ${items.map(i => `
           <button class="si ${S.view == i[0] ? 'on' : ''}" data-a="view" data-v="${i[0]}">
             ${I(i[2])}${i[1]}
           </button>
         `).join('')}
-        ${isStudent ? `
+        ${f ? `
           <div class="sh">Chat History</div>
           <div class="hist">
             ${S.hist.length ? S.hist.map((h, i) => `
@@ -1602,11 +1445,11 @@
           </div>
         ` : '<div style="flex:1"></div>'}
         <div class="prof row sp">
-          <div class="row" style="min-width:0">
-            <span class="av">${u ? u.avatar : 'U'}</span>
+          <div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="Edit profile">
+            <span class="av">${ini()}</span>
             <div style="line-height:1.3;min-width:0">
-              <div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u ? u.name : 'User'}</div>
-              <div class="mut" style="font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u ? u.roleTitle : 'Guest'} · ${u ? u.email : ''}</div>
+              <div style="font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pn()}</div>
+              <div class="mut" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${S.role == 'student' ? (prof().course || 'Student') : 'Demo account'}</div>
             </div>
           </div>
           <button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button>
@@ -1615,9 +1458,18 @@
       <div class="scrim ${S.nav ? 'open' : ''}" data-a="navx"></div>`;
     }
 
+    const SN = [
+      ['chat', 'AI Assistant', 'spark'],
+      ['dash', 'Dashboard', 'home'],
+      ['queries', 'My Queries', 'list'],
+      ['ann', 'Announcements', 'mega'],
+      ['help', 'Help & Support', 'help'],
+      ['profile', 'Profile', 'user']
+    ];
+
     function hd(title, ai) {
       const u = S.notifs.filter(n => n.u).length;
-      const isStudent = S.role == 'student';
+      const st = S.role == 'student';
       return `
       <div class="hd">
         <div class="row">
@@ -1625,7 +1477,7 @@
           <b style="font-weight:600">${title}</b>
           ${ai ? '<span class="on-ind" style="margin-left:6px"><span class="pu"></span>Online</span>' : ''}
         </div>
-        ${isStudent ? `
+        ${st ? `
           <button class="ib" data-a="bell" aria-label="Notifications">
             ${I('bell')}${u ? '<span class="dot"></span>' : ''}
           </button>
@@ -1643,7 +1495,6 @@
       </div>`;
     }
 
-    /* 4. CHAT INTERFACE (STUDENT PRIMARY LANDING) */
     function chat() {
       const m = S.chat;
       return `
@@ -1655,7 +1506,7 @@
                 <div class="welcome">
                   <span class="mark">U</span>
                   <h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1>
-                  <p>Ask anything about courses, exams, campus rules, or forward questions directly to faculty.</p>
+                  <p>Your university, your questions, one intelligent assistant.</p>
                   <div class="chips">
                     ${SUG.map(s => `<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}
                   </div>
@@ -1670,22 +1521,17 @@
             <input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off">
             <button class="send" data-a="send" aria-label="Send">${I('up')}</button>
           </div>
-          <div class="note">Answers are verified against published university handbooks and circulars.</div>
+          <div class="note">Demo answers only. Sources are sample content.</div>
         </div>
       </div>`;
     }
 
     function msg(x, i) {
       const c = x.n ? ' in' : '';
-      if (x.r == 'u') {
-        return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;
-      }
+      if (x.r == 'u') return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;
       const L = '<span class="mark">U</span>';
-      if (x.k == 'ty') {
-        return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
-      }
-      if (x.k == 'ok') {
-        return `
+      if (x.k == 'ty') return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
+      if (x.k == 'ok') return `
         <div class="a${c}">${L}
           <div class="body">
             <div class="who">UniBuddy</div>
@@ -1694,26 +1540,22 @@
             <div class="src">
               <span>${x.s} · ${x.p}</span>
               <button data-a="vs" data-v="${i}">View source</button>
+              <span>Demo content</span>
             </div>
             <div class="ts">${x.time}</div>
           </div>
         </div>`;
-      }
       return `
-      <div class="a${c}">${L}
-        <div class="body">
-          <div class="who">UniBuddy</div>
-          <p style="margin:0">I couldn’t locate a verified answer for this specific query in the active handbook. Would you like me to create and forward a ticket to the relevant faculty or department?</p>
-          <div class="nf">
-            ${x.fw ? `
-              <span class="vb">${I('check')} Forwarded as ticket ${x.fw}</span>
-            ` : `
-              <button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>
-            `}
+        <div class="a${c}">${L}
+          <div class="body">
+            <div class="who">UniBuddy</div>
+            I couldn’t find a verified answer to your question. Would you like me to forward it to the appropriate faculty or department?
+            <div class="nf">
+              ${x.fw ? `<span class="vb">${I('check')} Forwarded as ${x.fw}</span>` : `<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}
+            </div>
+            <div class="ts">${x.time}</div>
           </div>
-          <div class="ts">${x.time}</div>
-        </div>
-      </div>`;
+        </div>`;
     }
 
     function ask(q) {
@@ -1723,30 +1565,22 @@
       S.chat.push({ r: 'a', k: 'ty', n: 1 });
       S.view = 'chat';
       R();
-
       const l = cleanQ.toLowerCase();
       const h = KB.find(e => e.k.some(k => l.includes(k)));
-
       setTimeout(() => {
         S.chat.pop();
-        if (h) {
-          S.chat.push({ r: 'a', k: 'ok', t: h.a, s: h.s, p: h.p, time: now(), n: 1 });
-        } else {
-          S.chat.push({ r: 'a', k: 'nf', time: now(), n: 1, origQ: cleanQ });
-        }
+        S.chat.push(h ? { r: 'a', k: 'ok', t: h.a, s: h.s, p: h.p, time: now(), n: 1 } : { r: 'a', k: 'nf', time: now(), n: 1 });
         R();
-      }, 700);
+      }, 1000);
     }
 
     const ttl = () => {
       const u = S.chat.find(x => x.r == 'u');
-      return u && u.t ? u.t.slice(0, 30) : 'Campus Query';
+      return u && u.t ? u.t.slice(0, 30) : 'Query';
     };
 
     function newChat() {
-      if (S.chat.length) {
-        S.hist.unshift({ title: ttl(), msgs: [...S.chat] });
-      }
+      if (S.chat.length) S.hist.unshift({ title: ttl(), msgs: [...S.chat] });
       S.chat = [];
       S.view = 'chat';
       S.nav = false;
@@ -1755,27 +1589,25 @@
     }
 
     const ANN = [
-      { c: 'Exams', t: 'Internal exam timetable released', d: '4 Nov', b: 'Seventh-week internal examinations are scheduled. Check your department notice board for the detailed schedule.', big: 1, tone: 'lav', imp: 1 },
-      { c: 'Library', t: 'Library extends weekday hours', d: '2 Nov', b: 'Central library reading room open until 20:00 on all weekdays.', tone: 'blue' },
-      { c: 'Scholarships', t: 'Scholarship applications open', d: '1 Nov', b: 'Merit and means scholarships now accepting online applications via the student portal.', tone: 'mist' },
-      { c: 'Events', t: 'Annual Campus Hackathon registrations', d: '30 Oct', b: 'Teams of up to four. Prizes worth ₹1,00,000. Open to all engineering branches.', tone: 'blue' },
-      { c: 'Campus', t: 'Hostel maintenance schedule', d: '28 Oct', b: 'Scheduled water supply maintenance on Saturday 10:00 to 14:00.', tone: 'lav' }
+      { c: 'Exams', t: 'Internal exam timetable released', d: '4 Nov', b: 'Seventh-week internal examinations are scheduled. Check your department notice board for the full timetable.', big: 1, tone: 'lav', imp: 1 },
+      { c: 'Library', t: 'Library extends weekday hours', d: '2 Nov', b: 'Open until 20:00 on weekdays.', tone: 'blue' },
+      { c: 'Scholarships', t: 'Scholarship applications open', d: '1 Nov', b: 'Apply through the student portal.', tone: 'mist' },
+      { c: 'Events', t: 'Hackathon registrations open', d: '30 Oct', b: 'Teams of up to four. Open to all years.', tone: 'blue' },
+      { c: 'Campus', t: 'Hostel maintenance window', d: '28 Oct', b: 'Water supply paused Saturday 10:00 to 14:00.', tone: 'lav' }
     ];
 
-    /* 5. STUDENT DASHBOARD */
     function dash() {
       const t = S.tickets;
       const res = t.filter(x => x.st == 3).length;
-      const pending = t.length - res;
       const f = ANN[0];
       return `
       <div class="pg">
-        <h1 class="ed">Welcome back, ${S.user ? S.user.name : 'Student'}</h1>
-        <p class="sub">Here’s what is happening on campus today.</p>
+        <h1 class="ed">Welcome back, ${pn()}</h1>
+        <p class="sub">Here’s what is happening on campus today. Demo data.</p>
         <div class="askp">
           <div>
             <h3>Ask UniBuddy</h3>
-            <p>Get an instant verified answer, or forward queries directly to faculty desks.</p>
+            <p>Get an instant verified answer, or send it on to faculty.</p>
           </div>
           <div class="row">
             <input id="dq" placeholder="Ask UniBuddy anything...">
@@ -1783,17 +1615,10 @@
           </div>
         </div>
         <div class="strip">
-          ${[
-            ['list', 'Total queries', t.length],
-            ['tick', 'Resolved', res],
-            ['clock', 'In Progress / Open', pending]
-          ].map(s => `
+          ${[['list', 'Total queries', t.length + 6], ['tick', 'Resolved', res + 5], ['clock', 'Pending', t.length - res + 1]].map(s => `
             <div class="sti" data-a="view" data-v="queries">
               <span class="ic">${I(s[0])}</span>
-              <div>
-                <b>${s[2]}</b>
-                <span>${s[1]}</span>
-              </div>
+              <div><b>${s[2]}</b><span>${s[1]}</span></div>
             </div>
           `).join('')}
         </div>
@@ -1816,13 +1641,9 @@
             `).join('')}
           </section>
           <section>
-            <div class="sh2">Upcoming Academic Deadlines</div>
+            <div class="sh2">Upcoming deadlines</div>
             <div class="dl">
-              ${[
-                ['Semester Fee Payment', '12 Nov', 'Accounts Desk'],
-                ['Data Structures Assignment 3', '15 Nov', 'Computer Science'],
-                ['Semester Examination Form', '20 Nov', 'Examination Cell']
-              ].map(d => `
+              ${[['Fee payment', '12 Nov', 'Accounts'], ['Assignment 3', '15 Nov', 'Data Structures'], ['Exam form', '20 Nov', 'Examinations']].map(d => `
                 <div class="dli">
                   <b>${d[0]}</b>
                   <small>${d[1]} · ${d[2]}</small>
@@ -1834,7 +1655,7 @@
         <section>
           <div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div>
           <div class="qp">
-            ${t.slice(0, 4).map(x => `
+            ${t.slice(0, 3).map(x => `
               <div class="qr" data-a="open" data-v="${x.id}">
                 <small>${x.id}</small>
                 <span>${x.subj}</span>
@@ -1848,19 +1669,19 @@
 
     function tlh(t) {
       return `
-      <div class="prog"><i style="--p:${Math.max(10, ((t.st + 1) / 4) * 100)}%"></i></div>
+      <div class="prog"><i style="--p:${Math.max(8, t.st / 3 * 100)}%"></i></div>
       <div class="lab">Step ${t.st + 1} of 4 · ${STG[t.st]}</div>
       <div class="tl">
         ${STG.map((s, i) => `
           <div class="${i <= t.st ? 'd' : ''}">
             ${s}
-            <small>${i <= t.st ? (t.tl[i] || 'Completed') : 'Pending'}</small>
+            <small>${i <= t.st ? (t.tl[i] || 'Updated') : 'Pending'}</small>
           </div>
         `).join('')}
       </div>`;
     }
 
-    function detail(t, isStaff) {
+    function detail(t, fac) {
       return `
       <div class="two fx">
         <div>
@@ -1870,42 +1691,36 @@
               ${stl(t)}
             </div>
             <div class="mut" style="font-size:13px;margin:4px 0 14px">
-              Priority: <span class="pri ${t.pri}">${t.pri}</span> · Department: <b>${t.dept}</b> · Submitted: ${t.date}
+              Priority: <span class="pri ${t.pri}">${t.pri}</span> · Submitted ${t.date}
             </div>
-            <div class="lab">${isStaff ? 'Student Question' : 'Original Query'}</div>
-            <p style="margin:2px 0 0;font-weight:500">${t.q}</p>
+            <div class="lab">${fac ? 'Student question' : 'Original question'}</div>
+            <p style="margin:2px 0 0">${t.q}</p>
             ${t.desc ? `<p class="mut" style="margin:8px 0 0;font-size:13.5px">${t.desc}</p>` : ''}
           </div>
-          ${isStaff ? `
+          ${fac ? `
             <div class="card tint">
               <div class="lab">Student information</div>
-              <div style="font-weight:500">Aarav Sharma · B.Tech CSE Year 2</div>
-              <div class="mut" style="font-size:12px">Roll: 2024-CS-084 · student@unibuddy.demo</div>
+              <div style="font-weight:500">${stu().n} · ${stu().c}</div>
+              <div class="mut" style="font-size:12px">Demo student. Only permitted details are shown.</div>
             </div>
           ` : ''}
           <div class="card">
-            <h3 style="margin-bottom:10px">${isStaff ? 'Official Response' : 'Faculty Response'}</h3>
-            ${isStaff ? `
-              <textarea id="rp" rows="5" placeholder="Write official response or guidance to student...">${t.reply}</textarea>
+            <h3 style="margin-bottom:10px">${fac ? 'Reply' : 'Faculty response'}</h3>
+            ${fac ? `
+              <textarea id="rp" rows="6" placeholder="Write your response...">${t.reply}</textarea>
               <div class="row" style="justify-content:flex-end;margin-top:12px">
-                <button class="btn" data-a="resolve">${t.st == 3 ? 'Update & Keep Resolved' : 'Mark as Resolved'}</button>
+                <button class="btn" data-a="resolve">Resolve Ticket</button>
                 <button class="btn p" data-a="respond">Send Response</button>
               </div>
             ` : t.reply ? `
-              <div style="margin:0;background:var(--ice);border-radius:12px;padding:14px 16px;border:1px solid #d4e3fa">
-                <div style="font-weight:600;font-size:13px;margin-bottom:4px;color:var(--navy)">${t.fac} (${t.dept}):</div>
-                <div>${t.reply}</div>
-              </div>
+              <p style="margin:0;background:var(--ice);border-radius:12px;padding:12px 14px">${t.reply}</p>
             ` : `
-              <p class="mut" style="margin:0">No faculty response has been posted yet. You will receive an instant notification when ${t.fac} updates your ticket.</p>
+              <p class="mut" style="margin:0">No response yet. You will be notified as soon as ${t.fac == 'Unassigned' ? 'a faculty member' : t.fac} replies.</p>
             `}
           </div>
         </div>
         <div class="card">
-          <h3 style="margin-bottom:16px">${isStaff ? 'Assignment & Lifecycle' : 'Status Timeline'}</h3>
-          <div style="margin-bottom:12px;font-size:13px">
-            <b>Assigned Desk:</b> ${t.fac} (${t.dept})
-          </div>
+          <h3 style="margin-bottom:16px">${fac ? 'Status timeline' : 'Status updates'}</h3>
           ${tlh(t)}
         </div>
       </div>`;
@@ -1914,15 +1729,15 @@
     function queries() {
       const f = S.tickets.filter(t => 
         (S.fs == 'All' || STG[t.st] == S.fs) && 
-        (t.subj + t.id + t.dept + t.fac).toLowerCase().includes(S.fq.toLowerCase())
+        (t.subj + t.id + t.dept).toLowerCase().includes(S.fq.toLowerCase())
       );
-      const t = T(S.sel) || S.tickets[0];
+      const t = T(S.sel);
       return `
       <div class="pg">
         <div class="row sp" style="margin-bottom:16px;flex-wrap:wrap">
           <h2>My Queries</h2>
           <div class="row">
-            <input id="gs" placeholder="Search tickets..." value="${S.fq}" style="width:190px">
+            <input id="gs" placeholder="Search tickets" value="${S.fq}" style="width:190px">
             <select id="fs" style="width:auto">
               ${['All', ...STG].map(s => `<option ${S.fs == s ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
@@ -1935,7 +1750,7 @@
                 <th>Ticket ID</th>
                 <th>Subject</th>
                 <th>Department</th>
-                <th>Assigned Desk</th>
+                <th>Faculty</th>
                 <th>Date</th>
                 <th>Priority</th>
                 <th>Status</th>
@@ -1952,18 +1767,29 @@
                 </tr>
               `).join('')}
             </table>
-            ${f.length ? '' : '<p class="mut" style="text-align:center;padding:24px">No tickets match your filter criteria. Ask UniBuddy a query to forward one.</p>'}
+            ${f.length ? '' : '<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}
           </div>
         </div>
         ${t ? detail(t, false) : ''}
       </div>`;
     }
 
+    const TT = {
+      chat: 'AI Assistant',
+      dash: 'Dashboard',
+      queries: 'My Queries',
+      ann: 'Announcements',
+      help: 'Help & Support',
+      profile: 'Profile',
+      tix: 'Faculty · Tickets',
+      x: 'Workspace'
+    };
+
     function annView() {
       return `
       <div class="pg wide">
         <h1 class="ed">Announcements</h1>
-        <p class="sub">The latest updates, official circulars, and notices from university departments.</p>
+        <p class="sub">The latest from your university. Sample content for this demo.</p>
         <div class="mag">
           ${ANN.map(a => `
             <article class="am ${a.tone} ${a.big ? 'big' : ''}">
@@ -1980,120 +1806,125 @@
       </div>`;
     }
 
-    /* 6. PORTAL VIEWS */
-    const SN_STUDENT = [
-      ['chat', 'AI Assistant', 'spark'],
-      ['dash', 'Dashboard', 'home'],
-      ['queries', 'My Queries', 'list'],
-      ['ann', 'Announcements', 'mega'],
-      ['help', 'Help & Support', 'help']
-    ];
+    function onboard() {
+      const st = S.role == 'student';
+      return `
+      <div class="center">
+        <div style="display:grid;justify-items:center;gap:20px;width:100%">
+          <div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>
+          <div class="card formbox" style="max-width:440px;padding:28px">
+            <h2 class="ed">${st ? 'Welcome! Tell us about you' : 'Set up your profile'}</h2>
+            <p class="mut" style="margin:6px 0 0">This is how UniBuddy will address you across the portal. You can edit it any time from Profile.</p>
+            <label>Full name</label>
+            <input id="on" placeholder="Your full name" maxlength="40" autocomplete="off">
+            <div class="g2">
+              <div>
+                <label>Age</label>
+                <input id="oa" type="number" min="16" max="80" placeholder="e.g. 19">
+              </div>
+              ${st ? `
+                <div>
+                  <label>Course</label>
+                  ${courseSel('oc', '')}
+                </div>
+              ` : ''}
+            </div>
+            <div id="oerr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div>
+            <button class="btn p w" data-a="onsave">Continue</button>
+            <button class="lnk" data-a="logout" style="width:100%;margin-top:8px">Sign out</button>
+          </div>
+        </div>
+      </div>`;
+    }
 
-    function studentPortal() {
+    function profileView() {
+      const p = prof();
+      const st = S.role == 'student';
+      return `
+      <div class="pg" style="max-width:640px">
+        <h1 class="ed" style="font-size:clamp(30px,4vw,44px)">Your profile</h1>
+        <p class="sub">Changes appear across the whole portal straight away.</p>
+        <div class="card" style="margin-top:22px">
+          <div class="row" style="margin-bottom:6px">
+            <span class="avb">${ini()}</span>
+            <div>
+              <h3>${pn()}</h3>
+              <div class="mut" style="font-size:13px">${ROLES[S.role][1]}${st ? ' · ' + (p.course || COURSES[0]) : ''}</div>
+            </div>
+          </div>
+          <label>Full name</label>
+          <input id="pn" value="${pn()}" maxlength="40">
+          <div class="g2">
+            <div>
+              <label>Age</label>
+              <input id="pa" type="number" min="16" max="80" value="${p.age || ''}">
+            </div>
+            ${st ? `
+              <div>
+                <label>Course</label>
+                ${courseSel('pc', p.course || COURSES[0])}
+              </div>
+            ` : `
+              <div>
+                <label>Role</label>
+                <input value="${ROLES[S.role][1]}" disabled>
+              </div>
+            `}
+          </div>
+          <label>Email</label>
+          <input value="${S.user ? S.user.email : ''}" disabled>
+          <div id="perr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div>
+          <div class="row" style="justify-content:flex-end">
+            <button class="btn" data-a="resetprof">Reset profile</button>
+            <button class="btn p" data-a="saveprof">Save changes</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function helpView() {
+      return `
+      <div class="pg">
+        <div class="card tint" style="max-width:520px">
+          <h2 class="ed">Help & Support</h2>
+          <p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p>
+          <button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button>
+        </div>
+      </div>`;
+    }
+
+    function student() {
       const v = S.view;
-      const titles = { chat: 'AI Assistant', dash: 'Dashboard', queries: 'My Queries', ann: 'Announcements', help: 'Help & Support' };
       return `
       <div class="app">
-        ${side(SN_STUDENT)}
+        ${side(SN)}
         <main class="main">
-          ${hd(titles[v] || 'Student Portal', v == 'chat')}
+          ${hd(TT[v] || 'Student Portal', v == 'chat')}
           ${v == 'chat' ? chat() : `
             <div class="page">
-              ${v == 'dash' ? dash() : v == 'queries' ? queries() : v == 'ann' ? annView() : `
-                <div class="pg">
-                  <div class="card tint" style="max-width:560px">
-                    <h2 class="ed">Help & Support</h2>
-                    <p class="mut">UniBuddy is designed to resolve questions instantly using campus documents. If a query requires human intervention, simply forward it to faculty from the AI chat.</p>
-                    <div style="margin-top:16px;display:flex;gap:10px">
-                      <button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button>
-                      <button class="btn" data-a="view" data-v="queries">Track My Tickets</button>
-                    </div>
-                  </div>
-                </div>
-              `}
+              ${v == 'dash' ? dash() : v == 'queries' ? queries() : v == 'ann' ? annView() : v == 'profile' ? profileView() : helpView()}
             </div>
           `}
         </main>
       </div>`;
     }
 
-    function facultyPortal() {
-      const t = T(S.sel) || S.tickets[0];
-      const navItems = [
-        ['tix', 'Ticket Desk', 'inbox'],
-        ['ann', 'Announcements', 'mega']
-      ];
+    function faculty() {
+      const t = T(S.sel);
       return `
       <div class="app">
-        ${side(navItems)}
+        ${side([['tix', 'Tickets', 'inbox'], ['profile', 'Profile', 'user']])}
         <main class="main">
-          ${hd('Faculty · Student Query Desk')}
+          ${hd(TT[S.view] || 'Faculty Portal')}
           <div class="page">
-            ${S.view == 'ann' ? annView() : `
+            ${S.view == 'profile' ? profileView() : `
               <div class="pg">
-                <div class="row sp" style="margin-bottom:14px;flex-wrap:wrap">
-                  <div>
-                    <h2 class="ed">Assigned Student Tickets</h2>
-                    <p class="mut" style="font-size:13.5px;margin:2px 0 0">Review queries routed from UniBuddy AI and post official responses.</p>
-                  </div>
-                  <div class="badge">${S.tickets.length} Total Tickets</div>
-                </div>
-                <div class="card" style="padding:8px 8px 4px">
-                  <div class="tw">
-                    <table>
-                      <tr>
-                        <th>Ticket ID</th>
-                        <th>Subject</th>
-                        <th>Department</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                      </tr>
-                      ${S.tickets.map(x => `
-                        <tr class="rw ${x.id == S.sel ? 'on' : ''}" data-a="open" data-v="${x.id}">
-                          <td><b>${x.id}</b></td>
-                          <td>${x.subj}</td>
-                          <td>${x.dept}</td>
-                          <td><span class="pri ${x.pri}">${x.pri}</span></td>
-                          <td>${stl(x)}</td>
-                        </tr>
-                      `).join('')}
-                    </table>
-                  </div>
-                </div>
-                ${t ? detail(t, true) : ''}
-              </div>
-            `}
-          </div>
-        </main>
-      </div>`;
-    }
-
-    function authorityPortal() {
-      const navItems = [
-        ['overview', 'Escalation Oversight', 'shield'],
-        ['tix', 'All Department Tickets', 'inbox'],
-        ['ann', 'Announcements', 'mega']
-      ];
-      const t = T(S.sel) || S.tickets[0];
-      const v = S.view;
-
-      return `
-      <div class="app">
-        ${side(navItems)}
-        <main class="main">
-          ${hd('Authority · Campus Escalations & SLA Portal')}
-          <div class="page">
-            ${v == 'ann' ? annView() : v == 'tix' ? `
-              <div class="pg">
-                <h2 class="ed" style="margin-bottom:12px">All Department Queries</h2>
                 <div class="card" style="padding:8px 8px 4px">
                   <div class="tw">
                     <table>
                       <tr>
                         <th>ID</th>
                         <th>Subject</th>
-                        <th>Dept</th>
-                        <th>Faculty</th>
                         <th>Priority</th>
                         <th>Status</th>
                       </tr>
@@ -2101,8 +1932,6 @@
                         <tr class="rw ${x.id == S.sel ? 'on' : ''}" data-a="open" data-v="${x.id}">
                           <td><b>${x.id}</b></td>
                           <td>${x.subj}</td>
-                          <td>${x.dept}</td>
-                          <td>${x.fac}</td>
                           <td><span class="pri ${x.pri}">${x.pri}</span></td>
                           <td>${stl(x)}</td>
                         </tr>
@@ -2112,176 +1941,26 @@
                 </div>
                 ${t ? detail(t, true) : ''}
               </div>
-            ` : `
-              <div class="pg">
-                <div class="row sp" style="margin-bottom:16px;flex-wrap:wrap">
-                  <div>
-                    <h2 class="ed">Departmental SLA & Escalations</h2>
-                    <p class="mut" style="font-size:13.5px;margin:2px 0 0">Oversee multi-department response times, policy exceptions, and escalation queues.</p>
-                  </div>
-                  <span class="badge" style="background:#e3f3ec;color:#2f7d62;border-color:#bce5d5">System SLA: 94.2%</span>
-                </div>
-
-                <div class="strip">
-                  ${[
-                    ['shield', 'Escalated Issues', '2'],
-                    ['tick', 'Compliant SLA', '94%'],
-                    ['clock', 'Avg Resolution', '1.4d']
-                  ].map(s => `
-                    <div class="sti">
-                      <span class="ic">${I(s[0])}</span>
-                      <div>
-                        <b>${s[2]}</b>
-                        <span>${s[1]}</span>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-
-                <div class="dgrid">
-                  <section>
-                    <div class="sh2">Department Performance Overview</div>
-                    <div class="card" style="padding:16px">
-                      ${[
-                        ['Computer Science', '96% SLA', '18 active tickets', '#58b394'],
-                        ['Accounts & Fee Desk', '89% SLA', '7 active tickets', '#e5a83b'],
-                        ['Examinations Cell', '95% SLA', '12 active tickets', '#58b394'],
-                        ['Hostel Office', '91% SLA', '4 active tickets', '#58b394']
-                      ].map(d => `
-                        <div class="hrow">
-                          <span>
-                            <b style="font-weight:600">${d[0]}</b>
-                            <span class="mut" style="font-size:12px">${d[2]}</span>
-                          </span>
-                          <span class="badge" style="background:var(--bg2);color:${d[3]}">${d[1]}</span>
-                        </div>
-                      `).join('')}
-                    </div>
-                  </section>
-                  <section>
-                    <div class="sh2">High Priority Escalation Queue</div>
-                    <div class="card" style="padding:14px">
-                      ${S.tickets.filter(x => x.pri === 'High').map(x => `
-                        <div class="qr" data-a="open" data-v="${x.id}" style="padding:10px 0">
-                          <small>${x.id}</small>
-                          <span style="font-weight:500">${x.subj}</span>
-                          ${stl(x)}
-                        </div>
-                      `).join('')}
-                    </div>
-                  </section>
-                </div>
-
-                <div class="card" style="margin-top:20px">
-                  <h3 style="margin-bottom:8px">Selected Query Focus</h3>
-                  ${t ? detail(t, true) : '<p class="mut">Select an escalated ticket to review.</p>'}
-                </div>
-              </div>
             `}
           </div>
         </main>
       </div>`;
     }
 
-    function managementPortal() {
-      const navItems = [
-        ['overview', 'Campus Analytics', 'chart'],
-        ['tix', 'Institutional Audit', 'list'],
-        ['ann', 'Announcements', 'mega']
-      ];
-      const t = T(S.sel) || S.tickets[0];
-      const v = S.view;
-
+    function placeholder() {
+      const r = ROLES[S.role] || ROLES.authority;
       return `
       <div class="app">
-        ${side(navItems)}
+        ${side([['x', r[1] + ' home', 'home'], ['profile', 'Profile', 'user']])}
         <main class="main">
-          ${hd('Management · Institutional Operations Overview')}
+          ${hd(S.view == 'profile' ? 'Profile' : r[1])}
           <div class="page">
-            ${v == 'ann' ? annView() : v == 'tix' ? `
+            ${S.view == 'profile' ? profileView() : `
               <div class="pg">
-                <h2 class="ed" style="margin-bottom:12px">Campus Audit & Query Log</h2>
-                <div class="card" style="padding:8px 8px 4px">
-                  <div class="tw">
-                    <table>
-                      <tr><th>ID</th><th>Subject</th><th>Department</th><th>Date</th><th>Status</th></tr>
-                      ${S.tickets.map(x => `
-                        <tr class="rw ${x.id == S.sel ? 'on' : ''}" data-a="open" data-v="${x.id}">
-                          <td><b>${x.id}</b></td><td>${x.subj}</td><td>${x.dept}</td><td>${x.date}</td><td>${stl(x)}</td>
-                        </tr>
-                      `).join('')}
-                    </table>
-                  </div>
-                </div>
-                ${t ? detail(t, false) : ''}
-              </div>
-            ` : `
-              <div class="pg">
-                <div class="row sp" style="margin-bottom:16px;flex-wrap:wrap">
-                  <div>
-                    <h2 class="ed">Institutional Helpdesk Performance</h2>
-                    <p class="mut" style="font-size:13.5px;margin:2px 0 0">University-level metrics on query volume, AI instant deflection, and staff resolution times.</p>
-                  </div>
-                  <span class="badge" style="background:var(--lav)">Academic Year 2026-27</span>
-                </div>
-
-                <div class="strip">
-                  ${[
-                    ['spark', 'AI Deflection Rate', '78.4%'],
-                    ['tick', 'Tickets Resolved', '92.1%'],
-                    ['user', 'Avg Rating', '4.8 / 5']
-                  ].map(s => `
-                    <div class="sti">
-                      <span class="ic">${I(s[0])}</span>
-                      <div>
-                        <b>${s[2]}</b>
-                        <span>${s[1]}</span>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-
-                <div class="dgrid">
-                  <section>
-                    <div class="sh2">Query Volume Distribution</div>
-                    <div class="card" style="padding:16px">
-                      ${[
-                        ['Academics & Examination Policies', '42%', '64 queries'],
-                        ['Fee Structure, Accounts & Fines', '26%', '39 queries'],
-                        ['Campus Amenities, Library & IT', '18%', '27 queries'],
-                        ['Hostel Welfare & Dining Facilities', '14%', '21 queries']
-                      ].map(c => `
-                        <div style="margin-bottom:14px">
-                          <div class="row sp" style="font-size:13px;margin-bottom:4px">
-                            <b>${c[0]}</b>
-                            <span class="mut">${c[1]} (${c[2]})</span>
-                          </div>
-                          <div class="prog"><i style="--p:${c[1]}"></i></div>
-                        </div>
-                      `).join('')}
-                    </div>
-                  </section>
-                  <section>
-                    <div class="sh2">Institutional Efficiency Indicators</div>
-                    <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:12px">
-                      <div class="row sp">
-                        <span class="mut">First-Contact Resolution</span>
-                        <b>78.4%</b>
-                      </div>
-                      <div class="row sp">
-                        <span class="mut">Faculty Turnaround Time</span>
-                        <b>18.2 Hours</b>
-                      </div>
-                      <div class="row sp">
-                        <span class="mut">Active Ticket Inflow</span>
-                        <b>+14 Today</b>
-                      </div>
-                      <div class="row sp">
-                        <span class="mut">Student Satisfaction Index</span>
-                        <b style="color:#2f7d62">96.5%</b>
-                      </div>
-                    </div>
-                  </section>
+                <div class="card" style="max-width:480px;margin:50px auto;text-align:center">
+                  <div style="display:grid;justify-items:center;margin-bottom:12px">${IC(r[0])}</div>
+                  <h2>${r[1]} workspace</h2>
+                  <p class="mut">Welcome, ${pn()}. The wireframe does not define this role’s dashboard, so this is a placeholder. Student and Faculty flows are fully interactive.</p>
                 </div>
               </div>
             `}
@@ -2290,10 +1969,9 @@
       </div>`;
     }
 
-    /* 7. MODALS */
     function modal() {
       const m = S.modal;
-      const q = m.q || (S.chat[m.i - 1]?.t) || 'Campus Inquiry';
+      const q = m.q || (S.chat[m.i - 1]?.t) || '';
       const o = m.out ? ' out' : '';
 
       if (m.done) {
@@ -2301,11 +1979,11 @@
         <div class="ov${o}">
           <div class="modal" style="text-align:center">
             <div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div>
-            <h2>Ticket Submitted Successfully</h2>
-            <p class="mut" style="margin:6px 0">Your ticket tracking ID is:</p>
-            <div style="font-size:26px;font-weight:700;margin:6px 0 12px;color:var(--navy);letter-spacing:.02em">${m.done}</div>
-            <p class="mut" style="font-size:13px;margin-bottom:20px">Your inquiry has been assigned to the department faculty. You will be notified as soon as an update is posted.</p>
-            <button class="btn p w" data-a="vt" data-v="${m.done}">View Ticket in My Queries</button>
+            <h2>Ticket submitted</h2>
+            <p class="mut" style="margin:6px 0">Your ticket ID is</p>
+            <div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div>
+            <p class="mut" style="font-size:13px;margin-bottom:18px">Demo ticket. Faculty will review it shortly.</p>
+            <button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button>
           </div>
         </div>`;
       }
@@ -2313,14 +1991,14 @@
       return `
       <div class="ov${o}">
         <div class="modal">
-          <h2>Forward Query to Faculty</h2>
-          <label>Original Query</label>
-          <div class="demo" style="margin:0;color:var(--ink);background:var(--ice);padding:10px 12px;border-radius:10px">${q}</div>
+          <h2>Forward to Faculty</h2>
+          <label>Original question</label>
+          <div class="demo" style="margin:0;color:var(--ink)">${q}</div>
           <div class="g2">
             <div>
-              <label>Target Department</label>
+              <label>Department</label>
               <select id="md">
-                ${['Computer Science', 'Accounts', 'Examinations', 'Hostel Office', 'Library'].map(d => `<option>${d}</option>`).join('')}
+                ${['Computer Science', 'Accounts', 'Examinations', 'Hostel', 'Library'].map(d => `<option>${d}</option>`).join('')}
               </select>
             </div>
             <div>
@@ -2332,8 +2010,8 @@
               </select>
             </div>
           </div>
-          <label>Additional Context / Details</label>
-          <textarea id="mx" rows="3" placeholder="Add course code, roll number, or other helpful details..."></textarea>
+          <label>Additional description</label>
+          <textarea id="mx" rows="3" placeholder="Add any helpful details"></textarea>
           <div class="row" style="justify-content:flex-end;margin-top:20px">
             <button class="btn" data-a="mc">Cancel</button>
             <button class="btn p" data-a="ms">Submit Ticket</button>
@@ -2342,36 +2020,16 @@
       </div>`;
     }
 
-    /* 8. RENDER ENGINE */
     function R() {
       const a = $('#app');
-      const activeEl = document.activeElement;
-      const activeId = activeEl?.id;
-      const activeVal = activeEl ? activeEl.value : '';
+      const ae = document.activeElement?.id;
+      const v = ae ? document.activeElement.value : '';
+      let h;
 
-      let h = '';
-      if (S.scr == 'landing') {
-        h = landing();
-      } else if (S.scr == 'login') {
-        h = login();
-      } else {
-        // Protected App portals based on authenticated role
-        if (!S.user) {
-          S.scr = 'login';
-          h = login();
-        } else if (S.role == 'student') {
-          h = studentPortal();
-        } else if (S.role == 'faculty') {
-          h = facultyPortal();
-        } else if (S.role == 'authority') {
-          h = authorityPortal();
-        } else if (S.role == 'management') {
-          h = managementPortal();
-        } else {
-          S.scr = 'login';
-          h = login();
-        }
-      }
+      if (S.scr == 'landing') h = landing();
+      else if (S.scr == 'login') h = login();
+      else if (S.scr == 'onboard') h = onboard();
+      else h = S.role == 'student' ? student() : S.role == 'faculty' ? faculty() : placeholder();
 
       a.innerHTML = h + (S.modal ? modal() : '') + (S.toast ? `<div class="toast">${S.toast}</div>` : '');
 
@@ -2380,10 +2038,9 @@
       S.fx = 0;
       S.chat.forEach(x => x.n = 0);
 
-      // Preserve active input focus if not chat inputs
-      if (activeId && $('#' + activeId) && activeId !== 'ci' && activeId !== 'dq') {
-        $('#' + activeId).value = activeVal;
-        $('#' + activeId).focus();
+      if (ae && $('#' + ae) && ae !== 'ci' && ae !== 'dq') {
+        $('#' + ae).value = v;
+        $('#' + ae).focus();
       }
 
       const m = $('#msgs');
@@ -2395,8 +2052,8 @@
     function handleChatSend() {
       const ci = $('#ci');
       if (!ci) return;
-      const v = ci.value;
-      if (!v || !v.trim()) return;
+      const v = ci.value.trim();
+      if (!v) return;
       ci.value = '';
       ask(v);
     }
@@ -2404,55 +2061,12 @@
     function handleDashSend() {
       const dq = $('#dq');
       if (!dq) return;
-      const v = dq.value;
-      if (!v || !v.trim()) return;
+      const v = dq.value.trim();
+      if (!v) return;
       dq.value = '';
       ask(v);
     }
 
-    /* Process Authentication */
-    function processLogin() {
-      const emailEl = $('#loginEmail');
-      const passEl = $('#loginPassword');
-      const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
-      const password = passEl ? passEl.value : '';
-
-      S.loginDraft.email = email;
-      S.loginDraft.password = password;
-
-      if (!email || !password) {
-        S.loginDraft.error = 'Please enter both your university email and password.';
-        R();
-        return;
-      }
-
-      // Check account in predefined registry
-      const account = DEMO_ACCOUNTS[email];
-      if (!account) {
-        S.loginDraft.error = 'Unknown account. Please check your email or click a demo account below.';
-        R();
-        return;
-      }
-
-      if (password !== account.password) {
-        S.loginDraft.error = `Invalid password. (Use demo password: ${DEMO_PASSWORD})`;
-        R();
-        return;
-      }
-
-      // Valid credentials
-      S.loginDraft.error = '';
-      S.loginDraft.loading = true;
-      R();
-
-      setTimeout(() => {
-        S.loginDraft.loading = false;
-        authenticateUser(account, true);
-        toast(`Signed in as ${account.name} (${account.roleTitle})`);
-      }, 350);
-    }
-
-    /* Event Listeners */
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-a]');
       if (!el) {
@@ -2465,54 +2079,61 @@
       const a = el.dataset.a;
       const v = el.dataset.v;
 
-      if (a == 'home') {
-        go(S.user ? 'app' : 'landing');
-      }
-      else if (a == 'toLogin') {
-        go('login');
-      }
+      if (a == 'home') go(S.user ? 'app' : 'landing');
+      else if (a == 'roles') go('login');
       else if (a == 'scroll') {
         const target = $('#' + v);
         if (target) target.scrollIntoView({ behavior: 'smooth' });
       }
-      else if (a == 'togglePw') {
-        const p = $('#loginPassword');
+      else if (a == 'fill') {
+        if ($('#em')) $('#em').value = v;
+        if ($('#pw')) $('#pw').value = DPW;
+        if ($('#err')) $('#err').textContent = '';
+        if ($('#pw')) $('#pw').type = 'password';
+      }
+      else if (a == 'pw') {
+        const p = $('#pw');
         if (p) p.type = p.type == 'password' ? 'text' : 'password';
       }
-      else if (a == 'forgotPw') {
-        toast('Password reset instructions sent to university administrator.');
-      }
-      else if (a == 'selectDemo') {
-        const r = DEMO_ACCOUNTS[ROLES[v].email];
-        if (r) {
-          S.loginDraft.email = r.email;
-          S.loginDraft.password = DEMO_PASSWORD;
-          S.loginDraft.selectedRole = v;
-          S.loginDraft.error = '';
-          R();
+      else if (a == 'login') doLogin();
+      else if (a == 'onsave') {
+        const n = $('#on')?.value || '';
+        const ag = $('#oa')?.value || '';
+        const c = $('#oc')?.value || '';
+        const st = S.role == 'student';
+        const er = vProf(n, ag, c, st);
+        if (er) {
+          if ($('#oerr')) $('#oerr').textContent = er;
+          return;
         }
+        PR[S.user.email] = { name: n.trim().replace(/\s+/g, ' '), age: Number(ag), course: st ? c : '' };
+        savePR();
+        go('app');
       }
-      else if (a == 'useDemo') {
-        const r = DEMO_ACCOUNTS[ROLES[v].email];
-        if (r) {
-          S.loginDraft.email = r.email;
-          S.loginDraft.password = DEMO_PASSWORD;
-          S.loginDraft.selectedRole = v;
-          S.loginDraft.error = '';
-          S.loginDraft.loading = true;
-          R();
-          setTimeout(() => {
-            S.loginDraft.loading = false;
-            authenticateUser(r, true);
-            toast(`Signed in as ${r.name} (${r.roleTitle})`);
-          }, 250);
+      else if (a == 'saveprof') {
+        const n = $('#pn')?.value || '';
+        const ag = $('#pa')?.value || '';
+        const c = $('#pc')?.value || '';
+        const st = S.role == 'student';
+        const er = vProf(n, ag, c, st);
+        if (er) {
+          if ($('#perr')) $('#perr').textContent = er;
+          return;
         }
+        PR[S.user.email] = { name: n.trim().replace(/\s+/g, ' '), age: Number(ag), course: st ? c : '' };
+        savePR();
+        toast('Profile updated.');
       }
-      else if (a == 'submitLogin') {
-        processLogin();
+      else if (a == 'resetprof') {
+        delete PR[S.user.email];
+        savePR();
+        go('onboard');
       }
       else if (a == 'logout') {
-        logout();
+        try { localStorage.removeItem('ub-current-user'); } catch (x) {}
+        S.user = null;
+        S.role = null;
+        go('landing');
       }
       else if (a == 'view') {
         if (S.view != v) S.fx = 'view';
@@ -2543,7 +2164,7 @@
         if (n) {
           n.u = 0;
           if (n.tk) S.sel = n.tk;
-          S.view = S.role == 'student' ? 'queries' : 'tix';
+          S.view = 'queries';
           S.bell = false;
           S.fx = 'view';
           R();
@@ -2560,15 +2181,13 @@
       else if (a == 'dask') handleDashSend();
       else if (a == 'sq') ask(v);
       else if (a == 'send') handleChatSend();
-      else if (a == 'attach') {
-        toast('Attachment support: PDF / Document upload is ready for campus backend integration.');
-      }
+      else if (a == 'attach') toast('Attachments are not enabled in this demo.');
       else if (a == 'vs') {
         const x = S.chat[+v];
-        if (x) toast(`Verified Document Source: ${x.s}, ${x.p}`);
+        if (x) toast(`Demo source: ${x.s}, ${x.p}. No real document is connected.`);
       }
       else if (a == 'fwd') {
-        const questionText = S.chat[+v - 1]?.t || S.chat[+v]?.origQ || 'Campus inquiry';
+        const questionText = S.chat[+v - 1]?.t || S.chat.find(x => x.r == 'u')?.t || 'Question';
         S.modal = { i: +v, q: questionText };
         R();
       }
@@ -2582,32 +2201,24 @@
       }
       else if (a == 'ms') {
         const m = S.modal;
-        const q = m.q || S.chat[m.i - 1]?.t || 'Campus Inquiry';
+        const q = m.q || S.chat[m.i - 1]?.t || 'Question';
         const id = 'UB-' + (2100 + Math.floor(Math.random() * 900));
-        const dept = $('#md')?.value || 'Computer Science';
-        const pri = $('#mp')?.value || 'Medium';
-        const desc = $('#mx')?.value || '';
-        const facultyAssigned = dept == 'Computer Science' ? 'Dr. Mehta' : dept == 'Accounts' ? 'Ms. Rao' : 'Department Faculty';
-
         S.tickets.unshift({
           id,
-          subj: q.slice(0, 40) + (q.length > 40 ? '...' : ''),
-          dept,
-          fac: facultyAssigned,
+          subj: q.slice(0, 40),
+          dept: $('#md')?.value || 'Computer Science',
+          fac: 'Unassigned',
           date: today(),
-          pri,
+          pri: $('#mp')?.value || 'Medium',
           st: 0,
           q,
-          desc,
+          desc: $('#mx')?.value || '',
           reply: '',
           tl: [today().slice(0, 6)]
         });
-
-        if (S.chat[m.i]) {
-          S.chat[m.i].fw = id;
-        }
+        if (S.chat[m.i]) S.chat[m.i].fw = id;
         S.sel = id;
-        notify(`Ticket ${id} was submitted and routed to ${dept}.`, id);
+        notify(`Ticket ${id} was submitted (demo).`, id);
         S.modal = { done: id };
         R();
       }
@@ -2621,67 +2232,69 @@
       else if (a == 'respond' || a == 'resolve') {
         const t = T(S.sel);
         if (!t) return;
-        const rp = $('#rp')?.value.trim() || '';
-        if (a == 'respond' && !rp) {
-          toast('Please write a response first.');
+        const r = $('#rp')?.value.trim() || '';
+        if (a == 'respond' && !r) {
+          toast('Write a response first.');
           return;
         }
-        if (rp) t.reply = rp;
+        if (r) t.reply = r;
         const d = today().slice(0, 6);
-        if (t.fac == 'Unassigned') t.fac = 'Dr. Mehta';
+        t.fac = pn();
         while (t.tl.length < 3) t.tl.push(d);
-
         if (a == 'resolve') {
           t.st = 3;
           t.tl[3] = d;
-          notify(`Ticket ${t.id} was marked as Resolved by ${t.fac}.`, t.id);
-          toast('Ticket marked as Resolved.');
-        } else {
-          if (t.st < 2) t.st = 2; // In Progress
-          notify(`${t.fac} sent a response to Ticket ${t.id}.`, t.id);
-          toast('Response sent successfully.');
+        } else if (t.st < 2) {
+          t.st = 2;
         }
-        R();
+        notify(a == 'resolve' ? `Ticket ${t.id} was resolved by ${t.fac} (demo).` : `${t.fac} replied to ${t.id} (demo).`, t.id);
+        toast(a == 'resolve' ? 'Ticket resolved.' : 'Response sent.');
       }
     });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        if (e.target.id === 'ci') {
-          e.preventDefault();
-          handleChatSend();
-        } else if (e.target.id === 'dq') {
-          e.preventDefault();
-          handleDashSend();
-        } else if (e.target.id === 'loginEmail' || e.target.id === 'loginPassword') {
-          e.preventDefault();
-          processLogin();
-        }
+      if (e.key == 'Enter' && (e.target.id == 'ci' || e.target.id == 'dq')) {
+        e.preventDefault();
+        if (e.target.id == 'ci') handleChatSend();
+        else handleDashSend();
+      }
+      if (e.key == 'Enter' && (e.target.id == 'em' || e.target.id == 'pw')) {
+        e.preventDefault();
+        doLogin();
+      }
+      if (e.key == 'Enter' && ['on', 'oa', 'oc'].includes(e.target.id)) {
+        e.preventDefault();
+        document.querySelector('[data-a=onsave]')?.click();
       }
     });
 
     document.addEventListener('input', e => {
-      if (e.target.id === 'gs') {
+      if (e.target.id == 'gs') {
         S.fq = e.target.value;
         R();
-      } else if (e.target.id === 'loginEmail') {
-        S.loginDraft.email = e.target.value;
-      } else if (e.target.id === 'loginPassword') {
-        S.loginDraft.password = e.target.value;
       }
     });
 
     document.addEventListener('change', e => {
-      if (e.target.id === 'fs') {
+      if (e.target.id == 'fs') {
         S.fs = e.target.value;
         R();
       }
     });
 
-    // Check for existing valid session on startup
-    if (!restoreSession()) {
-      R();
-    }
+    // Restore existing session if available
+    try {
+      const savedUser = localStorage.getItem('ub-current-user');
+      if (savedUser && ACC[savedUser]) {
+        const a = ACC[savedUser];
+        S.user = { ...a, email: savedUser };
+        S.role = a.role;
+        S.scr = PR[savedUser] ? 'app' : 'onboard';
+        S.view = a.role == 'student' ? 'chat' : a.role == 'faculty' ? 'tix' : 'x';
+      }
+    } catch (e) {}
+
+    R();
   </script>
 </body>
 </html>

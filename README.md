@@ -7,45 +7,37 @@
 
 ## 🚀 Key Features
 
-- **Email-Based Role Authentication**: Automatic role detection and secure workspace routing from user email address (no manual role-selection step).
-- **Grounded AI Answers**: Immediate responses with citations (document title, circular number, page reference).
-- **Automated Query Escalation**: Unresolved or specialized student questions can be forwarded directly to the right department desk.
-- **Role-Specific Workspaces**:
-  - **Student**: Directly opens the UniBuddy AI Assistant with chat, dashboard, announcements, and personal query tracking.
-  - **Faculty**: Direct access to the Student Query Desk with assigned tickets, query details, student context, official reply drafting, and one-click ticket resolution.
-  - **Authority**: Escalation queue review, cross-department SLA tracking, and departmental re-routing.
-  - **Management**: Institutional operations overview, query deflection rates, resolution turnaround times, and category breakdown.
-- **Session Persistence**: Built-in session restoration across page reloads and back-navigation protection for logged-out states.
+- **Email-Based Role Authentication**: Instant automatic role detection from email without manual role selection.
+- **Profile Onboarding & Personalization**: First-time login onboarding flow capturing full name, age, and course (for students: `B.Tech CS & AI` or `B.Tech CS & DS`).
+- **Grounded AI Answers**: Immediate responses with citations (document title, circular name, page reference).
+- **Automated Query Escalation**: Unresolved student queries can be forwarded directly to the right department.
+- **Faculty Ticket Management**: Department professors and staff can inspect student tickets, reply, and resolve issues.
+- **Profile Management**: Profile page accessible from the sidebar to edit your name, age, or course anytime with instant portal updates.
 
 ---
 
 ## 👥 Demo Accounts (Prototype Access)
 
-Use any of the registered prototype accounts below with the unified demo password:
+Use any of the registered demo accounts below:
 
-**Demo Password:** `UniBuddy@123`
+**Universal Demo Password:** `demo123`
 
-| Role | Email Address | First Screen on Login |
+| Role | Demo Email | First-Time Flow |
 | :--- | :--- | :--- |
-| **Student** | `student@unibuddy.demo` | **AI Assistant (Instant Chat)** |
-| **Faculty** | `faculty@unibuddy.demo` | **Ticket Management Desk** |
-| **Authority** | `authority@unibuddy.demo` | **Escalation & SLA Monitor** |
-| **Management** | `management@unibuddy.demo` | **Institutional Operations Overview** |
+| **Student** | `student@unibuddy.demo` | Onboarding (Name, Age, Course) → AI Chat |
+| **Faculty** | `faculty@unibuddy.demo` | Onboarding (Name, Age) → Tickets Desk |
+| **Authority** | `authority@unibuddy.demo` | Onboarding (Name, Age) → Authority Workspace |
+| **Management** | `management@unibuddy.demo` | Onboarding (Name, Age) → Management Workspace |
 
-*Note: On the redesigned login page, you can either enter these credentials manually or click any demo card in the "Explore Demo Accounts" shelf to sign in with one click.*
+*Tip: On the Sign-In page, you can click on any demo account button to fill the credentials automatically.*
 
 ---
 
 ## 💻 Quick Start
 
-### Option 1: Run with Built-in Server
+### Run with Node.js
 
 ```bash
-# Clone the repository
-git clone https://github.com/vishu404code/UniBuddy.git
-cd UniBuddy
-
-# Start the local server (zero external dependencies required)
 npm start
 # or: node server.js
 ```
@@ -55,24 +47,11 @@ Open your browser and navigate to:
 
 ---
 
-### Option 2: Open Directly in Browser
+### Open Directly in Browser
 
-Double-click `index.html` or open it directly in Chrome, Safari, Edge, or Firefox:
+Double-click `index.html` or run:
 ```bash
 open index.html
-```
-
----
-
-## 🛠️ Project Structure
-
-```
-UniBuddy/
-├── index.html        # Main SPA (Unified UI, reactive state engine, auth registry, KB)
-├── server.js         # Built-in lightweight zero-dependency Node.js HTTP server
-├── package.json      # NPM script definitions
-├── .gitignore        # Git ignore rules
-└── README.md         # Documentation & credentials
 ```
 
 ---
