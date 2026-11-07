@@ -152,8 +152,8 @@ approve applying them to this development project.
 
 ## Open decisions
 
-- **Who holds `cross_campus_record_access`:** only the backend sets it, and only for
-  management. Confirm which management users should hold it. There is no UI for setting it.
+- **`cross_campus_record_access`:** decided, no user holds it. It stays `false` for
+  everyone, and nothing in the backend sets it. Management reporting stays aggregate-only.
 - **Who sets `scope`:** the uploader or publisher chooses `campus` or `university_wide`.
   Confirm whether a university-wide choice needs approval.
 
