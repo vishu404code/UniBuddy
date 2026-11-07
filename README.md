@@ -1,32 +1,51 @@
 # UniBuddy · Intelligent Campus AI Assistant & Helpdesk
 
 > **One campus. One intelligent assistant.**  
-> UniBuddy provides students with instant, verified answers grounded in official university documents and circulars. If a query requires departmental review, UniBuddy seamlessly creates and routes prioritized tickets to faculty desks, tracked in real-time until resolution.
+> UniBuddy provides students with instant, verified answers grounded in official university documents and circulars. When human intervention is required, UniBuddy seamlessly creates and routes prioritized tickets directly to faculty desks, tracked in real-time until resolution.
 
 ---
 
 ## 🚀 Key Features
 
+- **Email-Based Role Authentication**: Automatic role detection and secure workspace routing from user email address (no manual role-selection step).
 - **Grounded AI Answers**: Immediate responses with citations (document title, circular number, page reference).
-- **Automated Query Escalation**: Unresolved or specialized student questions can be forwarded directly to the right department (Computer Science, Accounts, Examinations, Hostel Office, Library).
-- **Faculty Ticket Management**: Department staff can inspect student questions, respond with official remarks, and update ticket progress or mark as resolved.
-- **Real-Time Lifecycle Tracking**: Step-by-step progress tracking (`Submitted` → `Assigned` → `In Progress` → `Resolved`).
-- **Interactive Role Switching**: Explore views for **Student**, **Faculty**, **Authority**, and **Management**.
-- **Campus Announcements & Deadlines**: Curated editorial magazine layout for academic events, exams, and financial dates.
-- **Zero-Dependency Quickstart**: Runs out of the box with plain browser support or with Node.js built-in HTTP server.
+- **Automated Query Escalation**: Unresolved or specialized student questions can be forwarded directly to the right department desk.
+- **Role-Specific Workspaces**:
+  - **Student**: Directly opens the UniBuddy AI Assistant with chat, dashboard, announcements, and personal query tracking.
+  - **Faculty**: Direct access to the Student Query Desk with assigned tickets, query details, student context, official reply drafting, and one-click ticket resolution.
+  - **Authority**: Escalation queue review, cross-department SLA tracking, and departmental re-routing.
+  - **Management**: Institutional operations overview, query deflection rates, resolution turnaround times, and category breakdown.
+- **Session Persistence**: Built-in session restoration across page reloads and back-navigation protection for logged-out states.
+
+---
+
+## 👥 Demo Accounts (Prototype Access)
+
+Use any of the registered prototype accounts below with the unified demo password:
+
+**Demo Password:** `UniBuddy@123`
+
+| Role | Email Address | First Screen on Login |
+| :--- | :--- | :--- |
+| **Student** | `student@unibuddy.demo` | **AI Assistant (Instant Chat)** |
+| **Faculty** | `faculty@unibuddy.demo` | **Ticket Management Desk** |
+| **Authority** | `authority@unibuddy.demo` | **Escalation & SLA Monitor** |
+| **Management** | `management@unibuddy.demo` | **Institutional Operations Overview** |
+
+*Note: On the redesigned login page, you can either enter these credentials manually or click any demo card in the "Explore Demo Accounts" shelf to sign in with one click.*
 
 ---
 
 ## 💻 Quick Start
 
-### Option 1: Run with Node.js (Recommended)
+### Option 1: Run with Built-in Server
 
 ```bash
 # Clone the repository
 git clone https://github.com/vishu404code/UniBuddy.git
 cd UniBuddy
 
-# Start the local server (zero npm dependencies required!)
+# Start the local server (zero external dependencies required)
 npm start
 # or: node server.js
 ```
@@ -45,26 +64,15 @@ open index.html
 
 ---
 
-## 👥 Demo Profiles & Roles
-
-| Role | Access Mode | Highlights |
-| :--- | :--- | :--- |
-| **Student** | Instant Demo / Email Login | AI assistant chat, ticket submission, query status tracker, campus circulars. |
-| **Faculty** | Instant Demo / Email Login | Ticket desk, student query review, response drafting, ticket resolution. |
-| **Authority** | Instant Demo | Departmental escalation and oversight portal. |
-| **Management** | Instant Demo | Campus-wide operations overview. |
-
----
-
 ## 🛠️ Project Structure
 
 ```
 UniBuddy/
-├── index.html        # Main SPA (UI, reactive state engine, KB, stylesheets)
+├── index.html        # Main SPA (Unified UI, reactive state engine, auth registry, KB)
 ├── server.js         # Built-in lightweight zero-dependency Node.js HTTP server
 ├── package.json      # NPM script definitions
 ├── .gitignore        # Git ignore rules
-└── README.md         # Documentation
+└── README.md         # Documentation & credentials
 ```
 
 ---
