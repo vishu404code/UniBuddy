@@ -1,9 +1,10 @@
 # UniBuddy Backend
 
-FastAPI backend for UniBuddy. Implemented so far: app foundation and health
-endpoint, the Supabase schema (migrations, not yet applied), and Supabase token
-verification with server-side role and campus authorization. Document upload,
-RAG, chat and tickets come in later milestones.
+FastAPI backend for UniBuddy. Implemented: auth and role/campus authorization, PDF
+upload and processing, embeddings, RAG chat with citations and abstention, forwarding
+unanswered questions to faculty, ticket handling, announcements, notifications, and
+dashboards. The code and its 105 tests are complete. The live flow still needs the
+approvals listed below before it can run against the dev project.
 
 ## Setup
 
@@ -46,8 +47,10 @@ curl http://localhost:8000/api/v1/health
 pytest
 ```
 
-Expected: 30 tests pass. The tests use a locally generated signing key and a
-fake JWKS client, so they never contact Supabase.
+Expected: 105 tests pass. The tests use a locally generated signing key, in-memory
+Supabase and OpenAI test doubles, and real PDFs generated with PyMuPDF. They make no
+network calls. The HTTP client tests use mocked transports, so they check request
+shape, not live Supabase or OpenAI behaviour.
 
 ## Authentication and authorization
 
@@ -170,6 +173,87 @@ Then call `GET /api/v1/auth/me` with that user's access token. You should see th
 profile. The migrations are not applied yet, and I will not run them until you
 approve applying them to this development project.
 
+## Vertical flow: endpoints and UI mapping
+
+All endpoints are under `/api/v1`. Roles are checked on the server for every route.
+
+| Method and path | Roles | What it does | Frontend screen it serves |
+|---|---|---|---|
+| `POST /documents` (multipart: `file`, `title`, `visibility`, `scope`, `department_id`) | faculty, authority | Validates the PDF, stores it, extracts text, chunks, embeds, saves chunks. Returns the document with `processing_status`. | None yet. Upload screen needed. |
+| `POST /documents/{id}/publish` | uploader (faculty), authority | Publishes a ready draft so students can retrieve it. | None yet. |
+| `GET /documents` | any signed-in user | Documents the caller may see, under RLS. | Faculty/authority document list (new). |
+| `POST /chat/ask` `{question, conversation_id?}` | student | Retrieves permitted chunks as the caller, answers with citations, or abstains. Saves both messages. | AI Assistant chat (`ask()` in `index.html`). |
+| `GET /chat/conversations` | student | The student's own conversations. | Chat history (`S.hist`). |
+| `GET /chat/conversations/{id}/messages` | student | Messages in one of the student's conversations. | Chat history view. |
+| `POST /chat/messages/{id}/forward` `{department_id, priority, description?}` | student | Creates a submitted ticket for the student's campus. One ticket per question. | "Forward to Faculty" modal (`ms` action). |
+| `GET /tickets` | any signed-in user | Tickets the caller may see, under RLS. | My Queries list (`S.tickets`) and faculty ticket table. |
+| `GET /tickets/{id}` | any signed-in user | Ticket detail with its timeline. | Ticket detail (`detail()`). |
+| `PATCH /tickets/{id}` `{status?, reply?, take_ticket?}` | faculty, authority | Takes a ticket, changes status, or replies. Student gets a notification. | Faculty Respond/Resolve actions. |
+| `GET /announcements` | any signed-in user | Announcements the caller may see. | Announcements feed (`ANN`). |
+| `POST /announcements` | faculty, authority | Publishes an announcement. University-wide scope is authority only. | None yet. |
+| `GET /notifications` | any signed-in user | The caller's notifications. | Notification bell (`S.notifs`). |
+| `PATCH /notifications/{id}/read` | any signed-in user | Marks one of the caller's notifications read. | Notification bell. |
+| `GET /dashboard/student` | student | Real counts of the student's questions and tickets. | Student dashboard tiles (`dash()`). |
+| `GET /management/stats` | management | Campus and department totals, resolution rates, average first-response hours. No record contents. | Management dashboard (placeholder today). |
+
+**Ticket status values** are the database values `submitted`, `assigned`, `in_progress`,
+`resolved`. The frontend shows "Submitted", "Assigned", "In Progress", "Resolved". The
+frontend should map the labels; the API does not return them.
+
+**Answer rules.** Retrieval uses `match_document_chunks`, which runs as the caller, so
+RLS decides which chunks can be returned. Chunks below `RETRIEVAL_MIN_SIMILARITY` are
+dropped. If nothing is left, the model is not called and the response abstains. If the
+model replies `INSUFFICIENT_EVIDENCE`, or gives no citation to a retrieved source, the
+response also abstains. Citations are built from the retrieved chunk's document and page,
+never from the model's text. Abstained responses set `escalation_available: true`.
+
+**Ingestion** runs inside the upload request. A PDF is limited to 20 MB and 300 pages.
+Scanned PDFs with no text layer are marked `failed`. OCR is not enabled. Any failure
+marks the document `failed`, so it is never left in `processing`.
+
+### Pending approvals before the live flow runs
+
+These need your explicit go-ahead. Nothing below has been applied.
+
+1. **Migration `20261108120700_backend_operations.sql`** (unapplied, in the repo). It adds:
+   - write and read-back grants for `service_role` on the tables the endpoints write to
+     (`documents`, `document_chunks`, `conversations`, `messages`, `tickets`,
+     `ticket_events`, `notifications`, `announcements`) and read grants on `campuses`,
+     `departments`, and the ticket-number sequence;
+   - a unique index on `tickets.source_message_id` for duplicate-ticket protection;
+   - the `match_document_chunks` function, executable by `authenticated` only.
+2. **A private Storage bucket named `documents`.** Run once, from `backend/`, after
+   the values below are in `.env`. Load `.env` into the shell first:
+
+   ```bash
+   set -a; source .env; set +a
+   curl -X POST "$SUPABASE_URL/storage/v1/bucket" \
+     -H "apikey: $SUPABASE_SECRET_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"id":"documents","name":"documents","public":false}'
+   ```
+
+   The `file_size_limit` and `allowed_mime_types` options are not set here. Upload size
+   and type are enforced by the backend.
+
+3. **Local values to add to `backend/.env`** (names only; never paste them into chat):
+   - `SUPABASE_PUBLISHABLE_KEY`: Project Settings → API Keys → publishable key.
+   - `OPENAI_API_KEY`: your OpenAI key. The backend uses it only on the server.
+   - `SUPABASE_STORAGE_BUCKET`: leave as `documents`.
+
+### Not done yet
+
+- OCR for scanned PDFs, re-uploading or replacing a document, and archiving from the API.
+- Faculty dashboard, and dashboard numbers for authority.
+- Pagination and filters on list endpoints. Each list returns all visible rows.
+- Retrieval quality testing against real campus documents. The similarity threshold of
+  0.3 and the top-5 limit are starting values only.
+- Capacity: ingestion runs synchronously in the upload request. Management stats read all
+  ticket rows and aggregate them in Python, which must move to SQL aggregates before
+  reporting scales. There is no rate limiting, caching, or load testing.
+- **Load target:** 3,000+ daily users has not been tested. Nothing here shows that target
+  is met.
+
 ## Open decisions
 
 - **`cross_campus_record_access`:** decided, no user holds it. It stays `false` for
@@ -210,9 +294,10 @@ must be granted explicitly in the migrations. Nothing is granted to `anon`.
 | `authenticated` | `SELECT` on `campuses`, `departments`, `profiles`, `documents`, `document_chunks`, `conversations`, `messages`, `tickets`, `ticket_events`, `announcements`, `notifications` | Each table's RLS policy decides which rows are returned. The grant only allows the read to be attempted. |
 | `authenticated`, `service_role` | `EXECUTE` on the `app_*` helpers and `can_read_document()` | Called from RLS policies. |
 
-The backend does not write to any table yet, so `service_role` has no write grants.
-Each later milestone adds only the grants its endpoints need. Writes for tickets, chat,
-announcements and so on will get grants when those endpoints are built.
+Until migration `20261108120700_backend_operations.sql` is approved and applied,
+`service_role` has only the grants above, so the upload, chat, ticket and announcement
+writes will fail with a permission error. That migration adds exactly the write and
+read-back grants the endpoints use (see "Pending approvals" above).
 
 Assumption to verify after applying: the secret key runs as the `service_role`
 Postgres role. If the profile lookup returns an empty result for a known user, check
@@ -223,16 +308,26 @@ that assumption first, and then check this table.
 ```
 backend/
   app/
-    main.py                     FastAPI app, CORS, router registration
-    config.py                   Settings from environment variables / .env
-    routes/auth.py              GET /api/v1/auth/me
-    middleware/auth.py          FastAPI dependencies: get_current_user, require_roles
-    services/token_verifier.py  Supabase JWT verification (JWKS, ES256/RS256)
-    services/authorization.py   Campus access rule
-    repositories/profiles.py    Profile lookup via Supabase REST (secret key)
-    schemas/auth.py             CurrentUser model and role type
-  supabase/migrations/          Schema, RLS policies, indexes (not yet applied)
-  tests/                        pytest suite (30 tests)
+    main.py                       FastAPI app, CORS, error mapping, router registration
+    config.py                     Settings from environment variables / .env
+    ai/
+      pdf_extractor.py            PyMuPDF page-wise text extraction
+      chunking.py                 Page-aware chunking
+      openai_client.py            Embeddings and chat completions (server-side only)
+      rag.py                      Evidence selection, prompt, citation and abstention rules
+    middleware/auth.py            Session and role dependencies
+    routes/                       One module per area: auth, documents, chat, tickets,
+                                  announcements, notifications, dashboards
+    services/
+      token_verifier.py           Supabase JWT verification (JWKS, ES256/RS256)
+      authorization.py            Campus access rule
+      supabase_client.py          PostgREST, RPC and Storage (secret or user-scoped calls)
+      providers.py                Cached Supabase and OpenAI clients
+      documents.py chat.py tickets.py announcements.py notifications.py dashboards.py
+    repositories/profiles.py      Profile lookup via Supabase REST
+    schemas/                      Pydantic request and response models
+  supabase/migrations/            Schema, RLS, indexes, grants (see pending approvals)
+  tests/                          pytest suite (105 tests) and in-memory test doubles
   requirements.txt
   .env.example
   pytest.ini
