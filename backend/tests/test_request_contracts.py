@@ -52,12 +52,12 @@ def test_no_request_body_accepts_role_campus_or_owner_fields():
     assert violations == []
 
 
-def test_identity_is_only_read_from_the_profile_endpoint():
+def test_identity_writes_under_auth_are_limited_to_the_public_registration_intake():
     openapi = app.openapi()
-    writes = [
+    writes = sorted(
         f"{method.upper()} {path}"
         for path, operations in openapi["paths"].items()
         for method in operations
-        if "auth" in path and method != "get"
-    ]
-    assert writes == []
+        if "/auth/" in path and method != "get"
+    )
+    assert writes == ["POST /api/v1/auth/registrations"]

@@ -14,7 +14,7 @@ from typing import Any, Callable
 from app.services.supabase_client import SupabaseError
 
 RESERVED_PARAMS = {"select", "order", "limit", "offset"}
-UNIQUE_COLUMNS = {"tickets": ["source_message_id"]}
+UNIQUE_COLUMNS = {"tickets": ["source_message_id"], "registration_requests": ["email"]}
 # Columns PostgREST returns even when a row omits them (database defaults or nulls).
 ROW_DEFAULTS = {
     "documents": {
