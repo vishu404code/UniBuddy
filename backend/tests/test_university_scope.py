@@ -112,3 +112,22 @@ def test_faculty_upload_route_refuses_university_wide_scope():
     finally:
         app.dependency_overrides.clear()
     assert response.status_code == 403
+
+
+def test_faculty_publish_route_refuses_a_university_wide_document():
+    faculty = _user("faculty")
+    sb = FakeSupabase(visible=lambda token, table, row: True)
+    doc_id = _seed(sb, _user("authority"), "university_wide")
+    app.dependency_overrides[get_token_verifier] = lambda: type("V", (), {"verify": lambda self, t: __import__("uuid").UUID(t)})()
+    app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(
+        {str(faculty.id): make_profile(str(faculty.id), role="faculty", campus_id=str(CAMPUS))})
+    app.dependency_overrides[get_supabase_client] = lambda: sb
+    try:
+        response = TestClient(app).post(
+            f"{settings.api_v1_prefix}/documents/{doc_id}/publish",
+            headers={"Authorization": f"Bearer {faculty.id}"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 403
+    assert sb.tables["documents"][0]["publication_status"] == "draft"
