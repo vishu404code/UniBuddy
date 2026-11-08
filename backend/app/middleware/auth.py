@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import lru_cache
 from uuid import UUID
 
@@ -18,6 +19,12 @@ bearer_scheme = HTTPBearer(auto_error=False)
 _UNAUTHORIZED_HEADERS = {"WWW-Authenticate": "Bearer"}
 
 
+@dataclass(frozen=True)
+class CurrentSession:
+    user: CurrentUser
+    access_token: str
+
+
 @lru_cache
 def _build_token_verifier() -> SupabaseTokenVerifier:
     if not settings.supabase_url:
@@ -35,11 +42,11 @@ def get_profile_repository() -> ProfileRepository:
     return ProfileRepository(settings.supabase_url, settings.supabase_secret_key)
 
 
-async def get_current_user(
+async def get_current_session(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     verifier: SupabaseTokenVerifier = Depends(get_token_verifier),
     profiles: ProfileRepository = Depends(get_profile_repository),
-) -> CurrentUser:
+) -> CurrentSession:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated", _UNAUTHORIZED_HEADERS)
 
@@ -57,7 +64,20 @@ async def get_current_user(
 
     if profile is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "No UniBuddy profile exists for this account")
-    return profile
+    return CurrentSession(user=profile, access_token=credentials.credentials)
+
+
+async def get_current_user(session: CurrentSession = Depends(get_current_session)) -> CurrentUser:
+    return session.user
+
+
+def session_with_roles(*allowed_roles: Role):
+    async def checker(session: CurrentSession = Depends(get_current_session)) -> CurrentSession:
+        if session.user.role not in allowed_roles:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Your role cannot perform this action")
+        return session
+
+    return checker
 
 
 def require_roles(*allowed_roles: Role):
