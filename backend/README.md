@@ -580,6 +580,66 @@ rejection, and the route boundaries; 14 frontend tests and a production build.
 **Not verified:** any live invitation, email delivery, the invite and reset links, password
 setting, sign-in with a new account, the Super Admin bootstrap, and the live approval flow.
 
+## One-hour demo: prerequisites and runbook
+
+**What the demo shows, in order:** sign in → a faculty or authority user uploads and publishes one
+approved campus PDF → a student asks a question and gets a grounded answer with its source and page →
+a question the PDF cannot answer is abstained and sent to faculty → faculty sees the ticket, replies,
+and changes its status.
+
+**Nothing below has been run live yet.** Local tests and the browser check of protected routes
+pass. The live steps need the items marked as blockers.
+
+**Prerequisites (you do these; never paste secrets into chat)**
+
+1. Approve the two pending migrations, `20261109120000` and `20261109130000`. Verified dry run: exactly those two.
+2. In `backend/.env`, uncomment and set `OPENAI_API_KEY` (it is currently commented out). Add
+   `http://localhost:5173` to `ALLOWED_ORIGINS`.
+3. Create `frontend/.env.local` from `frontend/.env.example`, with the publishable key and the API URL.
+4. Give me one approved, public campus PDF (path). Its text will be sent to OpenAI for embeddings and,
+   when answering, excerpts will be sent for generation. Approve that explicitly.
+5. Approve the controlled invitations (see the report for the addresses and the sequence). Invitees set
+   their own passwords. No seeded account's password is changed.
+
+**Runbook once the prerequisites are met**
+
+1. Start the API: `uv run uvicorn app.main:app --reload` (from `backend/`).
+2. Start the app: `npm run dev` (from `frontend/`), then open `http://localhost:5173/login`.
+3. Sign in as the faculty or authority user. Upload the PDF on the Documents page. Wait until its status
+   reads Ready (the worker processes it in the web process). Publish it.
+4. Sign in as the student. Ask a question the PDF answers. The answer must show its source and page.
+5. Ask a question the PDF does not answer. The answer must say it could not be found, with a send-to-faculty
+   button. Send it, choosing a department on the student's campus.
+6. Sign in as faculty. Open the ticket, take it, reply, and move it to In progress or Resolved.
+
+**Cost and data notes.** Each document is sent to OpenAI for embeddings once. Each question is
+embedded, and the relevant excerpts are sent for generation. Set a monthly spend limit on the OpenAI
+account first. Keep `DOCUMENT_WORKER_ENABLED=true` for the demo, and upload only the approved PDF, because
+the worker processes every queued upload with the key.
+
+## Supabase dashboard checklist (click by click)
+
+Menu names change between dashboard versions. Use the search box if a name differs. Do these on the dev project only.
+
+1. **Site URL.** Authentication → URL Configuration → *Site URL* → `http://localhost:5173` → Save.
+2. **Redirect URLs.** Same page → *Redirect URLs* → Add URL → `http://localhost:5173/accept-invitation` → Save.
+3. **Invite email template.** Authentication → Email Templates → *Invite user*. Replace the confirmation
+   link with the token-hash link:
+   `{{ .SiteURL }}/accept-invitation?token_hash={{ .TokenHash }}&type=invite`
+   → Save. (Leave the rest of the template as it is.)
+4. **Reset password template.** Authentication → Email Templates → *Reset password*:
+   `{{ .SiteURL }}/accept-invitation?token_hash={{ .TokenHash }}&type=recovery` → Save.
+5. **Link expiry (24 hours or less).** Authentication → Sign In / Providers → *Email* (or the Auth settings
+   page, depending on version) → find *OTP expiry* / *Email OTP expiration* → `86400` seconds → Save.
+6. **Password minimum 12.** Authentication → Sign In / Providers → *Email* (or Password settings) →
+   *Minimum password length* → `12` → Save.
+7. **Email delivery.** Project Settings → Authentication → *SMTP Settings*. Either leave the built-in mailer
+   for a quick test (rate-limited; it may only reach project-team addresses) or enter your own provider's
+   host, port, username and password here. Enter credentials only in this dashboard. Send one test email
+   if the page offers it.
+8. **Check nothing was created.** Authentication → Users: no new users should exist until you approve
+   the invitations.
+
 ## Open decisions
 
 - **`cross_campus_record_access`:** decided, no user holds it. It stays `false` for
