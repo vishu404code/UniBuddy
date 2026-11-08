@@ -49,6 +49,7 @@ passed. It does not mean the live project was tested.
   provisioning precheck returns `ok` and writes nothing; the audit table has 0 rows afterwards
   and the seeded data is unchanged (8 profiles)
 - RLS visibility matrix re-run on the live project: 80/80
+- Signed-in authority session via the magic-link method (secret key generates the link, publishable key exchanges it; no password changed, no email sent). Through the backend's real auth path: `/auth/me` returns role `authority` with a campus; tickets 2, documents 6, announcements 3 visible; `/dashboard/staff` 200; management and student dashboards 403; provisioning with an empty body 422 (no invitation); a garbage token 401. Side effect: a login session and two one-time token rows were created for the seeded authority user. Tokens were kept in memory and not stored.
 - Publishable key accepted: six anonymous read or RPC requests (profiles, documents, campuses, both staff and management RPCs, audit table) each returned `42501` (permission denied for `anon`). Anonymous access is closed.
 - Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
@@ -59,7 +60,7 @@ passed. It does not mean the live project was tested.
 ### Blocked (cannot be verified without the items listed)
 
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
-- **Signed-in user session** (uses the publishable key, which is now present): user-scoped reads over HTTP. Blocked on a session method you approve, because the magic-link option creates a login session and one-time token rows in the dev project's auth tables
+- **Live provisioning and OpenAI-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the OpenAI key, the PDF, the invite email setup and hosting
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
 - **Live provisioning (invite sends a real email)**: needs the publishable key for the authority session, the SMTP and redirect setup described in the one-batch checklist, a controlled inbox on an allowlisted domain. The domain allowlist is now implemented; the policy beyond it is your call
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
