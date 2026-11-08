@@ -49,6 +49,7 @@ passed. It does not mean the live project was tested.
   provisioning precheck returns `ok` and writes nothing; the audit table has 0 rows afterwards
   and the seeded data is unchanged (8 profiles)
 - RLS visibility matrix re-run on the live project: 80/80
+- Publishable key accepted: six anonymous read or RPC requests (profiles, documents, campuses, both staff and management RPCs, audit table) each returned `42501` (permission denied for `anon`). Anonymous access is closed.
 - Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
 ### Not applied
@@ -58,7 +59,7 @@ passed. It does not mean the live project was tested.
 ### Blocked (cannot be verified without the items listed)
 
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
-- **Publishable key** (`SUPABASE_PUBLISHABLE_KEY`): user-scoped reads over HTTP with a real session
+- **Signed-in user session** (uses the publishable key, which is now present): user-scoped reads over HTTP. Blocked on a session method you approve, because the magic-link option creates a login session and one-time token rows in the dev project's auth tables
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
 - **Live provisioning (invite sends a real email)**: needs the publishable key for the authority session, the SMTP and redirect setup described in the one-batch checklist, a controlled inbox on an allowlisted domain. The domain allowlist is now implemented; the policy beyond it is your call
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
