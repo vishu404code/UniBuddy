@@ -1,5 +1,7 @@
+import ssl
 from uuid import UUID
 
+import certifi
 import jwt
 from jwt import PyJWKClient
 
@@ -26,7 +28,13 @@ class SupabaseTokenVerifier:
     @classmethod
     def for_project(cls, supabase_url: str) -> "SupabaseTokenVerifier":
         issuer = f"{supabase_url.rstrip('/')}/auth/v1"
-        jwks_client = PyJWKClient(f"{issuer}/.well-known/jwks.json", cache_keys=True)
+        # Python.org builds on macOS may lack system CA certificates, so use certifi's bundle.
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        jwks_client = PyJWKClient(
+            f"{issuer}/.well-known/jwks.json",
+            cache_keys=True,
+            ssl_context=ssl_context,
+        )
         return cls(issuer=issuer, jwks_client=jwks_client)
 
     def verify(self, token: str) -> UUID:
