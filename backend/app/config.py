@@ -18,9 +18,9 @@ class Settings(BaseSettings):
 
     # Supabase project URL, e.g. https://<project-ref>.supabase.co
     supabase_url: str | None = None
-    # Server-side only. Bypasses RLS, so it is used for profile lookups and must
-    # never reach the frontend or a log line.
-    supabase_service_role_key: str | None = None
+    # Supabase secret API key (sb_secret_...). Server-side only. It bypasses RLS,
+    # so it is used for profile lookups and must never reach the frontend or a log line.
+    supabase_secret_key: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -12,7 +12,7 @@
 -- document has a campus to check against. Retrieval never filters student-facing
 -- documents by campus.
 --
--- The backend's retrieval query runs with the service_role key, which bypasses
+-- The backend's retrieval query runs with the secret key, which bypasses
 -- RLS. It must apply the same rules in its own SQL. These policies are a second
 -- line of defence.
 

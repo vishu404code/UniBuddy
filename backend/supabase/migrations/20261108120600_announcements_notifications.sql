@@ -8,7 +8,7 @@
 --
 -- `campus_id` and `department_id` are attribution and routing only for
 -- student-facing announcements. Campus is required unless scope is
--- 'university_wide'. Writes happen only through the backend (service_role).
+-- 'university_wide'. Writes happen only through the backend (secret key).
 
 create table public.announcements (
   id uuid primary key default gen_random_uuid(),

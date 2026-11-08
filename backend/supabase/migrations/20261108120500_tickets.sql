@@ -8,7 +8,7 @@
 --   management  -> individual tickets from other campuses only with the explicit
 --                  cross_campus_record_access grant. Aggregate reporting does not use
 --                  this grant.
--- Writes happen only through the backend (service_role).
+-- Writes happen only through the backend (secret key).
 
 create sequence public.ticket_number_seq;
 

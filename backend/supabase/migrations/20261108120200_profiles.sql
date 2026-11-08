@@ -2,7 +2,7 @@
 -- policies in later migrations depend on.
 --
 -- Profiles are not created by a signup trigger: role and campus are assigned
--- by the backend using the service_role key. Self-selected roles or campuses
+-- by the backend using the secret key. Self-selected roles or campuses
 -- at signup would let anyone grant themselves staff access.
 
 create table public.profiles (

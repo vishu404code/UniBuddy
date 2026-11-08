@@ -12,24 +12,23 @@ class ProfileLookupError(Exception):
 
 
 class ProfileRepository:
-    """Reads profile rows through Supabase's REST API with the service-role key.
+    """Reads profile rows through Supabase's REST API with the secret API key.
 
-    The service-role key bypasses RLS, so callers must only pass a user id that
-    came from a verified token. The id is typed as UUID, which keeps it out of
-    the query string as raw text.
+    The secret key bypasses RLS, so callers must only pass a user id that came
+    from a verified token. The id is typed as UUID, which keeps it out of the
+    query string as raw text.
     """
 
     def __init__(
         self,
         supabase_url: str,
-        service_role_key: str,
+        secret_key: str,
         transport: httpx.AsyncBaseTransport | None = None,
     ):
         self._endpoint = f"{supabase_url.rstrip('/')}/rest/v1/profiles"
-        self._headers = {
-            "apikey": service_role_key,
-            "Authorization": f"Bearer {service_role_key}",
-        }
+        # Secret keys are sent only in the apikey header. Authorization carries
+        # user JWTs, and an sb_secret_ value there is not a JWT.
+        self._headers = {"apikey": secret_key}
         self._transport = transport
 
     async def get_by_id(self, user_id: UUID) -> CurrentUser | None:

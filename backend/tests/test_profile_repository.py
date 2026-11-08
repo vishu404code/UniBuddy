@@ -8,29 +8,29 @@ import pytest
 from app.repositories.profiles import ProfileLookupError, ProfileRepository
 
 SUPABASE_URL = "https://test-project.supabase.co"
-SERVICE_KEY = "test-service-key"
+SECRET_KEY = "sb_secret_test-only-value"
 USER_ID = UUID("99999999-9999-9999-9999-999999999999")
 
 
 def _repo(handler):
-    return ProfileRepository(SUPABASE_URL, SERVICE_KEY, transport=httpx.MockTransport(handler))
+    return ProfileRepository(SUPABASE_URL, SECRET_KEY, transport=httpx.MockTransport(handler))
 
 
-def test_lookup_sends_service_key_and_filters_by_id():
+def test_lookup_sends_secret_key_in_apikey_only_and_filters_by_id():
     seen = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
         seen["apikey"] = request.headers["apikey"]
-        seen["auth"] = request.headers["authorization"]
+        seen["has_authorization"] = "authorization" in request.headers
         return httpx.Response(200, json=[])
 
     asyncio.run(_repo(handler).get_by_id(USER_ID))
 
     assert seen["url"].startswith(f"{SUPABASE_URL}/rest/v1/profiles?")
     assert f"id=eq.{USER_ID}" in seen["url"]
-    assert seen["apikey"] == SERVICE_KEY
-    assert seen["auth"] == f"Bearer {SERVICE_KEY}"
+    assert seen["apikey"] == SECRET_KEY
+    assert seen["has_authorization"] is False
 
 
 def test_missing_profile_returns_none():

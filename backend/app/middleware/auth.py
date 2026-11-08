@@ -30,9 +30,9 @@ def get_token_verifier() -> SupabaseTokenVerifier:
 
 
 def get_profile_repository() -> ProfileRepository:
-    if not settings.supabase_url or not settings.supabase_service_role_key:
+    if not settings.supabase_url or not settings.supabase_secret_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
-    return ProfileRepository(settings.supabase_url, settings.supabase_service_role_key)
+    return ProfileRepository(settings.supabase_url, settings.supabase_secret_key)
 
 
 async def get_current_user(

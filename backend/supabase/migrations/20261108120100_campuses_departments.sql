@@ -27,7 +27,7 @@ alter table public.departments enable row level security;
 
 -- Reference data: any authenticated user can read it (dropdowns, routing).
 -- No INSERT/UPDATE/DELETE policy is defined -- those happen via the backend
--- using the service_role key, which bypasses RLS entirely.
+-- using the secret key, which bypasses RLS entirely.
 create policy "campuses_select_authenticated" on public.campuses
   for select to authenticated using (true);
 
