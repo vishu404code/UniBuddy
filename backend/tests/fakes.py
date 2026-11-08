@@ -6,6 +6,7 @@ against the dev project separately.
 """
 
 import copy
+from uuid import uuid4
 from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Any, Callable
@@ -118,9 +119,67 @@ class FakeSupabase:
             return self._claim(payload)
         if function == "publish_document_version":
             return self._publish(payload["p_document_id"])
+        if function == "provisioning_precheck":
+            return self._provisioning_precheck(payload)
+        if function == "provisioning_complete":
+            return self._provisioning_complete(payload)
+        if function == "provisioning_record_failure":
+            self._audit(payload["p_actor"], payload["p_email"], payload["p_role"], payload["p_outcome"],
+                        payload["p_reason"], payload.get("p_user_id"))
+            return None
         if function in self.rpc_responses:
             return self.rpc_responses[function]
         raise NotImplementedError(f"fake has no service RPC {function}")
+
+    # Emulates the SQL provisioning functions in supabase/migrations/20261108120900. The SQL
+    # itself is validated against PostgreSQL in tests/sql/provisioning_test.sql.
+    def _audit(self, actor_id, email, role, outcome, reason, user_id=None):
+        self.tables["provisioning_audit"].append({
+            "actor_id": actor_id, "target_email": email.lower(), "target_role": role,
+            "outcome": outcome, "reason": reason, "target_user_id": user_id,
+        })
+
+    def _actor(self, actor_id):
+        return next((r for r in self.tables["profiles"] if r["id"] == actor_id), None)
+
+    def _provisioning_precheck(self, p):
+        actor = self._actor(p["p_actor"])
+        role, dept, email = p["p_role"], p["p_department"], p["p_email"].lower()
+        reason = None
+        if actor is None or actor["role"] != "authority":
+            reason = "not_authority"
+        elif not actor.get("campus_id"):
+            reason = "no_campus"
+        elif role not in ("student", "faculty"):
+            reason = "invalid_role"
+        elif role == "faculty" and not dept:
+            reason = "department_required"
+        elif dept and not any(d["id"] == dept and d["campus_id"] == actor["campus_id"] for d in self.tables["departments"]):
+            reason = "department_not_in_campus"
+        elif any(r["email"] == email for r in self.tables["profiles"]):
+            reason = "email_exists"
+        if reason:
+            self._audit(p["p_actor"], email, role, "rejected", reason)
+            return {"ok": False, "reason": reason}
+        return {"ok": True, "campus_id": actor["campus_id"]}
+
+    def _provisioning_complete(self, p):
+        actor = self._actor(p["p_actor"])
+        if actor is None or actor["role"] != "authority" or not actor.get("campus_id"):
+            raise SupabaseError(400, "provisioning_not_permitted")
+        if p["p_role"] not in ("student", "faculty"):
+            raise SupabaseError(400, "provisioning_invalid_role")
+        dept = p["p_department"]
+        if dept and not any(d["id"] == dept and d["campus_id"] == actor["campus_id"] for d in self.tables["departments"]):
+            raise SupabaseError(400, "provisioning_department_not_in_campus")
+        profile = {
+            "id": p["p_user_id"], "email": p["p_email"].lower(), "full_name": p["p_full_name"],
+            "role": p["p_role"], "campus_id": actor["campus_id"], "department_id": dept,
+            "cross_campus_record_access": False,
+        }
+        self.tables["profiles"].append(profile)
+        self._audit(p["p_actor"], p["p_email"], p["p_role"], "invited", None, p["p_user_id"])
+        return {k: profile[k] for k in ("id", "email", "full_name", "role", "campus_id", "department_id")}
 
     def _claim(self, payload):
         claimed = []
@@ -182,3 +241,25 @@ class FakeAI:
     async def complete(self, system, user):
         self.completions.append((system, user))
         return self.reply
+
+
+class FakeAuthAdmin:
+    """Records invitations instead of sending them. Never contacts Supabase."""
+
+    def __init__(self, invite_error=None, delete_error=None):
+        self.invites: list[tuple[str, str, Any]] = []
+        self.deleted: list[Any] = []
+        self.invite_error = invite_error
+        self.delete_error = delete_error
+
+    async def invite_user(self, email, full_name):
+        if self.invite_error:
+            raise self.invite_error
+        user_id = uuid4()
+        self.invites.append((email, full_name, user_id))
+        return user_id
+
+    async def delete_user(self, user_id):
+        if self.delete_error:
+            raise self.delete_error
+        self.deleted.append(user_id)

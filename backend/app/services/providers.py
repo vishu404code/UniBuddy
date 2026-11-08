@@ -28,3 +28,12 @@ def get_openai_client() -> OpenAIClient:
         embedding_model=settings.openai_embedding_model,
         chat_model=settings.openai_chat_model,
     )
+
+
+@lru_cache
+def get_auth_admin_client():
+    from app.services.auth_admin import AuthAdminClient
+
+    if not settings.supabase_url or not settings.supabase_secret_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "User provisioning is not configured")
+    return AuthAdminClient(settings.supabase_url, settings.supabase_secret_key)

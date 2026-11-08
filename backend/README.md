@@ -3,7 +3,7 @@
 FastAPI backend for UniBuddy. Implemented: auth and role/campus authorization, PDF
 upload and processing, embeddings, RAG chat with citations and abstention, forwarding
 unanswered questions to faculty, ticket handling, announcements, notifications, and
-dashboards. The code and its 130 pytest tests are complete. The live flow still needs
+dashboards. The code and its 158 pytest tests are complete. The live flow still needs
 the approvals listed below before it can run against the dev project.
 
 ## Setup
@@ -63,7 +63,7 @@ curl http://localhost:8000/api/v1/health
 pytest
 ```
 
-Expected: 130 tests pass. The tests use a locally generated signing key, in-memory
+Expected: 158 tests pass. The tests use a locally generated signing key, in-memory
 Supabase and OpenAI test doubles, and real PDFs generated with PyMuPDF. They make no
 network calls. The HTTP client tests use mocked transports, so they check request
 shape, not live Supabase or OpenAI behaviour.
@@ -217,6 +217,8 @@ They never widen access.
 | `PATCH /notifications/{id}/read` | any signed-in user | Marks one of the caller's notifications read. | Notification bell. |
 | `GET /dashboard/student` | student | Real counts of the student's questions and tickets. | Student dashboard tiles (`dash()`). |
 | `GET /dashboard/staff` | faculty, authority | Counts over the tickets and documents the caller can see: open, resolved, unassigned queue, assigned to me, by department, average first-response hours. | Faculty and authority dashboards (new). |
+| `POST /provisioning/students` `{email, full_name, department_id?}` | authority | Invites a student into the authority's own campus. **Sends a real invitation email.** | Authority user management (new). |
+| `POST /provisioning/faculty` `{email, full_name, department_id}` | authority | Invites a faculty member into the authority's own campus. Department is required and must be on that campus. **Sends a real invitation email.** | Authority user management (new). |
 | `GET /management/stats` | management | Campus and department totals, resolution rates, average first-response hours, computed in the database. No record contents. | Management dashboard (placeholder today). |
 
 **Ticket status values** are the database values `submitted`, `assigned`, `in_progress`,
@@ -263,6 +265,19 @@ deployed. It would need:
 Remaining dependency: choose the hosting runtime for the worker. Only then decide whether
 scanned PDFs are common enough to justify the image size and latency. No container or
 paid service has been created for this.
+
+### Production worker (plan, not deployed)
+
+Development runs the document worker inside the web process, which is the default when
+`DOCUMENT_WORKER_ENABLED=true`. Before production, run the worker as its own process, so
+slow document processing cannot delay web requests and the worker can be scaled separately:
+
+- The web service sets `DOCUMENT_WORKER_ENABLED=false`.
+- A separate background-worker service runs `python -m app.worker` with the same
+  environment. Several workers are safe, because the claim uses `SKIP LOCKED`.
+
+Nothing has been created for this. It would be a paid service, so it waits for your
+decision on hosting.
 
 ### Live setup status
 
@@ -317,22 +332,50 @@ API, against the real Supabase plan, with concurrent users and real documents. T
 
 ## Accounts, roles and campus assignment
 
-- **Who can create accounts.** Supabase Auth creates the login. The backend never creates
-  or edits users. Signup does not create a profile, and no endpoint accepts a role, campus,
-  department, or owner from the client. A contract test
-  (`tests/test_request_contracts.py`) fails if any request body starts accepting such a
-  field.
-- **Where role and campus come from.** Only the `profiles` row. Token claims such as
-  `user_metadata` are never read for authorization.
-- **How profiles are created today.** An operator with database owner access inserts the
-  row (SQL editor or CLI) after the Auth user exists. The `authenticated` role can read
-  profiles but cannot write them. The `service_role` key can read `profiles` but cannot
-  write them. This is deliberate, and it is safe for development.
-- **Before production.** The provisioning path is not built yet. An admin provisioning
-  function, restricted to an approved admin role and written to an audit log, is needed.
-  That needs your approval because it changes grants, so it is not started.
-- **Cross-campus access.** `cross_campus_record_access` is `false` for every user, and
-  nothing sets it. Management reporting uses aggregates only.
+**Who can onboard whom.** An authority user can invite students and faculty into its own
+campus, through `POST /provisioning/students` and `POST /provisioning/faculty`. Nothing
+else can create accounts through the API, and nothing can create authority or management
+accounts through the API.
+
+**What the caller controls.** Only the invitee's email, full name, and (for faculty
+or optionally for students) a department. The role comes from the endpoint. The campus is
+always the authority's own, read from its profile. Any other field, including `role`,
+`campus_id`, `all_campuses_access`, `cross_campus_record_access`, `uploaded_by`, or an owner
+field, makes the request fail with `422` before anything is sent. A contract test
+(`tests/test_request_contracts.py`) keeps this true.
+
+**Checks, in order.**
+
+1. The database precheck (`provisioning_precheck`). It verifies that the actor is an
+   authority user with a campus, that the role is student or faculty, that the department
+   belongs to that campus, and that no profile has the email yet. A rejection is written to
+   the audit trail, and no invitation is sent.
+2. The Supabase invitation (`/auth/v1/invite`). This sends a real email. An email that
+   already has a login is refused, and the refusal is audited.
+3. The database completion (`provisioning_complete`). It creates the profile with the
+   authority's campus and `cross_campus_record_access = false`, and audits the invitation.
+   If this step fails, the new login is deleted again and the compensation is audited. If
+   that deletion fails too, the audit records `cleanup_failed` for manual follow-up.
+
+**Audit trail.** Table `provisioning_audit` (migration `20261108120900`). Every rejection,
+invitation, failure, and compensation is recorded. Only the database owner can read it, and
+no API exposes it yet.
+
+**Other ways accounts exist today.** Management and authority accounts, and any correction
+to an existing profile, are still created by a database owner (SQL editor or CLI). The
+`authenticated` role can read profiles but not write them. The `service_role` key can only
+execute the three provisioning functions and read profiles.
+
+**Cross-campus access.** `cross_campus_record_access` is `false` for every user, and nothing
+sets it. Management reporting uses aggregates only. Management cannot provision accounts.
+
+**Before production.**
+
+- Decide the email policy. Right now any well-formed email can be invited. Restricting to
+  the university domain or to pre-approved lists is a product decision.
+- Decide whether provisioning needs approval from a second person, and build an audit read
+  path for the owners of the process.
+- Build the worker deployment (see below).
 
 ## Open decisions
 
@@ -342,6 +385,11 @@ API, against the real Supabase plan, with concurrent users and real documents. T
   Confirm whether a university-wide choice needs approval.
 
 ## Database (Supabase)
+
+Migration `20261108120900_campus_provisioning.sql` is **not applied** to the dev project. It
+adds `provisioning_audit` and three service-only functions. It has been tested on a local
+PostgreSQL 17 database (`tests/sql/run_local_db_tests.sh`), and needs your approval before
+it is applied.
 
 Schema lives in `supabase/migrations/` as numbered SQL files. They have been parsed
 with PostgreSQL's grammar but **not applied to any database**. Row-level security
@@ -409,8 +457,8 @@ backend/
       documents.py chat.py tickets.py announcements.py notifications.py dashboards.py
     repositories/profiles.py      Profile lookup via Supabase REST
     schemas/                      Pydantic request and response models, incl. Page envelope
-  supabase/migrations/            Schema, RLS, indexes, grants (all applied to dev)
-  tests/                          pytest suite (130 tests) and in-memory test doubles
+  supabase/migrations/            Schema, RLS, indexes, grants (0000-0800 applied to dev; 0900 pending approval)
+  tests/                          pytest suite (158 tests) and in-memory test doubles
   tests/sql/                      SQL assertions and a local-only database runner
   requirements.txt
   .env.example

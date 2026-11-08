@@ -14,6 +14,7 @@ from app.routes.chat import router as chat_router
 from app.routes.dashboards import router as dashboards_router
 from app.routes.documents import router as documents_router
 from app.routes.notifications import router as notifications_router
+from app.routes.provisioning import router as provisioning_router
 from app.routes.tickets import router as tickets_router
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
@@ -79,5 +80,6 @@ for router in (
     announcements_router,
     notifications_router,
     dashboards_router,
+    provisioning_router,
 ):
     app.include_router(router, prefix=settings.api_v1_prefix)

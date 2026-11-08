@@ -1,8 +1,10 @@
 """Guards against client-chosen identity, role or campus.
 
-Every value that decides who a user is, what role they have, or which campus they
-belong to must come from the verified token and the profiles table. A request
-body that accepted one of these fields would let a caller pick their own access.
+Every value that decides who the caller is, what role they have, or which campus they
+belong to must come from the verified token and the profiles table. A request body that
+accepted one of these fields would let a caller pick their own access. The email in a
+provisioning request is the invitee's address, which is the input, not the caller's
+identity, so it is not in the forbidden list.
 """
 
 from app.main import app
@@ -14,7 +16,6 @@ FORBIDDEN_BODY_FIELDS = {
     "uploaded_by",
     "published_by",
     "user_id",
-    "email",
     "cross_campus_record_access",
     "all_campuses_access",
     "assigned_faculty_id",
