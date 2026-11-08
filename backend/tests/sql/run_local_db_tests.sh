@@ -31,5 +31,8 @@ SQL
 for f in "$backend"/supabase/migrations/*.sql; do
   psql_cmd -d "$DB" -v ON_ERROR_STOP=1 -q --single-transaction -f "$f"
 done
-psql_cmd -d "$DB" -v ON_ERROR_STOP=1 -q -f "$here/document_lifecycle_test.sql" 2>&1 | grep -E "NOTICE|ERROR" | sed 's/^.*NOTICE:  //'
+for t in "$here"/*_test.sql; do
+  echo "== $(basename "$t")"
+  psql_cmd -d "$DB" -v ON_ERROR_STOP=1 -q -f "$t" 2>&1 | grep -E "NOTICE|ERROR" | grep -v "already been granted" | sed 's/^.*NOTICE:  //'
+done
 echo "local SQL assertions finished"
