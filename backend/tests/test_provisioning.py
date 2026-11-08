@@ -40,9 +40,67 @@ def _world(actor):
     return sb
 
 
-async def _provision(sb, auth, actor, email="New.Student@Example.com", role="student", department_id=None):
+ALLOWED = frozenset({"example.com"})
+
+
+async def _provision(sb, auth, actor, email="New.Student@Example.com", role="student", department_id=None,
+                     allowed=ALLOWED):
     return await provision_user(sb=sb, auth_admin=auth, actor=actor, email=email,
-                                full_name="New Student", role=role, department_id=department_id)
+                                full_name="New Student", role=role, department_id=department_id,
+                                allowed_domains=allowed)
+
+
+@pytest.mark.asyncio
+async def test_email_outside_the_allowlist_is_refused_before_any_invitation():
+    actor = _actor()
+    sb, auth = _world(actor), FakeAuthAdmin()
+
+    with pytest.raises(ProvisioningError) as info:
+        await _provision(sb, auth, actor, email="someone@evil.test")
+
+    assert info.value.status_code == 422
+    assert auth.invites == []
+    assert sb.tables["provisioning_audit"][-1]["reason"] == "email_domain_not_allowed"
+    assert sb.tables["provisioning_audit"][-1]["outcome"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_subdomains_are_not_allowed_by_an_exact_domain_entry():
+    actor = _actor()
+    sb, auth = _world(actor), FakeAuthAdmin()
+
+    with pytest.raises(ProvisioningError):
+        await _provision(sb, auth, actor, email="someone@mail.example.com")
+    assert auth.invites == []
+
+
+@pytest.mark.asyncio
+async def test_empty_allowlist_fails_closed_without_touching_anything():
+    actor = _actor()
+    sb, auth = _world(actor), FakeAuthAdmin()
+
+    with pytest.raises(ProvisioningError) as info:
+        await _provision(sb, auth, actor, allowed=frozenset())
+
+    assert info.value.status_code == 503
+    assert auth.invites == []
+    assert sb.tables["provisioning_audit"] == []
+
+
+def test_allowlist_config_is_parsed_from_one_comma_separated_setting(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "provisioning_allowed_email_domains", "  Uni.Example.edu, @campus.example.edu ,, ")
+
+    assert settings.provisioning_allowed_domains_set == frozenset({"uni.example.edu", "campus.example.edu"})
+
+
+def test_blank_allowlist_setting_means_no_domains(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "provisioning_allowed_email_domains", " , ")
+
+    assert settings.provisioning_allowed_domains_set == frozenset()
 
 
 @pytest.mark.asyncio
@@ -277,9 +335,37 @@ def _route_client(actor, auth):
 
 
 @pytest.fixture(autouse=True)
-def _clear_overrides():
+def _clear_overrides(monkeypatch):
+    monkeypatch.setattr(settings, "provisioning_allowed_email_domains", "example.com")
     yield
     app.dependency_overrides.clear()
+
+
+def test_route_fails_closed_when_no_domains_are_configured(monkeypatch):
+    actor = _actor()
+    auth = FakeAuthAdmin()
+    client, _ = _route_client(actor, auth)
+    monkeypatch.setattr(settings, "provisioning_allowed_email_domains", "")
+
+    response = client.post(f"{settings.api_v1_prefix}/provisioning/students",
+                           headers={"Authorization": f"Bearer {actor.id}"},
+                           json={"email": "new@example.com", "full_name": "New Student"})
+
+    assert response.status_code == 503
+    assert auth.invites == []
+
+
+def test_route_refuses_a_domain_outside_the_allowlist():
+    actor = _actor()
+    auth = FakeAuthAdmin()
+    client, _ = _route_client(actor, auth)
+
+    response = client.post(f"{settings.api_v1_prefix}/provisioning/students",
+                           headers={"Authorization": f"Bearer {actor.id}"},
+                           json={"email": "new@gmail.test", "full_name": "New Student"})
+
+    assert response.status_code == 422
+    assert auth.invites == []
 
 
 def test_authority_route_creates_the_invited_student():

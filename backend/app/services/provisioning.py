@@ -15,6 +15,10 @@ REJECTION_STATUS = {
 }
 
 
+def email_domain(email: str) -> str:
+    return email.rsplit("@", 1)[-1]
+
+
 class ProvisioningError(DocumentError):
     def __init__(self, status_code: int, message: str):
         super().__init__(message)
@@ -46,14 +50,23 @@ async def provision_user(
     full_name: str,
     role: str,
     department_id: UUID | None,
+    allowed_domains: frozenset[str],
 ) -> dict:
     """Invites one student or faculty member into the actor's campus.
 
-    Order matters. The database precheck runs first, so an invalid request never causes an
-    invitation. If the profile cannot be completed after the invite, the new auth user is
+    Order matters. The email domain must be on the server-side allowlist, and it fails closed
+    when the allowlist is empty. The database precheck runs next, so an invalid request never
+    causes an invitation. If the profile cannot be completed after the invite, the new auth user is
     deleted again, and the audit trail records the compensation.
     """
+    if not allowed_domains:
+        raise ProvisioningError(503, "User provisioning is not configured")
+
     email = email.strip().lower()
+    if email_domain(email) not in allowed_domains:
+        await _record(sb, actor, email, role, department_id, "failed", "email_domain_not_allowed")
+        raise ProvisioningError(422, "Invitations can only be sent to approved university email domains")
+
     precheck = await sb.rpc_service(
         "provisioning_precheck",
         {

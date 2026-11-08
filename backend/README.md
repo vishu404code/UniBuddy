@@ -21,8 +21,15 @@ passed. It does not mean the live project was tested.
 - Dashboards: student (exact counts), staff (SQL, RLS-scoped), management (SQL aggregates only)
 - Provisioning: authority invites students and faculty into its own campus; audit trail
 - Build: `pyproject.toml` with `uv.lock`; `requirements.txt` kept for pip deployment
+- Provisioning safeguards: the email domain must be on the server-side allowlist
+  (`PROVISIONING_ALLOWED_EMAIL_DOMAINS`, exact match). An empty list fails closed with `503`.
+  The campus and role come from the authority's profile and the endpoint, never from the
+  client. Management cannot provision.
 
 ### Locally verified (no live project)
+
+- Provisioning domain allowlist: exact match, subdomains refused, empty list fails closed,
+  config parsing (`tests/test_provisioning.py`)
 
 - 158 pytest tests pass under pip and under `uv`, on Python 3.11 and 3.14
 - Migrations `20261108120000` to `20261108120900` parse under PostgreSQL's grammar
@@ -37,6 +44,11 @@ passed. It does not mean the live project was tested.
 - Function privileges: `service_role`, `authenticated` and `anon` match the intended grants
 - `staff_dashboard_stats` and `management_ticket_stats` return real data
 - Private `documents` bucket exists; a probe upload and a service-key insert succeeded, and the probes were removed
+- Read-only checks, secret key, through the backend's own code paths: profile lookup returns
+  the role and campus from the row; the management aggregate RPC returns real totals; a valid
+  provisioning precheck returns `ok` and writes nothing; the audit table has 0 rows afterwards
+  and the seeded data is unchanged (8 profiles)
+- RLS visibility matrix re-run on the live project: 80/80
 - Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
 ### Not applied
@@ -48,18 +60,44 @@ passed. It does not mean the live project was tested.
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
 - **Publishable key** (`SUPABASE_PUBLISHABLE_KEY`): user-scoped reads over HTTP with a real session
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
-- **Live provisioning**: an invite sends a real email. It needs (a) an authority test session, which needs the publishable key, or a known password set on a seeded authority user; (b) Supabase SMTP and the redirect URLs configured for the invite (Authentication → Emails and URL Configuration); (c) a controlled inbox you own; and (d) an email policy decision
+- **Live provisioning (invite sends a real email)**: needs the publishable key for the authority session, the SMTP and redirect setup described in the one-batch checklist, a controlled inbox on an allowlisted domain. The domain allowlist is now implemented; the policy beyond it is your call
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
 - **Deployment**: no hosting chosen, no Render service, and no worker runtime. The worker plan is in the README
 - **Capacity (3,000+ daily users)**: not verified. Needs a load test against a deployed environment
 
-### Remaining steps
+### One-batch setup checklist (do these in order, then tell me "ready")
 
-1. **Keys.** Add `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY` to `backend/.env`. Do not paste them into chat. Then start the server with `uv run uvicorn app.main:app --reload`.
-2. **Sample PDF.** Give me one or more real campus PDFs, or place them somewhere I can read. Then run the upload, publish, ask, abstain and forward sequence against the dev project and report the real results.
-3. **Provisioning.** Approve migration 0900. Then invite one test address you control, and confirm the email and the profile.
-4. **Deployment.** Choose the hosting for the web service and the worker, and approve any paid resource before it is created.
-5. **Capacity.** Run a load test against the deployed API and the real Supabase plan, with concurrent users, real documents, and a measured p95 latency. Only then state a capacity figure.
+Everything below is needed before the live checks that depend on keys, PDFs and email.
+Secrets go into `backend/.env` or the Supabase dashboard only. Never paste them into chat.
+
+1. **Env values in `backend/.env`.** Add these four lines, with real values:
+   - `SUPABASE_PUBLISHABLE_KEY`: Project Settings → API Keys → publishable key.
+   - `OPENAI_API_KEY`: your OpenAI key.
+   - `PROVISIONING_ALLOWED_EMAIL_DOMAINS`: the domain your controlled test inbox uses, for
+     example `yourdomain.test`. Use exact domains, comma-separated. Leave it empty and
+     provisioning stays disabled.
+   - Keep `SUPABASE_STORAGE_BUCKET=documents`.
+2. **Invitation email (Supabase dashboard).**
+   - Authentication → Emails: check the "Invite user" template.
+   - Project Settings → Authentication (SMTP): for a controlled test, either use the built-in
+     mailer, which is rate-limited and may only reach project-team addresses, or enter your
+     own SMTP provider.
+   - Authentication → URL Configuration: set the Site URL to `http://localhost:3000` and add
+     the invite landing page to the redirect allow-list.
+3. **Controlled test inbox.** An address you own on the allowlisted domain, for example a
+   plus-address such as `you+unibuddy-test@yourdomain.test`.
+4. **Sample campus PDF.** Put one real PDF at a path I can read, for example
+   `backend/sample_data/campus-policy.pdf`. The `sample_data` folder is not in git. Tell me
+   the path, and say whether it can be shared with the model.
+5. **Authority test session.** I will sign in as the seeded authority user
+   `rlstest-authority-c1@example.com` with the publishable key. No password is changed.
+6. Tell me "ready". I will then run, in one batch:
+   - a live upload, worker processing, publish, a cited answer, an abstention, and a forward
+     to faculty, on the dev project, using the sample PDF;
+   - one provisioning invite to your controlled inbox, then the profile row and one audit row;
+   - the user-scoped reads through the publishable key with the real session.
+
+Deployment, capacity and OCR are not in this batch. See their sections below.
 
 ## Setup
 
@@ -426,8 +464,8 @@ sets it. Management reporting uses aggregates only. Management cannot provision 
 
 **Before production.**
 
-- Decide the email policy. Right now any well-formed email can be invited. Restricting to
-  the university domain or to pre-approved lists is a product decision.
+- Confirm the production domain list for `PROVISIONING_ALLOWED_EMAIL_DOMAINS`. Exact-match
+  allowlisting is implemented, and an empty list is disabled.
 - Decide whether provisioning needs approval from a second person, and build an audit read
   path for the owners of the process.
 - Build the worker deployment (see below).

@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     openai_chat_model: str = "gpt-4o-mini"
 
+    # Provisioning: invitations are only sent to these email domains (exact match, comma-separated).
+    # Empty means provisioning is disabled and every request fails closed.
+    provisioning_allowed_email_domains: str = ""
+
     # Ingestion and retrieval limits. Retrieval values are starting points and
     # must be tuned against real campus documents.
     max_upload_bytes: int = 20 * 1024 * 1024
@@ -48,6 +52,14 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def provisioning_allowed_domains_set(self) -> frozenset[str]:
+        return frozenset(
+            domain.strip().lstrip("@").lower()
+            for domain in self.provisioning_allowed_email_domains.split(",")
+            if domain.strip()
+        )
 
     @property
     def allowed_origins_list(self) -> list[str]:
