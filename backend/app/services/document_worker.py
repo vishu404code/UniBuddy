@@ -86,7 +86,10 @@ async def process_document(
         await _finish_failed(sb, document, str(exc))
         return "failed"
     except (OpenAIError, SupabaseError, httpx.HTTPError) as exc:
-        logger.warning("Document %s processing attempt failed: %s", document_id, type(exc).__name__)
+        # str(exc) holds only a safe, key-free reason such as "OpenAI returned HTTP 401".
+        logger.warning(
+            "Document %s processing attempt failed: %s (%s)", document_id, type(exc).__name__, exc
+        )
         reason = "Processing failed temporarily; it will be retried"
         if isinstance(exc, OpenAIError):
             reason = "The AI service did not respond; processing will be retried"
