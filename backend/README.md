@@ -211,19 +211,19 @@ never from the model's text. Abstained responses set `escalation_available: true
 Scanned PDFs with no text layer are marked `failed`. OCR is not enabled. Any failure
 marks the document `failed`, so it is never left in `processing`.
 
-### Pending approvals before the live flow runs
+### Live setup status
 
-These need your explicit go-ahead. Nothing below has been applied.
+Done on the dev project: migration `20261108120700_backend_operations.sql` applied, and the private `documents` bucket created. Still needed before the live flow can run: `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY` in `backend/.env`.
 
-1. **Migration `20261108120700_backend_operations.sql`** (unapplied, in the repo). It adds:
+1. **Migration `20261108120700_backend_operations.sql`** (applied). It adds:
    - write and read-back grants for `service_role` on the tables the endpoints write to
      (`documents`, `document_chunks`, `conversations`, `messages`, `tickets`,
      `ticket_events`, `notifications`, `announcements`) and read grants on `campuses`,
      `departments`, and the ticket-number sequence;
    - a unique index on `tickets.source_message_id` for duplicate-ticket protection;
    - the `match_document_chunks` function, executable by `authenticated` only.
-2. **A private Storage bucket named `documents`.** Run once, from `backend/`, after
-   the values below are in `.env`. Load `.env` into the shell first:
+2. **A private Storage bucket named `documents`** (created). The command below is for
+   recreating it in another project, run from `backend/` with the values in `.env`. Load `.env` into the shell first:
 
    ```bash
    set -a; source .env; set +a
@@ -294,10 +294,8 @@ must be granted explicitly in the migrations. Nothing is granted to `anon`.
 | `authenticated` | `SELECT` on `campuses`, `departments`, `profiles`, `documents`, `document_chunks`, `conversations`, `messages`, `tickets`, `ticket_events`, `announcements`, `notifications` | Each table's RLS policy decides which rows are returned. The grant only allows the read to be attempted. |
 | `authenticated`, `service_role` | `EXECUTE` on the `app_*` helpers and `can_read_document()` | Called from RLS policies. |
 
-Until migration `20261108120700_backend_operations.sql` is approved and applied,
-`service_role` has only the grants above, so the upload, chat, ticket and announcement
-writes will fail with a permission error. That migration adds exactly the write and
-read-back grants the endpoints use (see "Pending approvals" above).
+Migration `20261108120700_backend_operations.sql` adds the write and read-back grants
+the endpoints use. It is applied to the dev project.
 
 Assumption to verify after applying: the secret key runs as the `service_role`
 Postgres role. If the profile lookup returns an empty result for a known user, check
