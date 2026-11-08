@@ -4,6 +4,7 @@ import AuthLayout from "./AuthLayout";
 import { useAuth } from "../auth/AuthContext";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import { dashboardPathForRole } from "../lib/roles";
+import { googleSignInRequest } from "../lib/googleSignIn";
 
 export default function LoginPage() {
   const { session, profile, refreshProfile } = useAuth();
@@ -15,6 +16,15 @@ export default function LoginPage() {
 
   if (session && profile && dashboardPathForRole(profile.role)) {
     return <Navigate to={dashboardPathForRole(profile.role)} replace />;
+  }
+
+  async function handleGoogle() {
+    if (!supabaseConfigured) return setError("Sign-in is not configured for this environment.");
+    setError(null);
+    const { error: oauthError } = await supabase.auth.signInWithOAuth(
+      googleSignInRequest(window.location.origin),
+    );
+    if (oauthError) setError("Google sign-in is not available right now. Use your email and password.");
   }
 
   async function handleSubmit(event) {
@@ -54,6 +64,8 @@ export default function LoginPage() {
         {error && <p role="alert" className="error">{error}</p>}
         <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
       </form>
+      <p className="links">or</p>
+      <button type="button" onClick={handleGoogle} disabled={busy}>Continue with Google</button>
       <p className="links">
         <Link to="/forgot-password">Forgot password?</Link> · <Link to="/register">Request access as a student</Link>
       </p>
