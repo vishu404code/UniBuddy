@@ -9,6 +9,7 @@ from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
     archive_document,
+    require_university_wide_permission,
     processing_note,
     publish_document,
     replace_document,
@@ -48,6 +49,7 @@ async def upload(
 ):
     """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}."""
     _check_form(visibility, scope)
+    require_university_wide_permission(session.user, scope)
     data = await file.read(settings.max_upload_bytes + 1)
     row = await upload_document(
         sb=sb,

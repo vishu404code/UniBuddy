@@ -64,12 +64,12 @@ passed. It does not mean the live project was tested.
 
 ### Blocked (cannot be verified without the items listed)
 
-- **Migration `20261109130000`** (Super Admin, bootstrap, super-admin provisioning, account list): tested locally, not applied to dev, needs your approval
+- **Applied to dev (approved):** migrations `20261109120000` and `20261109130000`. Verified read-only: the seeded 8 profiles and 8 auth users are unchanged, no registration rows, no Super Admin, the bootstrap function runs only as the owner.
+- **Migration `20261109140000`** (university-wide scope trigger): tested locally, not applied, needs your approval
 - **Super Admin account**: not created. Needs the bootstrap runbook, after your approval of the invitation
 - **Abuse protection for the public registration endpoint** (host rate limit or CAPTCHA): not built
 - **Supabase email templates, redirects and OTP expiry**: dashboard settings, not configured yet
 - **Live invitation** to `yash.g26398@nst.rishihood.edu.in`: needs your separate go-ahead, and the Supabase Auth settings above
-- **Migration `20261109120000`** (registration requests): tested locally, not applied to dev, needs your approval
 
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
 - **Live provisioning and OpenAI-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the OpenAI key, the PDF, the invite email setup and hosting
@@ -530,6 +530,13 @@ production build. **Not verified:** any live invitation, email delivery, the ema
 the password-setting path. Each needs your go-ahead and the settings above.
 
 ## Roles, invitations and approvals (implemented)
+
+**University-wide content.** Only Authority may create, publish, replace or archive
+university-wide documents. Faculty can't set that scope, so they can't publish it. The API checks
+this in the document service and the upload route. Migration `20261109140000_university_scope_guard.sql`
+adds a database trigger with the same rule (unapplied, approval needed). Super Admin can't upload
+documents, because uploading needs document access, and Super Admin has no academic-record access.
+That is an open question.
 
 **Role policy as built**
 

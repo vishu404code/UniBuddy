@@ -70,6 +70,7 @@ async def _store_and_queue(
     replaces_document_id: UUID | None,
     content_type: str | None,
 ) -> dict[str, Any]:
+    require_university_wide_permission(uploader, scope)
     validate_upload(data, content_type, title, max_bytes)
     if uploader.campus_id is None:
         raise DocumentForbidden("Your account has no campus assigned")
@@ -141,6 +142,18 @@ async def _load_visible_document(sb: SupabaseClient, access_token: str, document
     return rows[0]
 
 
+UNIVERSITY_WIDE_ROLES = frozenset({"authority", "super_admin"})
+
+
+def require_university_wide_permission(user: CurrentUser, scope: str) -> None:
+    """Only authority (and Super Admin) may create, publish or archive university-wide content.
+
+    The database enforces the same rule with a trigger on documents, so this is not the only check.
+    """
+    if scope == "university_wide" and user.role not in UNIVERSITY_WIDE_ROLES:
+        raise DocumentForbidden("Only authority can handle university-wide documents")
+
+
 def _can_manage(user: CurrentUser, document: dict[str, Any]) -> bool:
     if str(document["uploaded_by"]) == str(user.id):
         return True
@@ -163,6 +176,7 @@ async def replace_document(
     original = await _load_visible_document(sb, access_token, document_id)
     if not _can_manage(user, original):
         raise DocumentForbidden("Only the uploader or same-campus authority can replace this document")
+    require_university_wide_permission(user, original["scope"])
     if original["publication_status"] == "archived":
         raise DocumentConflict("Archived documents cannot be replaced")
     if original["processing_status"] != "ready":
@@ -205,6 +219,7 @@ async def archive_document(
     document = await _load_visible_document(sb, access_token, document_id)
     if not _can_manage(user, document):
         raise DocumentForbidden("Only the uploader or same-campus authority can archive this document")
+    require_university_wide_permission(user, document["scope"])
     if document["publication_status"] == "archived":
         return document
     updated = await sb.update_service(
@@ -225,6 +240,7 @@ async def publish_document(
     document = await _load_visible_document(sb, access_token, document_id)
     if user.role == "faculty" and str(document["uploaded_by"]) != str(user.id):
         raise DocumentForbidden("Only the uploader can publish a faculty draft")
+    require_university_wide_permission(user, document["scope"])
     if document["processing_status"] != "ready":
         raise DocumentConflict("Document is not ready to publish")
     if document["publication_status"] != "draft":
