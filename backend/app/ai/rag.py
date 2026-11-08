@@ -8,6 +8,7 @@ ABSTAIN_MESSAGE = (
     "You can send this question to the relevant faculty."
 )
 INSUFFICIENT_MARKER = "INSUFFICIENT_EVIDENCE"
+CITATION_PATTERN = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 
 SYSTEM_PROMPT = (
     "You answer questions for a university campus assistant. Use only the numbered SOURCES. "
@@ -82,7 +83,9 @@ async def answer_question(question: str, evidence: list[Evidence], generator: Te
     if not raw or INSUFFICIENT_MARKER in raw:
         return abstain()
 
-    cited_numbers = sorted({int(n) for n in re.findall(r"\[(\d+)\]", raw) if 1 <= int(n) <= len(evidence)})
+    # Accept [1], [1][2] and [1, 2]; a model often writes the last form.
+    cited = {int(n) for group in CITATION_PATTERN.findall(raw) for n in re.findall(r"\d+", group)}
+    cited_numbers = sorted(n for n in cited if 1 <= n <= len(evidence))
     if not cited_numbers:
         return abstain()
 

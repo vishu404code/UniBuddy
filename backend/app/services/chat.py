@@ -1,13 +1,21 @@
+import logging
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
-from app.ai.gemini_client import GeminiClient
+from app.ai.gemini_client import AIServiceError, GeminiClient
 from app.ai.rag import Answer, answer_question, select_evidence
 from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
 from app.services.supabase_client import SupabaseClient, SupabaseError
 
 MAX_TITLE_LENGTH = 60
+# Saved as the answer when the AI service fails. It has no citations, so the student can
+# still send the question to faculty. The question itself is never lost.
+UNAVAILABLE_MESSAGE = (
+    "UniBuddy could not check the documents just now. Try again later, "
+    "or send this question to faculty."
+)
+logger = logging.getLogger("unibuddy.chat")
 
 
 @dataclass(frozen=True)
@@ -62,18 +70,22 @@ async def ask_question(
         [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
     )
 
-    query_vector = await ai.embed_query(question)
-    rows = await sb.rpc_as_user(
-        access_token,
-        "match_document_chunks",
-        {
-            "query_embedding": _vector_literal(query_vector),
-            "match_count": top_k,
-            "min_similarity": min_similarity,
-        },
-    )
-    evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
-    answer = await answer_question(question, evidence, ai)
+    try:
+        query_vector = await ai.embed_query(question)
+        rows = await sb.rpc_as_user(
+            access_token,
+            "match_document_chunks",
+            {
+                "query_embedding": _vector_literal(query_vector),
+                "match_count": top_k,
+                "min_similarity": min_similarity,
+            },
+        )
+        evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
+        answer = await answer_question(question, evidence, ai)
+    except AIServiceError as exc:
+        logger.warning("Question %s could not be answered: %s", user_message_id, exc)
+        answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)
 
     assistant_message_id = uuid4()
     await sb.insert_service(

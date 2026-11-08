@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     # embedding model, and its output is fixed at 1536 dimensions to match the database.
     gemini_api_key: str | None = None
     gemini_embedding_model: str = "gemini-embedding-001"
-    gemini_chat_model: str = "gemini-2.5-flash"
+    # gemini-2.5-flash returns 404 for this key's generateContent calls, so it is not used.
+    gemini_chat_model: str = "gemini-3.5-flash-lite"
 
     # Provisioning: invitations are only sent to these email domains (exact match, comma-separated).
     # Empty means provisioning is disabled and every request fails closed.

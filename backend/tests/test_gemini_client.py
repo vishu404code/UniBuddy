@@ -144,6 +144,6 @@ def test_default_models_and_no_openai_settings():
     settings = Settings(_env_file=None)
 
     assert settings.gemini_embedding_model == "gemini-embedding-001"
-    assert settings.gemini_chat_model == "gemini-2.5-flash"
+    assert settings.gemini_chat_model == "gemini-3.5-flash-lite"
     assert settings.gemini_api_key is None
     assert not hasattr(settings, "openai_api_key")

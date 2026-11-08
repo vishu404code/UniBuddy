@@ -58,6 +58,34 @@ passed. It does not mean the live project was tested.
 - Publishable key accepted: six anonymous read or RPC requests (profiles, documents, campuses, both staff and management RPCs, audit table) each returned `42501` (permission denied for `anon`). Anonymous access is closed.
 - Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
+### Verified status (2026-11-09)
+
+**Verified by automated tests, and by minimal live or read-only checks**
+
+- Backend tests: 218 pass. Frontend tests: 28 pass. The frontend production build succeeds.
+- Gemini embeddings: a synthetic embedding returned 1536 dimensions. This was one live call.
+- Gemini answers: a synthetic answer through the app's client returned text with `gemini-3.5-flash-lite`. This was one live call. `gemini-2.5-flash` and `gemini-2.5-flash-lite` returned 404 for this key, so neither is the default.
+- The Leave of Absence Policy is published as university-wide and Ready: 10 pages, 23 chunks, all 1536-dimensional. The stored file matches the source PDF. This was read-only.
+- The hosted API answers at `https://unibuddy-backend-demo.onrender.com/api/v1/health`. This was read-only. Its code version and whether it holds `GEMINI_API_KEY` were not checked.
+- Chat (code and tests): answers come only from published documents, cite real sources and pages, and abstain without evidence. If the AI service fails, the question is saved with a reply that offers to send it to faculty, and it has no citations.
+- Tickets (code and tests): taking, status changes, replies and notifications follow the role and status rules.
+
+**Not verified**
+
+- A real Student login, and student chat end to end in a browser: a cited answer, an unanswerable question, forwarding, and a faculty reply.
+- Google sign-in. The Google Cloud and Supabase setup is not done.
+- The Vercel frontend. It isn't deployed.
+- The hosted backend's code version and its Gemini settings.
+- OCR, and capacity for 3,000 or more users.
+
+**Actions for you**
+
+1. Restart the local API so the new default answer model loads.
+2. Student account: from **Authority → Invitations**, invite one university mailbox you control, then set the password from the email link. You may send the invitation yourself.
+3. Google sign-in: follow the Google Cloud and Supabase checklist. Keep the client secret out of chat and out of frontend code.
+4. Hosted API: in Render, set `GEMINI_API_KEY` as a private variable, set `GEMINI_CHAT_MODEL=gemini-3.5-flash-lite`, and redeploy, if you want the hosted API to answer questions.
+5. Hosted frontend: import the repo in Vercel with root directory `frontend`, if you want a hosted frontend.
+
 ### Not applied
 
 - Nothing pending on the dev project. Live provisioning is not yet exercised; see the blocked items
@@ -72,7 +100,7 @@ passed. It does not mean the live project was tested.
 - **Live invitation** to `yash.g26398@nst.rishihood.edu.in`: needs your separate go-ahead, and the Supabase Auth settings above
 
 - **Gemini key** (`GEMINI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
-- **Live provisioning and Gemini-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the Gemini key, the PDF, the invite email setup and hosting
+- **Live provisioning and Gemini-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); see **Verified status (2026-11-09)** below for the current blockers
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
 - **Live provisioning (invite sends a real email)**: needs the publishable key for the authority session, the SMTP and redirect setup described in the one-batch checklist, a controlled inbox on an allowlisted domain. The domain allowlist is now implemented; the policy beyond it is your call
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
