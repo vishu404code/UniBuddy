@@ -196,6 +196,28 @@ To apply them, once approved:
 
 The first migration enables pgvector (`create extension if not exists vector`).
 
+### Table privileges
+
+The project has the Data API on, automatic table exposure off, and RLS on. New
+tables are not exposed by default, so every privilege the backend or users need
+must be granted explicitly in the migrations. Nothing is granted to `anon`.
+
+| Role | Privilege | Why |
+|---|---|---|
+| `service_role` (used by the secret key) | `USAGE` on schema `public` | Lets the backend reach the schema through the Data API. |
+| `service_role` | `SELECT` on `profiles` | `/auth/me` profile lookup. RLS is bypassed for this role. |
+| `authenticated` (signed-in users) | `USAGE` on schema `public` | Needed for signed-in reads under RLS. |
+| `authenticated` | `SELECT` on `campuses`, `departments`, `profiles`, `documents`, `document_chunks`, `conversations`, `messages`, `tickets`, `ticket_events`, `announcements`, `notifications` | Each table's RLS policy decides which rows are returned. The grant only allows the read to be attempted. |
+| `authenticated`, `service_role` | `EXECUTE` on the `app_*` helpers and `can_read_document()` | Called from RLS policies. |
+
+The backend does not write to any table yet, so `service_role` has no write grants.
+Each later milestone adds only the grants its endpoints need. Writes for tickets, chat,
+announcements and so on will get grants when those endpoints are built.
+
+Assumption to verify after applying: the secret key runs as the `service_role`
+Postgres role. If the profile lookup returns an empty result for a known user, check
+that assumption first, and then check this table.
+
 ## Project layout
 
 ```

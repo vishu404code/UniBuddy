@@ -34,6 +34,7 @@ create policy "campuses_select_authenticated" on public.campuses
 create policy "departments_select_authenticated" on public.departments
   for select to authenticated using (true);
 
-grant usage on schema public to anon, authenticated;
+-- No anon grants: the Data API does not expose these tables to anon.
+grant usage on schema public to authenticated, service_role;
 grant select on public.campuses to authenticated;
 grant select on public.departments to authenticated;

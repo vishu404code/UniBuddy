@@ -109,3 +109,6 @@ create policy "profiles_select" on public.profiles
   );
 
 grant select on public.profiles to authenticated;
+-- The backend's /auth/me lookup runs with the secret key as service_role.
+-- Only SELECT is granted; profile writes stay out of the API for now.
+grant select on public.profiles to service_role;
