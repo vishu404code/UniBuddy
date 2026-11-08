@@ -22,6 +22,7 @@ passed. It does not mean the live project was tested.
 - Provisioning: authority invites students and faculty into its own campus; audit trail
 - Build: `pyproject.toml` with `uv.lock`; `requirements.txt` kept for pip deployment
 - Provisioning safeguards: the email domain must be on the server-side allowlist
+- Authentication UI and account flow (React + Vite in `frontend/`): login, registration request, invitation acceptance, set-password, forgot-password, and one dashboard per role
   (`PROVISIONING_ALLOWED_EMAIL_DOMAINS`, exact match). An empty list fails closed with `503`.
   The campus and role come from the authority's profile and the endpoint, never from the
   client. Management cannot provision.
@@ -29,6 +30,9 @@ passed. It does not mean the live project was tested.
 ### Locally verified (no live project)
 
 - Provisioning domain allowlist: exact match, subdomains refused, empty list fails closed,
+  config parsing (`tests/test_provisioning.py`)
+- Registration intake: domain allowlist, fail closed, identical receipt for repeat requests, no role or campus accepted (`tests/test_registration.py`, `tests/sql/registration_test.sql`)
+- Frontend: role routing, domain and password checks, API error handling (13 unit tests); production build succeeds with no key-shaped values in the output; a signed-out visitor is redirected from a protected route to `/login` in the browser
   config parsing (`tests/test_provisioning.py`)
 
 - 158 pytest tests pass under pip and under `uv`, on Python 3.11 and 3.14
@@ -58,6 +62,10 @@ passed. It does not mean the live project was tested.
 - Nothing pending on the dev project. Live provisioning is not yet exercised; see the blocked items
 
 ### Blocked (cannot be verified without the items listed)
+
+- **Authentication decisions** (see the questions in the report): Super Admin; inviting authority and management accounts; approving student registrations and campus routing; abuse protection for the public registration endpoint; the Supabase email templates and OTP expiry
+- **Live invitation** to `yash.g26398@nst.rishihood.edu.in`: needs your separate go-ahead, and the Supabase Auth settings above
+- **Migration `20261109120000`** (registration requests): tested locally, not applied to dev, needs your approval
 
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
 - **Live provisioning and OpenAI-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the OpenAI key, the PDF, the invite email setup and hosting
@@ -471,6 +479,50 @@ sets it. Management reporting uses aggregates only. Management cannot provision 
 - Decide whether provisioning needs approval from a second person, and build an audit read
   path for the owners of the process.
 - Build the worker deployment (see below).
+
+## Authentication: invitations, registration and the React app
+
+**Implemented**
+
+- **Frontend:** a separate React + Vite app in `frontend/`. Pages: `/login`, `/register`,
+  `/accept-invitation`, `/set-password`, `/forgot-password`, and one dashboard per role. The
+  friend-owned root `index.html` is untouched. See `frontend/README.md`.
+- **Sign-in:** Supabase Auth email and password. FastAPI verifies the token and loads the
+  role and campus from `profiles`. `GET /auth/me` is the source of truth for the redirect.
+- **Invitations:** `POST /provisioning/students` and `POST /provisioning/faculty`. Only an
+  authority user can call them, and only for its own campus. The email must be on
+  `PROVISIONING_ALLOWED_EMAIL_DOMAINS`. The invitation itself is a Supabase Auth invite.
+- **Student registration request:** `POST /auth/registrations`. Public, restricted to the
+  allowlisted domain, returns the same answer whether or not the address is known, and grants
+  nothing. Stored in `registration_requests` (migration `20261109120000`, unapplied).
+
+**Not implemented (waiting on decisions below)**
+
+- Approving a registration request, which is what turns a request into an invitation.
+- Inviting authority or management accounts, and creating Super Admin.
+
+**Supabase Auth settings (dashboard, once you're ready to test)**
+
+These are dashboard steps. Enter SMTP credentials only in the dashboard.
+
+1. **Site URL:** `http://localhost:5173`.
+2. **Redirect URLs:** add `http://localhost:5173/accept-invitation`.
+3. **Invite email template.** The default template sends tokens in the URL fragment, which the
+   accept page can't read. Use a link that carries the token hash instead:
+   `{{ .SiteURL }}/accept-invitation?token_hash={{ .TokenHash }}&type=invite`
+   (verify the variable names against the dashboard's template help).
+4. **Reset email template:** the same form with `type=recovery`.
+5. **Expiry:** set the email link expiry to 24 hours or less, to meet the time-limited rule.
+   Supabase tokens are single-use.
+6. **Password policy:** set the minimum length to 12, to match the UI.
+7. **SMTP:** choose the built-in mailer for tests or your own provider. The built-in mailer
+   is rate-limited and may only reach project-team addresses.
+8. **Backend CORS:** add `http://localhost:5173` to `ALLOWED_ORIGINS` in `backend/.env`.
+
+**Verified locally:** the SQL for the registration table (`tests/sql/registration_test.sql`),
+the intake service and route (173 backend tests), and the frontend's unit tests and
+production build. **Not verified:** any live invitation, email delivery, the email links, or
+the password-setting path. Each needs your go-ahead and the settings above.
 
 ## Open decisions
 

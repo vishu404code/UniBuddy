@@ -11,3 +11,8 @@ backend/__pycache__/
 backend/**/__pycache__/
 *.pyc
 .pytest_cache/
+
+# Frontend local settings (never commit)
+frontend/.env.local
+frontend/.env.*.local
+frontend/dist/
