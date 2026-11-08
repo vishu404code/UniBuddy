@@ -32,22 +32,23 @@ passed. It does not mean the live project was tested.
 
 ### Live verified (Mumbai dev project, ref in `.env`)
 
-- Migrations `20261108120000` to `20261108120800` applied; the seeded RLS test data is kept
+- Migrations `20261108120000` to `20261108120900` applied; the seeded RLS test data is kept
 - RLS visibility matrix: 80/80 on the live project after migration 0800
 - Function privileges: `service_role`, `authenticated` and `anon` match the intended grants
 - `staff_dashboard_stats` and `management_ticket_stats` return real data
 - Private `documents` bucket exists; a probe upload and a service-key insert succeeded, and the probes were removed
+- Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
-### Not applied, pending your approval
+### Not applied
 
-- Migration `20261108120900_campus_provisioning.sql`: tested locally, not applied to dev
+- Nothing pending on the dev project. Live provisioning is not yet exercised; see the blocked items
 
 ### Blocked (cannot be verified without the items listed)
 
 - **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
 - **Publishable key** (`SUPABASE_PUBLISHABLE_KEY`): user-scoped reads over HTTP with a real session
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
-- **Live provisioning**: needs migration 0900 approved, an email policy, and a controlled test inbox, because an invite sends a real email
+- **Live provisioning**: an invite sends a real email. It needs (a) an authority test session, which needs the publishable key, or a known password set on a seeded authority user; (b) Supabase SMTP and the redirect URLs configured for the invite (Authentication → Emails and URL Configuration); (c) a controlled inbox you own; and (d) an email policy decision
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
 - **Deployment**: no hosting chosen, no Render service, and no worker runtime. The worker plan is in the README
 - **Capacity (3,000+ daily users)**: not verified. Needs a load test against a deployed environment
