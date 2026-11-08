@@ -25,7 +25,7 @@ ALL_SIGNED_IN = ("student", "faculty", "authority", "management")
 
 def _to_out(row: dict) -> DocumentOut:
     data = dict(row)
-    data["processing_note"] = processing_note(row, openai_configured=bool(settings.openai_api_key))
+    data["processing_note"] = processing_note(row, ai_configured=bool(settings.gemini_api_key))
     return DocumentOut(**data)
 
 

@@ -255,8 +255,8 @@ async def publish_document(
     return published
 
 
-def processing_note(document: dict[str, Any], openai_configured: bool) -> str | None:
-    if document["processing_status"] == "pending" and not openai_configured:
+def processing_note(document: dict[str, Any], ai_configured: bool) -> str | None:
+    if document["processing_status"] == "pending" and not ai_configured:
         return "Waiting for the AI service to be configured before this document can be processed"
     if document["processing_status"] == "failed":
         return document.get("last_error")

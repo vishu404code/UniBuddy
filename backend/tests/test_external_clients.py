@@ -3,7 +3,6 @@ import json
 import httpx
 import pytest
 
-from app.ai.openai_client import EMBEDDING_DIMENSIONS, OpenAIClient, OpenAIError
 from app.services.supabase_client import SupabaseClient, SupabaseError
 
 SUPABASE = "https://test-project.supabase.co"
@@ -12,71 +11,8 @@ PUBLISHABLE = "sb_publishable_test-only-value"
 USER_TOKEN = "eyJ.test.user-token"
 
 
-def _openai(handler):
-    return OpenAIClient(
-        api_key="sk-test-only",
-        base_url="https://api.openai.test/v1",
-        embedding_model="text-embedding-3-small",
-        chat_model="gpt-test",
-        transport=httpx.MockTransport(handler),
-    )
-
-
 def _supabase(handler):
     return SupabaseClient(SUPABASE, SECRET, PUBLISHABLE, transport=httpx.MockTransport(handler))
-
-
-@pytest.mark.asyncio
-async def test_embed_returns_vectors_in_input_order_and_checks_dimensions():
-    def handler(request):
-        body = json.loads(request.content)
-        assert body["model"] == "text-embedding-3-small"
-        data = [
-            {"index": i, "embedding": [float(i)] * EMBEDDING_DIMENSIONS}
-            for i in reversed(range(len(body["input"])))
-        ]
-        return httpx.Response(200, json={"data": data})
-
-    vectors = await _openai(handler).embed(["a", "b"])
-
-    assert vectors[0][0] == 0.0 and vectors[1][0] == 1.0
-
-
-@pytest.mark.asyncio
-async def test_embed_rejects_wrong_dimension():
-    def handler(request):
-        return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.1, 0.2]}]})
-
-    with pytest.raises(OpenAIError, match="dimensions"):
-        await _openai(handler).embed(["a"])
-
-
-@pytest.mark.asyncio
-async def test_embed_maps_http_errors_without_leaking_body():
-    def handler(request):
-        return httpx.Response(401, json={"error": {"message": "bad key sk-secret"}})
-
-    with pytest.raises(OpenAIError) as info:
-        await _openai(handler).embed(["a"])
-    assert "sk-secret" not in str(info.value)
-    assert "401" in str(info.value)
-
-
-@pytest.mark.asyncio
-async def test_complete_sends_system_and_user_messages_at_zero_temperature():
-    seen = {}
-
-    def handler(request):
-        seen["body"] = json.loads(request.content)
-        seen["auth"] = request.headers["authorization"]
-        return httpx.Response(200, json={"choices": [{"message": {"content": "Pay in week two [1]."}}]})
-
-    text = await _openai(handler).complete("system text", "user text")
-
-    assert text == "Pay in week two [1]."
-    assert seen["body"]["temperature"] == 0
-    assert seen["body"]["messages"][0] == {"role": "system", "content": "system text"}
-    assert seen["auth"] == "Bearer sk-test-only"
 
 
 @pytest.mark.asyncio

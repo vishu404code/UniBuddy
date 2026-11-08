@@ -147,7 +147,7 @@ async def test_unexpected_error_requeues_instead_of_crashing_the_worker(monkeypa
     async def boom(*args, **kwargs):
         raise RuntimeError("bug in a code path")
 
-    monkeypatch.setattr(ai, "embed", boom)
+    monkeypatch.setattr(ai, "embed_documents", boom)
 
     status = await _process(sb, ai, doc_id)
 
@@ -181,7 +181,7 @@ async def test_worker_does_not_claim_while_the_ai_key_is_missing(monkeypatch):
         return await original(function, payload)
 
     sb.rpc_service = counting_rpc
-    monkeypatch.setattr(settings, "openai_api_key", None)
+    monkeypatch.setattr(settings, "gemini_api_key", None)
     monkeypatch.setattr(settings, "document_worker_poll_seconds", 0.01)
 
     with pytest.raises(asyncio.TimeoutError):
@@ -203,7 +203,7 @@ async def test_claim_failure_does_not_stop_the_loop(monkeypatch):
         return []
 
     sb.rpc_service = flaky_rpc
-    monkeypatch.setattr(settings, "openai_api_key", "sk-test-only")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-only-key")
     monkeypatch.setattr(settings, "document_worker_poll_seconds", 0.01)
 
     with pytest.raises(asyncio.TimeoutError):

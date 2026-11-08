@@ -40,7 +40,7 @@ passed. It does not mean the live project was tested.
 - Migrations `20261108120000` to `20261108120900` parse under PostgreSQL's grammar
 - Lifecycle and provisioning SQL assertions pass on PostgreSQL 17 with pgvector (`tests/sql/run_local_db_tests.sh`)
 - RLS visibility matrix: 80/80 on a local database with the final policies
-- The server starts with the worker lifespan, and the worker idles without an OpenAI key
+- The server starts with the worker lifespan, and the worker idles without a Gemini key
 
 ### Live verified (Mumbai dev project, ref in `.env`)
 
@@ -71,8 +71,8 @@ passed. It does not mean the live project was tested.
 - **Supabase email templates, redirects and OTP expiry**: dashboard settings, not configured yet
 - **Live invitation** to `yash.g26398@nst.rishihood.edu.in`: needs your separate go-ahead, and the Supabase Auth settings above
 
-- **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
-- **Live provisioning and OpenAI-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the OpenAI key, the PDF, the invite email setup and hosting
+- **Gemini key** (`GEMINI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
+- **Live provisioning and Gemini-dependent flow**: see the one-batch checklist. The signed-in session blocker is resolved (below); the remaining blockers are the Gemini key, the PDF, the invite email setup and hosting
 - **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
 - **Live provisioning (invite sends a real email)**: needs the publishable key for the authority session, the SMTP and redirect setup described in the one-batch checklist, a controlled inbox on an allowlisted domain. The domain allowlist is now implemented; the policy beyond it is your call
 - **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
@@ -86,7 +86,7 @@ Secrets go into `backend/.env` or the Supabase dashboard only. Never paste them 
 
 1. **Env values in `backend/.env`.** Add these four lines, with real values:
    - `SUPABASE_PUBLISHABLE_KEY`: Project Settings → API Keys → publishable key.
-   - `OPENAI_API_KEY`: your OpenAI key.
+   - `GEMINI_API_KEY`: your Google Gemini API key from Google AI Studio.
    - `PROVISIONING_ALLOWED_EMAIL_DOMAINS`: the domain your controlled test inbox uses, for
      example `yourdomain.test`. Use exact domains, comma-separated. Leave it empty and
      provisioning stays disabled.
@@ -171,9 +171,9 @@ pytest
 ```
 
 Expected: 158 tests pass. The tests use a locally generated signing key, in-memory
-Supabase and OpenAI test doubles, and real PDFs generated with PyMuPDF. They make no
+Supabase and Gemini test doubles, and real PDFs generated with PyMuPDF. They make no
 network calls. The HTTP client tests use mocked transports, so they check request
-shape, not live Supabase or OpenAI behaviour.
+shape, not live Supabase or Gemini behaviour.
 
 ## Authentication and authorization
 
@@ -341,8 +341,12 @@ or a second worker never processes the same document twice:
 - A PDF that cannot be read, or has no text layer, fails at once with a reason. A temporary
   failure (AI service, storage, database) returns the document to the queue. After
   `DOCUMENT_MAX_ATTEMPTS` (default 3) it fails with the reason recorded in `last_error`.
-- With no `OPENAI_API_KEY`, uploads are still accepted. Documents wait in the queue, and
-  `processing_note` says why. The worker does not call OpenAI, and nothing is faked.
+- With no `GEMINI_API_KEY`, uploads are still accepted. Documents wait in the queue, and
+  `processing_note` says why. The worker does not call Gemini, and nothing is faked.
+- **Embedding space.** Document chunks and questions both use `gemini-embedding-001` at 1536 dimensions.
+  Chunks are embedded as `RETRIEVAL_DOCUMENT` and questions as `RETRIEVAL_QUERY`. Every processing run
+  re-embeds the whole document, so one document never mixes models. Changing the embedding model or
+  dimension later means re-embedding every document. Never compare vectors from two models.
 
 Run the worker in the web process (the default, when `DOCUMENT_WORKER_ENABLED=true`), or as
 its own process, which is the better option for Render:
@@ -399,9 +403,9 @@ staff dashboard and management aggregate return real data for the seeded users.
 
 **Live checks not yet run, and why:**
 
-1. Live OpenAI calls (embeddings and answers). Blocked: no `OPENAI_API_KEY` yet.
+1. Live Gemini calls (embeddings and answers). Blocked: no `GEMINI_API_KEY` yet.
 2. The upload-to-answer flow on the dev project: upload, worker processing, publish, a
-   cited answer, an abstention, and a forward to faculty. Blocked: needs the OpenAI key,
+   cited answer, an abstention, and a forward to faculty. Blocked: needs the Gemini key,
    and real campus PDFs for meaningful answers.
 3. User-scoped reads through the publishable key with a real signed-in session.
    Blocked: no `SUPABASE_PUBLISHABLE_KEY` yet. Until then the RLS checks used SQL role
@@ -600,10 +604,10 @@ pass. The live steps need the items marked as blockers.
 **Prerequisites (you do these; never paste secrets into chat)**
 
 1. Approve the two pending migrations, `20261109120000` and `20261109130000`. Verified dry run: exactly those two.
-2. In `backend/.env`, uncomment and set `OPENAI_API_KEY` (it is currently commented out). Add
+2. In `backend/.env`, set `GEMINI_API_KEY` (an older `OPENAI_API_KEY` line is no longer used). Add
    `http://localhost:5173` to `ALLOWED_ORIGINS`.
 3. Create `frontend/.env.local` from `frontend/.env.example`, with the publishable key and the API URL.
-4. Give me one approved, public campus PDF (path). Its text will be sent to OpenAI for embeddings and,
+4. Give me one approved, public campus PDF (path). Its text will be sent to Google Gemini for embeddings and,
    when answering, excerpts will be sent for generation. Approve that explicitly.
 5. Approve the controlled invitations (see the report for the addresses and the sequence). Invitees set
    their own passwords. No seeded account's password is changed.
@@ -619,9 +623,9 @@ pass. The live steps need the items marked as blockers.
    button. Send it, choosing a department on the student's campus.
 6. Sign in as faculty. Open the ticket, take it, reply, and move it to In progress or Resolved.
 
-**Cost and data notes.** Each document is sent to OpenAI for embeddings once. Each question is
-embedded, and the relevant excerpts are sent for generation. Set a monthly spend limit on the OpenAI
-account first. Keep `DOCUMENT_WORKER_ENABLED=true` for the demo, and upload only the approved PDF, because
+**Cost and data notes.** Each document is sent to Google Gemini for embeddings once. Each question is
+embedded, and the relevant excerpts are sent for generation. Set a spend limit on the Google Cloud or AI Studio
+project first. Keep `DOCUMENT_WORKER_ENABLED=true` for the demo, and upload only the approved PDF, because
 the worker processes every queued upload with the key.
 
 ## Supabase dashboard checklist (click by click)
@@ -712,7 +716,7 @@ backend/
     ai/
       pdf_extractor.py            PyMuPDF page-wise text extraction
       chunking.py                 Page-aware chunking
-      openai_client.py            Embeddings and chat completions (server-side only)
+      gemini_client.py            Gemini embeddings and answers (server-side only)
       rag.py                      Evidence selection, prompt, citation and abstention rules
     middleware/auth.py            Session and role dependencies
     routes/                       One module per area: auth, documents, chat, tickets,
@@ -723,7 +727,7 @@ backend/
       token_verifier.py           Supabase JWT verification (JWKS, ES256/RS256)
       authorization.py            Campus access rule
       supabase_client.py          PostgREST, RPC and Storage (secret or user-scoped calls)
-      providers.py                Cached Supabase and OpenAI clients
+      providers.py                Cached Supabase and Gemini clients
       documents.py chat.py tickets.py announcements.py notifications.py dashboards.py
     repositories/profiles.py      Profile lookup via Supabase REST
     schemas/                      Pydantic request and response models, incl. Page envelope

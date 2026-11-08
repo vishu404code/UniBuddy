@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
-from app.ai.openai_client import OpenAIClient
+from app.ai.gemini_client import GeminiClient
 from app.ai.rag import Answer, answer_question, select_evidence
 from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
@@ -35,7 +35,7 @@ async def _conversation_for_user(sb: SupabaseClient, user: CurrentUser, conversa
 async def ask_question(
     *,
     sb: SupabaseClient,
-    ai: OpenAIClient,
+    ai: GeminiClient,
     user: CurrentUser,
     access_token: str,
     question: str,
@@ -62,7 +62,7 @@ async def ask_question(
         [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
     )
 
-    [query_vector] = await ai.embed([question])
+    query_vector = await ai.embed_query(question)
     rows = await sb.rpc_as_user(
         access_token,
         "match_document_chunks",

@@ -8,21 +8,20 @@ once; the database claim uses SKIP LOCKED, so each document is taken by one work
 import asyncio
 import logging
 
-from app.ai.openai_client import OpenAIClient
+from app.ai.gemini_client import GeminiClient
 from app.config import settings
 from app.services.document_worker import run_forever
 from app.services.supabase_client import SupabaseClient
 
 
-def build_clients() -> tuple[SupabaseClient, OpenAIClient | None]:
+def build_clients() -> tuple[SupabaseClient, GeminiClient | None]:
     sb = SupabaseClient(settings.supabase_url, settings.supabase_secret_key, settings.supabase_publishable_key)
     ai = None
-    if settings.openai_api_key:
-        ai = OpenAIClient(
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            embedding_model=settings.openai_embedding_model,
-            chat_model=settings.openai_chat_model,
+    if settings.gemini_api_key:
+        ai = GeminiClient(
+            api_key=settings.gemini_api_key,
+            embedding_model=settings.gemini_embedding_model,
+            chat_model=settings.gemini_chat_model,
         )
     return sb, ai
 
@@ -32,7 +31,7 @@ async def main() -> None:
         raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY must be set")
     sb, ai = build_clients()
     if ai is None:
-        logging.getLogger("unibuddy.worker").warning("OPENAI_API_KEY is not set; the worker will idle")
+        logging.getLogger("unibuddy.worker").warning("GEMINI_API_KEY is not set; the worker will idle")
     await run_forever(sb, ai)
 
 

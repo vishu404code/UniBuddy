@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from app.ai.chunking import chunk_pages
-from app.ai.openai_client import OpenAIClient, OpenAIError
+from app.ai.gemini_client import AIServiceError, GeminiClient
 from app.ai.pdf_extractor import PdfProcessingError, extract_pages
 from app.config import settings
 from app.services.supabase_client import SupabaseClient, SupabaseError
@@ -40,7 +40,7 @@ async def _requeue_or_fail(sb: SupabaseClient, document: dict[str, Any], reason:
 async def process_document(
     *,
     sb: SupabaseClient,
-    ai: OpenAIClient,
+    ai: GeminiClient,
     document: dict[str, Any],
     bucket: str,
     chunk_max_chars: int,
@@ -57,7 +57,7 @@ async def process_document(
         data = await sb.download_object(bucket, document["storage_path"])
         extracted = extract_pages(data)
         chunks = chunk_pages(extracted.pages, chunk_max_chars, chunk_overlap_chars)
-        vectors = await ai.embed([chunk.content for chunk in chunks])
+        vectors = await ai.embed_documents([chunk.content for chunk in chunks])
 
         rows = [
             {
@@ -85,13 +85,13 @@ async def process_document(
     except PdfProcessingError as exc:
         await _finish_failed(sb, document, str(exc))
         return "failed"
-    except (OpenAIError, SupabaseError, httpx.HTTPError) as exc:
-        # str(exc) holds only a safe, key-free reason such as "OpenAI returned HTTP 401".
+    except (AIServiceError, SupabaseError, httpx.HTTPError) as exc:
+        # str(exc) holds only a safe, key-free reason such as "Gemini returned HTTP 403".
         logger.warning(
             "Document %s processing attempt failed: %s (%s)", document_id, type(exc).__name__, exc
         )
         reason = "Processing failed temporarily; it will be retried"
-        if isinstance(exc, OpenAIError):
+        if isinstance(exc, AIServiceError):
             reason = "The AI service did not respond; processing will be retried"
         return await _requeue_or_fail(sb, document, reason, max_attempts)
     except Exception:
@@ -110,7 +110,7 @@ async def claim_jobs(sb: SupabaseClient, limit: int) -> list[dict[str, Any]]:
     )
 
 
-async def run_once(sb: SupabaseClient, ai: OpenAIClient) -> int:
+async def run_once(sb: SupabaseClient, ai: GeminiClient) -> int:
     jobs = await claim_jobs(sb, settings.document_worker_batch_size)
     for job in jobs:
         await process_document(
@@ -125,13 +125,13 @@ async def run_once(sb: SupabaseClient, ai: OpenAIClient) -> int:
     return len(jobs)
 
 
-async def run_forever(sb: SupabaseClient, ai: OpenAIClient) -> None:
+async def run_forever(sb: SupabaseClient, ai: GeminiClient) -> None:
     waiting_logged = False
     while True:
         try:
-            if not settings.openai_api_key:
+            if not settings.gemini_api_key:
                 if not waiting_logged:
-                    logger.warning("OPENAI_API_KEY is not set; documents will wait in the queue")
+                    logger.warning("GEMINI_API_KEY is not set; documents will wait in the queue")
                     waiting_logged = True
                 await asyncio.sleep(settings.document_worker_poll_seconds)
                 continue

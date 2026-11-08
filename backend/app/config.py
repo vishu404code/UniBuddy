@@ -22,11 +22,11 @@ class Settings(BaseSettings):
     supabase_publishable_key: str | None = None
     supabase_storage_bucket: str = "documents"
 
-    # OpenAI. Server-side only.
-    openai_api_key: str | None = None
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_embedding_model: str = "text-embedding-3-small"
-    openai_chat_model: str = "gpt-4o-mini"
+    # Google Gemini (GenAI SDK). Server-side only. Documents and questions share one
+    # embedding model, and its output is fixed at 1536 dimensions to match the database.
+    gemini_api_key: str | None = None
+    gemini_embedding_model: str = "gemini-embedding-001"
+    gemini_chat_model: str = "gemini-2.5-flash"
 
     # Provisioning: invitations are only sent to these email domains (exact match, comma-separated).
     # Empty means provisioning is disabled and every request fails closed.

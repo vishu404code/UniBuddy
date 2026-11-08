@@ -1,4 +1,4 @@
-"""In-memory test doubles for the Supabase and OpenAI clients.
+"""In-memory test doubles for the Supabase and Gemini clients.
 
 These model only what the service tests need. Row visibility under RLS is
 modelled by the `visible` callable passed in; the real RLS behaviour is verified
@@ -269,13 +269,20 @@ class FakeAI:
         self.embedded: list[str] = []
         self.completions: list[tuple[str, str]] = []
 
-    async def embed(self, texts):
+    async def embed_documents(self, texts):
         if self.fail_embed:
-            from app.ai.openai_client import OpenAIError
+            from app.ai.gemini_client import AIServiceError
 
-            raise OpenAIError("embedding failed")
+            raise AIServiceError("embedding failed")
         self.embedded.extend(texts)
-        return [[float(len(t) % 7) / 10 + 0.01] * 1536 for t in texts]
+        return [self._vector(t) for t in texts]
+
+    async def embed_query(self, text):
+        return self._vector(text)
+
+    @staticmethod
+    def _vector(text):
+        return [float(len(text) % 7) / 10 + 0.01] * 1536
 
     async def complete(self, system, user):
         self.completions.append((system, user))

@@ -15,7 +15,7 @@ from app.services.documents import (
     replace_document,
     upload_document,
 )
-from app.services.providers import get_openai_client, get_supabase_client
+from app.services.providers import get_ai_client, get_supabase_client
 from tests.conftest import FakeProfileRepository, make_profile
 from tests.fakes import FakeAI, FakeSupabase
 
@@ -101,7 +101,7 @@ def test_faculty_upload_route_refuses_university_wide_scope():
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(
         {str(verifier_user.id): make_profile(str(verifier_user.id), role="faculty", campus_id=str(CAMPUS))})
     app.dependency_overrides[get_supabase_client] = lambda: FakeSupabase()
-    app.dependency_overrides[get_openai_client] = lambda: FakeAI()
+    app.dependency_overrides[get_ai_client] = lambda: FakeAI()
     try:
         response = TestClient(app).post(
             f"{settings.api_v1_prefix}/documents",

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.ai.openai_client import OpenAIClient
+from app.ai.gemini_client import GeminiClient
 from app.config import settings
 from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.chat import (
@@ -17,7 +17,7 @@ from app.schemas.chat import (
 )
 from app.schemas.common import Page
 from app.services.chat import ask_question, forward_message_to_faculty
-from app.services.providers import get_openai_client, get_supabase_client
+from app.services.providers import get_ai_client, get_supabase_client
 from app.services.supabase_client import SupabaseClient
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -29,7 +29,7 @@ async def ask(
     body: AskRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
     sb: SupabaseClient = Depends(get_supabase_client),
-    ai: OpenAIClient = Depends(get_openai_client),
+    ai: GeminiClient = Depends(get_ai_client),
 ):
     result = await ask_question(
         sb=sb,

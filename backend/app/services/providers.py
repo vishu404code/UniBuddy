@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from fastapi import HTTPException, status
 
-from app.ai.openai_client import OpenAIClient
+from app.ai.gemini_client import GeminiClient
 from app.config import settings
 from app.services.supabase_client import SupabaseClient
 
@@ -19,14 +19,13 @@ def get_supabase_client() -> SupabaseClient:
 
 
 @lru_cache
-def get_openai_client() -> OpenAIClient:
-    if not settings.openai_api_key:
+def get_ai_client() -> GeminiClient:
+    if not settings.gemini_api_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI service is not configured")
-    return OpenAIClient(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        embedding_model=settings.openai_embedding_model,
-        chat_model=settings.openai_chat_model,
+    return GeminiClient(
+        api_key=settings.gemini_api_key,
+        embedding_model=settings.gemini_embedding_model,
+        chat_model=settings.gemini_chat_model,
     )
 
 

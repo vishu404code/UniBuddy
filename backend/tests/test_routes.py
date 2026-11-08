@@ -8,7 +8,7 @@ from app.ai.rag import ABSTAIN_MESSAGE
 from app.config import settings
 from app.main import app
 from app.middleware.auth import get_token_verifier, get_profile_repository
-from app.services.providers import get_openai_client, get_supabase_client
+from app.services.providers import get_ai_client, get_supabase_client
 from app.services.supabase_client import SupabaseError
 from tests.conftest import FakeProfileRepository, make_profile
 from tests.fakes import FakeAI, FakeSupabase
@@ -49,7 +49,7 @@ def harness():
     app.dependency_overrides[get_token_verifier] = lambda: _Verifier()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(profiles)
     app.dependency_overrides[get_supabase_client] = lambda: sb
-    app.dependency_overrides[get_openai_client] = lambda: ai
+    app.dependency_overrides[get_ai_client] = lambda: ai
     try:
         yield TestClient(app), sb, ai
     finally:
@@ -92,7 +92,7 @@ def test_faculty_upload_is_accepted_and_queued(harness):
 
 def test_queued_upload_reports_that_ai_processing_waits_for_the_key(harness, monkeypatch):
     client, _, _ = harness
-    monkeypatch.setattr(settings, "openai_api_key", None)
+    monkeypatch.setattr(settings, "gemini_api_key", None)
     response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"title": "x"},
                            files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
 

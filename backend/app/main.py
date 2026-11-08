@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.ai.openai_client import OpenAIError
+from app.ai.gemini_client import AIServiceError
 from app.config import settings
 from app.routes.admin import router as admin_router
 from app.routes.announcements import router as announcements_router
@@ -63,9 +63,9 @@ async def supabase_error_handler(_request: Request, exc: SupabaseError):
     return JSONResponse(status_code=502, content={"detail": "Database request failed"})
 
 
-@app.exception_handler(OpenAIError)
-async def openai_error_handler(_request: Request, exc: OpenAIError):
-    logger.error("OpenAI request failed: %s", exc)
+@app.exception_handler(AIServiceError)
+async def ai_error_handler(_request: Request, exc: AIServiceError):
+    logger.error("AI request failed: %s", exc)
     return JSONResponse(status_code=502, content={"detail": "AI service request failed"})
 
 
