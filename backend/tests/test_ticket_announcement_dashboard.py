@@ -7,7 +7,7 @@ from app.schemas.announcements import AnnouncementCreate
 from app.schemas.auth import CurrentUser
 from app.schemas.tickets import TicketUpdateRequest
 from app.services.announcements import create_announcement
-from app.services.dashboards import management_stats, student_dashboard
+from app.services.dashboards import student_dashboard
 from app.services.documents import DocumentConflict, DocumentError, DocumentForbidden, DocumentNotFound
 from app.services.notifications import mark_notification_read
 from app.services.tickets import update_ticket
@@ -213,29 +213,3 @@ async def test_student_dashboard_counts_only_what_rls_returns():
     assert stats["tickets_by_status"]["resolved"] == 1
     assert stats["tickets_by_status"]["submitted"] == 1
     assert stats["total_questions"] == 2
-
-
-@pytest.mark.asyncio
-async def test_management_stats_compute_rates_and_first_response_time_from_real_rows():
-    sb = FakeSupabase()
-    campus_name = "Campus One"
-    sb.tables["campuses"].append({"id": str(CAMPUS), "name": campus_name})
-    sb.tables["departments"].append({"id": str(DEPT), "name": "CS"})
-    created = datetime(2026, 11, 1, 10, tzinfo=timezone.utc)
-    replied = created + timedelta(hours=5)
-    t1, t2 = _ticket(_user("student"), status="resolved", number="UB-1"), _ticket(_user("student"), number="UB-2")
-    t1["created_at"], t2["created_at"] = created.isoformat(), created.isoformat()
-    sb.tables["tickets"] += [t1, t2]
-    sb.tables["ticket_events"].append({"id": str(uuid4()), "ticket_id": t1["id"], "event_type": "reply",
-                                       "created_at": replied.isoformat()})
-
-    stats = await management_stats(sb)
-
-    assert stats["total_tickets"] == 2
-    assert stats["resolved_tickets"] == 1
-    assert stats["resolution_rate"] == 0.5
-    assert stats["avg_first_response_hours"] == 5.0
-    assert stats["campuses"][0]["name"] == campus_name
-    assert stats["campuses"][0]["resolution_rate"] == 0.5
-    assert stats["departments"][0]["name"] == "CS"
-    assert "student_id" not in str(stats)

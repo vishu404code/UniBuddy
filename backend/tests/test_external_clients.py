@@ -173,3 +173,79 @@ async def test_update_returns_representation_so_callers_can_detect_no_match():
         return httpx.Response(200, json=[])
 
     assert await _supabase(handler).update_service("tickets", {"id": "eq.x"}, {"status": "assigned"}) == []
+
+
+@pytest.mark.asyncio
+async def test_paged_read_as_user_requests_exact_count_and_parses_total():
+    seen = {}
+
+    def handler(request):
+        seen["prefer"] = request.headers["prefer"]
+        seen["limit"], seen["offset"] = request.url.params["limit"], request.url.params["offset"]
+        seen["apikey"] = request.headers["apikey"]
+        return httpx.Response(200, json=[{"id": "1"}], headers={"content-range": "20-20/57"})
+
+    rows, total = await _supabase(handler).select_page_as_user(USER_TOKEN, "tickets", {}, limit=1, offset=20)
+
+    assert seen["prefer"] == "count=exact"
+    assert (seen["limit"], seen["offset"]) == ("1", "20")
+    assert seen["apikey"] == PUBLISHABLE
+    assert rows == [{"id": "1"}] and total == 57
+
+
+@pytest.mark.asyncio
+async def test_count_as_user_uses_zero_limit_and_returns_total():
+    def handler(request):
+        assert request.url.params["limit"] == "0"
+        return httpx.Response(200, json=[], headers={"content-range": "*/12"})
+
+    assert await _supabase(handler).count_as_user(USER_TOKEN, "messages", {"role": "eq.user"}) == 12
+
+
+@pytest.mark.asyncio
+async def test_download_uses_the_secret_key_and_returns_bytes():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = str(request.url)
+        seen["apikey"] = request.headers["apikey"]
+        return httpx.Response(200, content=b"%PDF-1.4 data")
+
+    assert await _supabase(handler).download_object("documents", "campus/a.pdf") == b"%PDF-1.4 data"
+    assert seen["url"] == f"{SUPABASE}/storage/v1/object/documents/campus/a.pdf"
+    assert seen["apikey"] == SECRET
+
+
+@pytest.mark.asyncio
+async def test_storage_delete_and_row_delete_use_the_secret_key():
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, str(request.url), request.headers["apikey"]))
+        return httpx.Response(200, json={})
+
+    client = _supabase(handler)
+    await client.delete_object("documents", "campus/a.pdf")
+    await client.delete_service("document_chunks", {"document_id": "eq.x"})
+
+    assert seen[0][0] == "DELETE" and "/storage/v1/object/documents/campus/a.pdf" in seen[0][1]
+    assert seen[1][0] == "DELETE" and "/rest/v1/document_chunks" in seen[1][1]
+    assert all(key == SECRET for _, _, key in seen)
+
+
+@pytest.mark.asyncio
+async def test_service_rpc_posts_to_the_function_with_the_secret_key():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = str(request.url)
+        seen["apikey"] = request.headers["apikey"]
+        seen["authorization"] = request.headers.get("authorization")
+        return httpx.Response(200, json={"total_tickets": 3})
+
+    result = await _supabase(handler).rpc_service("management_ticket_stats", {})
+
+    assert seen["url"] == f"{SUPABASE}/rest/v1/rpc/management_ticket_stats"
+    assert seen["apikey"] == SECRET
+    assert seen["authorization"] is None
+    assert result == {"total_tickets": 3}

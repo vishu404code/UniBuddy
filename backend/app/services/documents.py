@@ -1,14 +1,12 @@
 from typing import Any
 from uuid import UUID, uuid4
 
-from app.ai.chunking import chunk_pages
-from app.ai.openai_client import OpenAIClient, OpenAIError
-from app.ai.pdf_extractor import PdfProcessingError, extract_pages
 from app.schemas.auth import CurrentUser
 from app.services.supabase_client import SupabaseClient, SupabaseError
 
 PDF_CONTENT_TYPE = "application/pdf"
 MAX_TITLE_LENGTH = 200
+PUBLISH_NOT_READY = "document_not_publishable"
 
 
 class DocumentError(Exception):
@@ -35,10 +33,6 @@ class DocumentProcessingFailed(DocumentError):
     status_code = 422
 
 
-def _vector_literal(vector: list[float]) -> str:
-    return "[" + ",".join(repr(value) for value in vector) + "]"
-
-
 def validate_upload(data: bytes, content_type: str | None, title: str, max_bytes: int) -> None:
     if not title.strip() or len(title.strip()) > MAX_TITLE_LENGTH:
         raise DocumentError(f"Title must be 1 to {MAX_TITLE_LENGTH} characters")
@@ -61,30 +55,20 @@ async def _check_department(sb: SupabaseClient, department_id: UUID, campus_id: 
         raise DocumentError("Department does not belong to your campus")
 
 
-async def _mark_failed(sb: SupabaseClient, document_id: UUID) -> None:
-    await sb.update_service(
-        "documents",
-        {"id": f"eq.{document_id}"},
-        {"processing_status": "failed"},
-    )
-
-
-async def ingest_document(
+async def _store_and_queue(
     *,
     sb: SupabaseClient,
-    ai: OpenAIClient,
     uploader: CurrentUser,
     title: str,
     visibility: str,
     scope: str,
     department_id: UUID | None,
     filename: str | None,
-    content_type: str | None,
     data: bytes,
     max_bytes: int,
-    chunk_max_chars: int,
-    chunk_overlap_chars: int,
     storage_bucket: str,
+    replaces_document_id: UUID | None,
+    content_type: str | None,
 ) -> dict[str, Any]:
     validate_upload(data, content_type, title, max_bytes)
     if uploader.campus_id is None:
@@ -94,6 +78,8 @@ async def ingest_document(
 
     document_id = uuid4()
     storage_path = f"{uploader.campus_id}/{document_id}.pdf"
+    await sb.upload_object(storage_bucket, storage_path, data, PDF_CONTENT_TYPE)
+
     row: dict[str, Any] = {
         "id": str(document_id),
         "title": title.strip(),
@@ -108,49 +94,125 @@ async def ingest_document(
         "visibility": visibility,
         "processing_status": "pending",
         "publication_status": "draft",
+        "replaces_document_id": str(replaces_document_id) if replaces_document_id else None,
     }
-    await sb.insert_service("documents", [row])
-
     try:
-        await sb.upload_object(storage_bucket, storage_path, data, PDF_CONTENT_TYPE)
-        await sb.update_service("documents", {"id": f"eq.{document_id}"}, {"processing_status": "processing"})
-
-        extracted = extract_pages(data)
-        chunks = chunk_pages(extracted.pages, chunk_max_chars, chunk_overlap_chars)
-        vectors = await ai.embed([chunk.content for chunk in chunks])
-
-        chunk_rows = [
-            {
-                "id": str(uuid4()),
-                "document_id": str(document_id),
-                "chunk_index": chunk.chunk_index,
-                "page_number": chunk.page_number,
-                "content": chunk.content,
-                "embedding": _vector_literal(vector),
-            }
-            for chunk, vector in zip(chunks, vectors, strict=True)
-        ]
-        await sb.insert_service("document_chunks", chunk_rows)
-        await sb.update_service(
-            "documents",
-            {"id": f"eq.{document_id}"},
-            {"processing_status": "ready", "page_count": extracted.page_count},
-        )
-    except PdfProcessingError as exc:
-        await _mark_failed(sb, document_id)
-        raise DocumentProcessingFailed(str(exc)) from exc
-    except OpenAIError as exc:
-        await _mark_failed(sb, document_id)
-        raise DocumentProcessingFailed("Embedding generation failed; try uploading again later") from exc
+        await sb.insert_service("documents", [row])
     except SupabaseError:
-        await _mark_failed(sb, document_id)
-        raise
-    except Exception:
-        await _mark_failed(sb, document_id)
+        await _best_effort_remove_object(sb, storage_bucket, storage_path)
         raise
 
     rows = await sb.select_service("documents", {"select": "*", "id": f"eq.{document_id}"})
     return rows[0]
+
+
+async def _best_effort_remove_object(sb: SupabaseClient, bucket: str, path: str) -> None:
+    try:
+        await sb.delete_object(bucket, path)
+    except SupabaseError:
+        pass
+
+
+async def upload_document(
+    *,
+    sb: SupabaseClient,
+    uploader: CurrentUser,
+    title: str,
+    visibility: str,
+    scope: str,
+    department_id: UUID | None,
+    filename: str | None,
+    content_type: str | None,
+    data: bytes,
+    max_bytes: int,
+    storage_bucket: str,
+) -> dict[str, Any]:
+    return await _store_and_queue(
+        sb=sb, uploader=uploader, title=title, visibility=visibility, scope=scope,
+        department_id=department_id, filename=filename, data=data, max_bytes=max_bytes,
+        storage_bucket=storage_bucket, replaces_document_id=None, content_type=content_type,
+    )
+
+
+async def _load_visible_document(sb: SupabaseClient, access_token: str, document_id: UUID) -> dict[str, Any]:
+    rows = await sb.select_as_user(access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
+    if not rows:
+        raise DocumentNotFound("Document not found")
+    return rows[0]
+
+
+def _can_manage(user: CurrentUser, document: dict[str, Any]) -> bool:
+    if str(document["uploaded_by"]) == str(user.id):
+        return True
+    return user.role == "authority" and str(document["campus_id"]) == str(user.campus_id)
+
+
+async def replace_document(
+    *,
+    sb: SupabaseClient,
+    user: CurrentUser,
+    access_token: str,
+    document_id: UUID,
+    title: str | None,
+    content_type: str | None,
+    filename: str | None,
+    data: bytes,
+    max_bytes: int,
+    storage_bucket: str,
+) -> dict[str, Any]:
+    original = await _load_visible_document(sb, access_token, document_id)
+    if not _can_manage(user, original):
+        raise DocumentForbidden("Only the uploader or same-campus authority can replace this document")
+    if original["publication_status"] == "archived":
+        raise DocumentConflict("Archived documents cannot be replaced")
+    if original["processing_status"] != "ready":
+        raise DocumentConflict("Wait for the current version to finish processing before replacing it")
+
+    pending = await sb.select_service(
+        "documents",
+        {
+            "select": "id",
+            "replaces_document_id": f"eq.{document_id}",
+            "publication_status": "eq.draft",
+        },
+    )
+    if pending:
+        raise DocumentConflict("A replacement for this document is already in progress")
+
+    return await _store_and_queue(
+        sb=sb,
+        uploader=user,
+        title=title or original["title"],
+        visibility=original["visibility"],
+        scope=original["scope"],
+        department_id=UUID(str(original["department_id"])) if original["department_id"] else None,
+        filename=filename,
+        data=data,
+        max_bytes=max_bytes,
+        storage_bucket=storage_bucket,
+        replaces_document_id=document_id,
+        content_type=content_type,
+    )
+
+
+async def archive_document(
+    *,
+    sb: SupabaseClient,
+    user: CurrentUser,
+    access_token: str,
+    document_id: UUID,
+) -> dict[str, Any]:
+    document = await _load_visible_document(sb, access_token, document_id)
+    if not _can_manage(user, document):
+        raise DocumentForbidden("Only the uploader or same-campus authority can archive this document")
+    if document["publication_status"] == "archived":
+        return document
+    updated = await sb.update_service(
+        "documents",
+        {"id": f"eq.{document_id}", "publication_status": "neq.archived"},
+        {"publication_status": "archived"},
+    )
+    return updated[0] if updated else document
 
 
 async def publish_document(
@@ -160,15 +222,7 @@ async def publish_document(
     access_token: str,
     document_id: UUID,
 ) -> dict[str, Any]:
-    rows = await sb.select_as_user(
-        access_token,
-        "documents",
-        {"select": "*", "id": f"eq.{document_id}"},
-    )
-    if not rows:
-        raise DocumentNotFound("Document not found")
-    document = rows[0]
-
+    document = await _load_visible_document(sb, access_token, document_id)
     if user.role == "faculty" and str(document["uploaded_by"]) != str(user.id):
         raise DocumentForbidden("Only the uploader can publish a faculty draft")
     if document["processing_status"] != "ready":
@@ -176,15 +230,18 @@ async def publish_document(
     if document["publication_status"] != "draft":
         raise DocumentConflict("Only draft documents can be published")
 
-    updated = await sb.update_service(
-        "documents",
-        {
-            "id": f"eq.{document_id}",
-            "publication_status": "eq.draft",
-            "processing_status": "eq.ready",
-        },
-        {"publication_status": "published"},
-    )
-    if not updated:
-        raise DocumentConflict("Document changed while publishing; reload and try again")
-    return updated[0]
+    try:
+        published = await sb.rpc_service("publish_document_version", {"p_document_id": str(document_id)})
+    except SupabaseError as exc:
+        if PUBLISH_NOT_READY in exc.detail:
+            raise DocumentConflict("Document changed before it could be published; reload and try again") from exc
+        raise
+    return published
+
+
+def processing_note(document: dict[str, Any], openai_configured: bool) -> str | None:
+    if document["processing_status"] == "pending" and not openai_configured:
+        return "Waiting for the AI service to be configured before this document can be processed"
+    if document["processing_status"] == "failed":
+        return document.get("last_error")
+    return None

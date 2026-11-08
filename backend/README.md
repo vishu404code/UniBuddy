@@ -3,8 +3,8 @@
 FastAPI backend for UniBuddy. Implemented: auth and role/campus authorization, PDF
 upload and processing, embeddings, RAG chat with citations and abstention, forwarding
 unanswered questions to faculty, ticket handling, announcements, notifications, and
-dashboards. The code and its 105 tests are complete. The live flow still needs the
-approvals listed below before it can run against the dev project.
+dashboards. The code and its 128 pytest tests are complete. The live flow still needs
+the approvals listed below before it can run against the dev project.
 
 ## Setup
 
@@ -47,7 +47,7 @@ curl http://localhost:8000/api/v1/health
 pytest
 ```
 
-Expected: 105 tests pass. The tests use a locally generated signing key, in-memory
+Expected: 128 tests pass. The tests use a locally generated signing key, in-memory
 Supabase and OpenAI test doubles, and real PDFs generated with PyMuPDF. They make no
 network calls. The HTTP client tests use mocked transports, so they check request
 shape, not live Supabase or OpenAI behaviour.
@@ -173,32 +173,58 @@ Then call `GET /api/v1/auth/me` with that user's access token. You should see th
 profile. The migrations are not applied yet, and I will not run them until you
 approve applying them to this development project.
 
-## Vertical flow: endpoints and UI mapping
+## Document and chat flow: endpoints and UI mapping
 
 All endpoints are under `/api/v1`. Roles are checked on the server for every route.
+List endpoints return `{"items": [...], "total": n, "limit": l, "offset": o}`. `limit`
+defaults to 20 and is capped at 100. Filters narrow the rows the caller can already see.
+They never widen access.
 
 | Method and path | Roles | What it does | Frontend screen it serves |
 |---|---|---|---|
-| `POST /documents` (multipart: `file`, `title`, `visibility`, `scope`, `department_id`) | faculty, authority | Validates the PDF, stores it, extracts text, chunks, embeds, saves chunks. Returns the document with `processing_status`. | None yet. Upload screen needed. |
-| `POST /documents/{id}/publish` | uploader (faculty), authority | Publishes a ready draft so students can retrieve it. | None yet. |
-| `GET /documents` | any signed-in user | Documents the caller may see, under RLS. | Faculty/authority document list (new). |
+| `POST /documents` (multipart: `file`, `title`, `visibility`, `scope`, `department_id`) | faculty, authority | Stores the PDF and queues it. Returns **202** with `processing_status: pending`. | None yet. Upload screen needed. |
+| `POST /documents/{id}/replace` (multipart: `file`, `title?`) | uploader (faculty), same-campus authority | Queues a new version. It stays a draft until published. Returns **202**. | None yet. |
+| `POST /documents/{id}/publish` | uploader (faculty), authority | Publishes a ready draft. If it replaces another version, that version is archived in the same database step. | None yet. |
+| `POST /documents/{id}/archive` | uploader (faculty), same-campus authority | Archives a draft or published document. Idempotent. | None yet. |
+| `GET /documents/{id}` | any signed-in user | One document the caller may see, with `processing_note` and `last_error`. | Document status polling. |
+| `GET /documents` (`limit`, `offset`, `processing_status`, `publication_status`, `visibility`, `scope`, `campus_id`, `department_id`) | any signed-in user | Paged list the caller may see. | Faculty/authority document list (new). |
 | `POST /chat/ask` `{question, conversation_id?}` | student | Retrieves permitted chunks as the caller, answers with citations, or abstains. Saves both messages. | AI Assistant chat (`ask()` in `index.html`). |
-| `GET /chat/conversations` | student | The student's own conversations. | Chat history (`S.hist`). |
-| `GET /chat/conversations/{id}/messages` | student | Messages in one of the student's conversations. | Chat history view. |
+| `GET /chat/conversations` (paged) | student | The student's own conversations. | Chat history (`S.hist`). |
+| `GET /chat/conversations/{id}/messages` (paged) | student | Messages in one of the student's conversations. | Chat history view. |
 | `POST /chat/messages/{id}/forward` `{department_id, priority, description?}` | student | Creates a submitted ticket for the student's campus. One ticket per question. | "Forward to Faculty" modal (`ms` action). |
-| `GET /tickets` | any signed-in user | Tickets the caller may see, under RLS. | My Queries list (`S.tickets`) and faculty ticket table. |
+| `GET /tickets` (`limit`, `offset`, `status`, `priority`, `department_id`, `campus_id`, `assigned=me\|unassigned`) | any signed-in user | Paged tickets the caller may see. | My Queries list (`S.tickets`) and faculty ticket table. |
 | `GET /tickets/{id}` | any signed-in user | Ticket detail with its timeline. | Ticket detail (`detail()`). |
-| `PATCH /tickets/{id}` `{status?, reply?, take_ticket?}` | faculty, authority | Takes a ticket, changes status, or replies. Student gets a notification. | Faculty Respond/Resolve actions. |
-| `GET /announcements` | any signed-in user | Announcements the caller may see. | Announcements feed (`ANN`). |
+| `PATCH /tickets/{id}` `{status?, reply?, take_ticket?}` | faculty, authority | Takes a ticket, changes status, or replies. The student gets a notification. | Faculty Respond/Resolve actions. |
+| `GET /announcements` (paged; `audience`, `scope`, `campus_id`, `is_important`) | any signed-in user | Announcements the caller may see. | Announcements feed (`ANN`). |
 | `POST /announcements` | faculty, authority | Publishes an announcement. University-wide scope is authority only. | None yet. |
-| `GET /notifications` | any signed-in user | The caller's notifications. | Notification bell (`S.notifs`). |
+| `GET /notifications` (paged; `is_read`) | any signed-in user | The caller's notifications. | Notification bell (`S.notifs`). |
 | `PATCH /notifications/{id}/read` | any signed-in user | Marks one of the caller's notifications read. | Notification bell. |
 | `GET /dashboard/student` | student | Real counts of the student's questions and tickets. | Student dashboard tiles (`dash()`). |
-| `GET /management/stats` | management | Campus and department totals, resolution rates, average first-response hours. No record contents. | Management dashboard (placeholder today). |
+| `GET /dashboard/staff` | faculty, authority | Counts over the tickets and documents the caller can see: open, resolved, unassigned queue, assigned to me, by department, average first-response hours. | Faculty and authority dashboards (new). |
+| `GET /management/stats` | management | Campus and department totals, resolution rates, average first-response hours, computed in the database. No record contents. | Management dashboard (placeholder today). |
 
 **Ticket status values** are the database values `submitted`, `assigned`, `in_progress`,
 `resolved`. The frontend shows "Submitted", "Assigned", "In Progress", "Resolved". The
-frontend should map the labels; the API does not return them.
+frontend should map the labels.
+
+**Document processing.** Uploads are stored and queued. A worker claims them, so a restart
+or a second worker never processes the same document twice:
+
+- `claim_document_jobs` uses `FOR UPDATE SKIP LOCKED`. A claim whose worker stopped expires
+  after `DOCUMENT_LEASE_SECONDS` (default 600) and is claimed again.
+- Processing is safe to repeat. Old chunks are deleted before new ones are inserted.
+- A PDF that cannot be read, or has no text layer, fails at once with a reason. A temporary
+  failure (AI service, storage, database) returns the document to the queue. After
+  `DOCUMENT_MAX_ATTEMPTS` (default 3) it fails with the reason recorded in `last_error`.
+- With no `OPENAI_API_KEY`, uploads are still accepted. Documents wait in the queue, and
+  `processing_note` says why. The worker does not call OpenAI, and nothing is faked.
+
+Run the worker in the web process (the default, when `DOCUMENT_WORKER_ENABLED=true`), or as
+its own process, which is the better option for Render:
+
+```bash
+python -m app.worker
+```
 
 **Answer rules.** Retrieval uses `match_document_chunks`, which runs as the caller, so
 RLS decides which chunks can be returned. Chunks below `RETRIEVAL_MIN_SIMILARITY` are
@@ -207,52 +233,53 @@ model replies `INSUFFICIENT_EVIDENCE`, or gives no citation to a retrieved sourc
 response also abstains. Citations are built from the retrieved chunk's document and page,
 never from the model's text. Abstained responses set `escalation_available: true`.
 
-**Ingestion** runs inside the upload request. A PDF is limited to 20 MB and 300 pages.
-Scanned PDFs with no text layer are marked `failed`. OCR is not enabled. Any failure
-marks the document `failed`, so it is never left in `processing`.
+### OCR for scanned PDFs: assessment
+
+Not implemented. Scanned PDFs fail with a clear reason. OCR would need:
+
+- the Tesseract binary and its language data installed on the host. PyMuPDF does not
+  include them, and this backend's requirements are pure Python wheels;
+- a container runtime for the worker, for example a Render Docker service with
+  `apt-get install tesseract-ocr tesseract-ocr-eng`. No container is set up yet;
+- an OCR timing test on real campus scans, since OCR is much slower than text extraction.
+
+Remaining dependency: choose the hosting runtime for the worker, then decide whether
+scanned PDFs are common enough to justify the image size and latency.
 
 ### Live setup status
 
-Done on the dev project: migration `20261108120700_backend_operations.sql` applied, and the private `documents` bucket created. Still needed before the live flow can run: `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY` in `backend/.env`.
+Done on the dev project: migrations `20261108120700` and the private `documents` bucket.
 
-1. **Migration `20261108120700_backend_operations.sql`** (applied). It adds:
-   - write and read-back grants for `service_role` on the tables the endpoints write to
-     (`documents`, `document_chunks`, `conversations`, `messages`, `tickets`,
-     `ticket_events`, `notifications`, `announcements`) and read grants on `campuses`,
-     `departments`, and the ticket-number sequence;
-   - a unique index on `tickets.source_message_id` for duplicate-ticket protection;
-   - the `match_document_chunks` function, executable by `authenticated` only.
-2. **A private Storage bucket named `documents`** (created). The command below is for
-   recreating it in another project, run from `backend/` with the values in `.env`. Load `.env` into the shell first:
+Waiting for your approval: migration `20261108120800_document_lifecycle_and_scale.sql`.
+It adds the job columns, `claim_document_jobs`, `publish_document_version`, the SQL
+dashboard and management aggregates, the indexes, and the RLS subquery rewrite. It has
+been tested on a local PostgreSQL 17 + pgvector database (`tests/sql/run_local_db_tests.sh`),
+not on the dev project.
 
-   ```bash
-   set -a; source .env; set +a
-   curl -X POST "$SUPABASE_URL/storage/v1/bucket" \
-     -H "apikey: $SUPABASE_SECRET_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"id":"documents","name":"documents","public":false}'
-   ```
+Still needed before the live flow can run: `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY`
+in `backend/.env`.
 
-   The `file_size_limit` and `allowed_mime_types` options are not set here. Upload size
-   and type are enforced by the backend.
+### Capacity: measured so far
 
-3. **Local values to add to `backend/.env`** (names only; never paste them into chat):
-   - `SUPABASE_PUBLISHABLE_KEY`: Project Settings → API Keys → publishable key.
-   - `OPENAI_API_KEY`: your OpenAI key. The backend uses it only on the server.
-   - `SUPABASE_STORAGE_BUCKET`: leave as `documents`.
+These were measured locally on one machine with a 200,000-ticket synthetic dataset. They
+are single runs with no concurrency. They are not production evidence.
+
+- Management aggregate, all tickets: about 0.13 s, returns about 900 bytes.
+- Authority staff dashboard, 100,000 visible tickets: about 3.2 s before the RLS subquery
+  rewrite, about 0.15 s after it.
+
+**Not verified:** the 3,000+ daily-user target. That needs a load test through the deployed
+API, against the real Supabase plan, with concurrent users and real documents. The
+`count=exact` list totals also have a cost that has not been measured on a large dataset.
 
 ### Not done yet
 
-- OCR for scanned PDFs, re-uploading or replacing a document, and archiving from the API.
-- Faculty dashboard, and dashboard numbers for authority.
-- Pagination and filters on list endpoints. Each list returns all visible rows.
-- Retrieval quality testing against real campus documents. The similarity threshold of
-  0.3 and the top-5 limit are starting values only.
-- Capacity: ingestion runs synchronously in the upload request. Management stats read all
-  ticket rows and aggregate them in Python, which must move to SQL aggregates before
-  reporting scales. There is no rate limiting, caching, or load testing.
-- **Load target:** 3,000+ daily users has not been tested. Nothing here shows that target
-  is met.
+- OCR for scanned PDFs (see above), re-running a failed document from the API, and deleting
+  documents. Archiving is supported; hard deletion is not.
+- Pagination is in place, but keyset pagination is not. Large offsets will get slower.
+- The similarity threshold of 0.3 and the top-5 limit are starting values, not tuned
+  against real campus documents.
+- Load testing, rate limiting and caching.
 
 ## Open decisions
 
@@ -296,6 +323,9 @@ must be granted explicitly in the migrations. Nothing is granted to `anon`.
 
 Migration `20261108120700_backend_operations.sql` adds the write and read-back grants
 the endpoints use. It is applied to the dev project.
+Migration `20261108120800_document_lifecycle_and_scale.sql` (pending approval) adds
+`DELETE` on `document_chunks` for reprocessing, `EXECUTE` on the job and aggregate
+functions, and the RLS subquery rewrite. It is not applied to the dev project yet.
 
 Assumption to verify after applying: the secret key runs as the `service_role`
 Postgres role. If the profile lookup returns an empty result for a known user, check
@@ -316,16 +346,19 @@ backend/
     middleware/auth.py            Session and role dependencies
     routes/                       One module per area: auth, documents, chat, tickets,
                                   announcements, notifications, dashboards
+    worker.py                     `python -m app.worker`: standalone document worker
     services/
+      document_worker.py          Claims and processes queued documents (retries, attempt cap)
       token_verifier.py           Supabase JWT verification (JWKS, ES256/RS256)
       authorization.py            Campus access rule
       supabase_client.py          PostgREST, RPC and Storage (secret or user-scoped calls)
       providers.py                Cached Supabase and OpenAI clients
       documents.py chat.py tickets.py announcements.py notifications.py dashboards.py
     repositories/profiles.py      Profile lookup via Supabase REST
-    schemas/                      Pydantic request and response models
-  supabase/migrations/            Schema, RLS, indexes, grants (see pending approvals)
-  tests/                          pytest suite (105 tests) and in-memory test doubles
+    schemas/                      Pydantic request and response models, incl. Page envelope
+  supabase/migrations/            Schema, RLS, indexes, grants (0800 is pending approval)
+  tests/                          pytest suite (128 tests) and in-memory test doubles
+  tests/sql/                      SQL assertions and a local-only database runner
   requirements.txt
   .env.example
   pytest.ini

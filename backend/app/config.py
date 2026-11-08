@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     retrieval_min_similarity: float = 0.3
 
+    # Document worker. Claims pending uploads, so restarts and extra workers are safe.
+    document_worker_enabled: bool = True
+    document_worker_poll_seconds: float = 5.0
+    document_worker_batch_size: int = 3
+    document_lease_seconds: int = 600
+    document_max_attempts: int = 3
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.ai.openai_client import OpenAIClient
 from app.config import settings
@@ -15,6 +15,7 @@ from app.schemas.chat import (
     ForwardResponse,
     MessageOut,
 )
+from app.schemas.common import Page
 from app.services.chat import ask_question, forward_message_to_faculty
 from app.services.providers import get_openai_client, get_supabase_client
 from app.services.supabase_client import SupabaseClient
@@ -52,25 +53,32 @@ async def ask(
     )
 
 
-@router.get("/conversations", response_model=list[ConversationOut])
+@router.get("/conversations", response_model=Page[ConversationOut])
 async def list_conversations(
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
     sb: SupabaseClient = Depends(get_supabase_client),
 ):
-    return await sb.select_as_user(
+    rows, total = await sb.select_page_as_user(
         session.access_token,
         "conversations",
         {"select": "id,title,created_at", "order": "created_at.desc"},
+        limit,
+        offset,
     )
+    return Page[ConversationOut](items=rows, total=total, limit=limit, offset=offset)
 
 
-@router.get("/conversations/{conversation_id}/messages", response_model=list[MessageOut])
+@router.get("/conversations/{conversation_id}/messages", response_model=Page[MessageOut])
 async def list_messages(
     conversation_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
     sb: SupabaseClient = Depends(get_supabase_client),
 ):
-    return await sb.select_as_user(
+    rows, total = await sb.select_page_as_user(
         session.access_token,
         "messages",
         {
@@ -78,7 +86,10 @@ async def list_messages(
             "conversation_id": f"eq.{conversation_id}",
             "order": "created_at.asc",
         },
+        limit,
+        offset,
     )
+    return Page[MessageOut](items=rows, total=total, limit=limit, offset=offset)
 
 
 @router.post("/messages/{message_id}/forward", response_model=ForwardResponse, status_code=201)

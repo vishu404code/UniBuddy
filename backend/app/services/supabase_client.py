@@ -10,6 +10,14 @@ class SupabaseError(Exception):
         self.detail = detail
 
 
+def _total_from_content_range(value: str | None) -> int:
+    """PostgREST sends Content-Range as 'start-end/total' or '*/total'."""
+    if not value or "/" not in value:
+        return 0
+    total = value.rsplit("/", 1)[1]
+    return int(total) if total.isdigit() else 0
+
+
 class SupabaseClient:
     """Thin client for Supabase PostgREST, RPC and Storage.
 
@@ -70,6 +78,10 @@ class SupabaseClient:
                 return rows
             offset += page_size
 
+    async def insert_service_batched(self, table: str, rows: list[dict[str, Any]], batch_size: int = 200) -> None:
+        for start in range(0, len(rows), batch_size):
+            await self.insert_service(table, rows[start : start + batch_size])
+
     async def insert_service(self, table: str, rows: list[dict[str, Any]]) -> None:
         headers = {**self._service_headers(), "Prefer": "return=minimal", "Content-Type": "application/json"}
         async with self._http() as client:
@@ -83,6 +95,29 @@ class SupabaseClient:
         headers = {**self._service_headers(), "Prefer": "return=representation", "Content-Type": "application/json"}
         async with self._http() as client:
             response = await client.patch(f"{self._rest}/{table}", params=filters, json=values, headers=headers)
+        self._raise_for_status(response)
+        return response.json()
+
+    async def download_object(self, bucket: str, path: str) -> bytes:
+        async with self._http() as client:
+            response = await client.get(f"{self._storage}/object/{bucket}/{path}", headers=self._service_headers())
+        self._raise_for_status(response)
+        return response.content
+
+    async def delete_object(self, bucket: str, path: str) -> None:
+        async with self._http() as client:
+            response = await client.delete(f"{self._storage}/object/{bucket}/{path}", headers=self._service_headers())
+        self._raise_for_status(response)
+
+    async def delete_service(self, table: str, filters: dict[str, str]) -> None:
+        async with self._http() as client:
+            response = await client.delete(f"{self._rest}/{table}", params=filters, headers=self._service_headers())
+        self._raise_for_status(response)
+
+    async def rpc_service(self, function: str, payload: dict[str, Any]) -> Any:
+        headers = {**self._service_headers(), "Content-Type": "application/json"}
+        async with self._http() as client:
+            response = await client.post(f"{self._rpc}/{function}", json=payload, headers=headers)
         self._raise_for_status(response)
         return response.json()
 
@@ -106,7 +141,26 @@ class SupabaseClient:
         self._raise_for_status(response)
         return response.json()
 
-    async def rpc_as_user(self, access_token: str, function: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    async def select_page_as_user(
+        self, access_token: str, table: str, params: dict[str, str], limit: int, offset: int
+    ) -> tuple[list[dict[str, Any]], int]:
+        """One page of rows plus the exact total the caller can see (RLS applied to both)."""
+        headers = {**self._user_headers(access_token), "Prefer": "count=exact"}
+        query = {**params, "limit": str(limit), "offset": str(offset)}
+        async with self._http() as client:
+            response = await client.get(f"{self._rest}/{table}", params=query, headers=headers)
+        self._raise_for_status(response)
+        return response.json(), _total_from_content_range(response.headers.get("content-range"))
+
+    async def count_as_user(self, access_token: str, table: str, params: dict[str, str]) -> int:
+        headers = {**self._user_headers(access_token), "Prefer": "count=exact"}
+        query = {**params, "limit": "0"}
+        async with self._http() as client:
+            response = await client.get(f"{self._rest}/{table}", params=query, headers=headers)
+        self._raise_for_status(response)
+        return _total_from_content_range(response.headers.get("content-range"))
+
+    async def rpc_as_user(self, access_token: str, function: str, payload: dict[str, Any]) -> Any:
         headers = {**self._user_headers(access_token), "Content-Type": "application/json"}
         async with self._http() as client:
             response = await client.post(f"{self._rpc}/{function}", json=payload, headers=headers)

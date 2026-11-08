@@ -16,7 +16,9 @@ class DocumentOut(BaseModel):
     scope: Scope
     publication_status: Literal["draft", "published", "archived"]
     processing_status: Literal["pending", "processing", "ready", "failed"]
+    processing_note: str | None = None
     page_count: int | None
     campus_id: UUID | None
     department_id: UUID | None
+    replaces_document_id: UUID | None = None
     created_at: datetime
