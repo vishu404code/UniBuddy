@@ -25,3 +25,22 @@ main { padding: 1.2rem; max-width: 960px; }
 table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 0.5rem; }
 th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e3e8f0; }
 @media (max-width: 480px) { main { padding: 0.8rem; } .card { padding: 1.1rem; } }
+
+.row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+.filters label { min-width: 12rem; }
+.plain-list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.5rem; }
+.link-button { background: none; border: none; color: #263653; padding: 0; text-align: left; text-decoration: underline; cursor: pointer; }
+.chat-layout { display: grid; grid-template-columns: minmax(180px, 240px) 1fr; gap: 1rem; align-items: start; }
+.chat-panel { display: flex; flex-direction: column; gap: 0.75rem; min-height: 60vh; }
+.messages { display: flex; flex-direction: column; gap: 0.6rem; max-height: 55vh; overflow-y: auto; }
+.bubble { padding: 0.7rem 0.9rem; border-radius: 12px; max-width: 85%; }
+.bubble p { margin: 0 0 0.4rem; white-space: pre-wrap; }
+.bubble-user { background: #eaf1fc; align-self: flex-end; }
+.bubble-ai { background: #f4f6fa; border: 1px solid #e3e8f0; align-self: flex-start; }
+.citations { margin: 0.4rem 0 0; padding-left: 1rem; font-size: 0.9rem; color: #263653; }
+.ask-form { display: flex; gap: 0.6rem; }
+.ask-form input { flex: 1; }
+.dialog-backdrop { position: fixed; inset: 0; background: rgba(38, 54, 83, 0.35); display: grid; place-items: center; padding: 1rem; }
+.dialog { max-width: 460px; width: 100%; box-sizing: border-box; }
+textarea { font: inherit; padding: 0.5rem; border: 1px solid #c9d1e0; border-radius: 6px; width: 100%; box-sizing: border-box; }
+@media (max-width: 640px) { .chat-layout { grid-template-columns: 1fr; } .bubble { max-width: 100%; } }

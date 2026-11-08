@@ -9,6 +9,9 @@ import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import StaffDashboard from "./pages/dashboards/StaffDashboard";
 import ManagementDashboard from "./pages/dashboards/ManagementDashboard";
 import AuthorityInvitationsPage from "./pages/authority/AuthorityInvitationsPage";
+import DocumentsPage from "./pages/documents/DocumentsPage";
+import ChatPage from "./pages/chat/ChatPage";
+import { MyTicketsPage, StaffTicketsPage, TicketDetailPage } from "./pages/tickets/TicketsPage";
 import SuperAdminAccountsPage from "./pages/superadmin/SuperAdminAccountsPage";
 
 export default function App() {
@@ -43,6 +46,42 @@ export default function App() {
       <Route
         path="/super-admin/accounts"
         element={<RequireRole roles={["super_admin"]}><SuperAdminAccountsPage /></RequireRole>}
+      />
+      <Route
+        path="/faculty/documents"
+        element={<RequireRole roles={["faculty"]}><DocumentsPage /></RequireRole>}
+      />
+      <Route
+        path="/authority/documents"
+        element={<RequireRole roles={["authority"]}><DocumentsPage /></RequireRole>}
+      />
+      <Route
+        path="/faculty/tickets"
+        element={<RequireRole roles={["faculty"]}><StaffTicketsPage basePath="/faculty/tickets" /></RequireRole>}
+      />
+      <Route
+        path="/faculty/tickets/:id"
+        element={<RequireRole roles={["faculty"]}><TicketDetailPage backTo="/faculty/tickets" /></RequireRole>}
+      />
+      <Route
+        path="/authority/tickets"
+        element={<RequireRole roles={["authority"]}><StaffTicketsPage basePath="/authority/tickets" /></RequireRole>}
+      />
+      <Route
+        path="/authority/tickets/:id"
+        element={<RequireRole roles={["authority"]}><TicketDetailPage backTo="/authority/tickets" /></RequireRole>}
+      />
+      <Route
+        path="/student/chat"
+        element={<RequireRole roles={["student"]}><ChatPage /></RequireRole>}
+      />
+      <Route
+        path="/student/tickets"
+        element={<RequireRole roles={["student"]}><MyTicketsPage basePath="/student/tickets" /></RequireRole>}
+      />
+      <Route
+        path="/student/tickets/:id"
+        element={<RequireRole roles={["student"]}><TicketDetailPage backTo="/student/tickets" /></RequireRole>}
       />
       <Route path="*" element={<p role="alert">Page not found.</p>} />
     </Routes>

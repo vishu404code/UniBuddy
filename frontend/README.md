@@ -39,6 +39,10 @@ Other scripts: `npm test` (unit tests), `npm run build` (production bundle in `d
 | `/management/dashboard` | management | `GET /management/stats`: aggregates only |
 | `/authority/invitations` | authority | Invite students and faculty to the authority's campus; approve or reject pending registrations |
 | `/super-admin/accounts` | Super Admin | Invite authority and management accounts; list accounts (account fields only) |
+| `/student/chat` | student | Ask UniBuddy. Answers show their source and page. If the documents do not answer, send the question to faculty. |
+| `/student/tickets`, `/student/tickets/:id` | student | Track your tickets and faculty replies. |
+| `/faculty/documents`, `/authority/documents` | faculty, authority | Upload an official PDF, watch processing, publish when ready, archive. |
+| `/faculty/tickets`, `/authority/tickets` (+ `/:id`) | faculty, authority | Assigned, unassigned and campus-queue tickets. Take a ticket, reply, change status. |
 
 ## How the connection works
 

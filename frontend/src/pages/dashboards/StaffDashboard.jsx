@@ -8,8 +8,13 @@ export default function StaffDashboard() {
   const { data, error, loading } = useApi("/dashboard/staff");
   const title = profile?.role === "authority" ? "Authority dashboard" : "Faculty dashboard";
   const isAuthority = profile?.role === "authority";
+  const base = isAuthority ? "/authority" : "/faculty";
+  const links = [
+    { to: `${base}/documents`, label: "Documents" },
+    { to: `${base}/tickets`, label: "Tickets" },
+  ];
   return (
-    <Shell title={title}>
+    <Shell title={title} links={links}>
       {isAuthority && <p><Link to="/authority/invitations">Invitations and registration approvals</Link></p>}
       {loading && <p role="status">Loading…</p>}
       {error && <p role="alert" className="error">{error}</p>}

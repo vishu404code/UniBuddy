@@ -16,16 +16,17 @@ function messageFrom(data, status) {
 
 export async function apiRequest(path, { method = "GET", body, token } = {}) {
   const headers = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
+
+  let payload;
+  if (isForm) payload = body;
+  else if (body !== undefined) payload = JSON.stringify(body);
 
   let response;
   try {
-    response = await fetch(`${config.apiBaseUrl}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    response = await fetch(`${config.apiBaseUrl}${path}`, { method, headers, body: payload });
   } catch {
     throw new ApiError(0, "The server could not be reached. Try again shortly.");
   }
