@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.ai.openai_client import OpenAIError
 from app.config import settings
+from app.routes.admin import router as admin_router
 from app.routes.announcements import router as announcements_router
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
@@ -81,5 +82,6 @@ for router in (
     notifications_router,
     dashboards_router,
     provisioning_router,
+    admin_router,
 ):
     app.include_router(router, prefix=settings.api_v1_prefix)

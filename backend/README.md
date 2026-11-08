@@ -22,7 +22,8 @@ passed. It does not mean the live project was tested.
 - Provisioning: authority invites students and faculty into its own campus; audit trail
 - Build: `pyproject.toml` with `uv.lock`; `requirements.txt` kept for pip deployment
 - Provisioning safeguards: the email domain must be on the server-side allowlist
-- Authentication UI and account flow (React + Vite in `frontend/`): login, registration request, invitation acceptance, set-password, forgot-password, and one dashboard per role
+- Authentication UI and account flow (React + Vite in `frontend/`): login, registration request, invitation acceptance, set-password, forgot-password, one dashboard per role, an authority screen for invitations and registration approvals, and a Super Admin screen for authority and management accounts
+- Role policy: students by approved registration, faculty and students by campus authority within campus, authority and management by Super Admin, Super Admin by one-time bootstrap only; the campus and role are never client-supplied (see "Roles, invitations and approvals")
   (`PROVISIONING_ALLOWED_EMAIL_DOMAINS`, exact match). An empty list fails closed with `503`.
   The campus and role come from the authority's profile and the endpoint, never from the
   client. Management cannot provision.
@@ -63,7 +64,10 @@ passed. It does not mean the live project was tested.
 
 ### Blocked (cannot be verified without the items listed)
 
-- **Authentication decisions** (see the questions in the report): Super Admin; inviting authority and management accounts; approving student registrations and campus routing; abuse protection for the public registration endpoint; the Supabase email templates and OTP expiry
+- **Migration `20261109130000`** (Super Admin, bootstrap, super-admin provisioning, account list): tested locally, not applied to dev, needs your approval
+- **Super Admin account**: not created. Needs the bootstrap runbook, after your approval of the invitation
+- **Abuse protection for the public registration endpoint** (host rate limit or CAPTCHA): not built
+- **Supabase email templates, redirects and OTP expiry**: dashboard settings, not configured yet
 - **Live invitation** to `yash.g26398@nst.rishihood.edu.in`: needs your separate go-ahead, and the Supabase Auth settings above
 - **Migration `20261109120000`** (registration requests): tested locally, not applied to dev, needs your approval
 
@@ -464,10 +468,11 @@ field, makes the request fail with `422` before anything is sent. A contract tes
 invitation, failure, and compensation is recorded. Only the database owner can read it, and
 no API exposes it yet.
 
-**Other ways accounts exist today.** Management and authority accounts, and any correction
-to an existing profile, are still created by a database owner (SQL editor or CLI). The
-`authenticated` role can read profiles but not write them. The `service_role` key can only
-execute the three provisioning functions and read profiles.
+**Other ways accounts exist today.** Authority and management accounts are created by Super
+Admin's invitation, and Super Admin itself by the one-time bootstrap (see "Roles, invitations and
+approvals"). Any correction to an existing profile is still made by a database owner. The
+`authenticated` role can read profiles but not write them. The `service_role` key can execute
+only the provisioning and approval functions, and read profiles.
 
 **Cross-campus access.** `cross_campus_record_access` is `false` for every user, and nothing
 sets it. Management reporting uses aggregates only. Management cannot provision accounts.
@@ -476,7 +481,7 @@ sets it. Management reporting uses aggregates only. Management cannot provision 
 
 - Confirm the production domain list for `PROVISIONING_ALLOWED_EMAIL_DOMAINS`. Exact-match
   allowlisting is implemented, and an empty list is disabled.
-- Decide whether provisioning needs approval from a second person, and build an audit read
+- Decide whether invitations need approval from a second person, and build an audit read
   path for the owners of the process.
 - Build the worker deployment (see below).
 
@@ -523,6 +528,57 @@ These are dashboard steps. Enter SMTP credentials only in the dashboard.
 the intake service and route (173 backend tests), and the frontend's unit tests and
 production build. **Not verified:** any live invitation, email delivery, the email links, or
 the password-setting path. Each needs your go-ahead and the settings above.
+
+## Roles, invitations and approvals (implemented)
+
+**Role policy as built**
+
+| Role | Created by | Campus | Notes |
+|---|---|---|---|
+| Student | Approved registration (a campus authority approves), or a campus authority's invitation | The approving or inviting authority's campus | A registration is a pending request and grants nothing. |
+| Faculty | A campus authority's invitation | The inviting authority's campus, and a department on it | |
+| Authority | Super Admin's invitation | Chosen by Super Admin, required | Campus authority cannot create authority accounts. |
+| Management | Super Admin's invitation | Optional | Aggregate-only. `cross_campus_record_access` stays false. |
+| Super Admin | One-time bootstrap only, from the database owner's session | None | Account provisioning and the account list. No academic records. |
+
+No client ever supplies its own role or campus. The endpoint sets the role. The campus comes
+from the approver's or inviter's profile, or, for authority accounts only, from Super Admin's
+choice, validated in the database.
+
+**Endpoints (all under `/api/v1`)**
+
+| Method and path | Who | What |
+|---|---|---|
+| `POST /auth/registrations` | public | Stores a pending student request. Same answer for repeat requests. |
+| `GET /provisioning/registrations` | authority | Pending requests. |
+| `POST /provisioning/registrations/{id}/approve` | authority | Invites the student to the authority's campus. Sends a real email. |
+| `POST /provisioning/registrations/{id}/reject` | authority | Rejects with an optional reason. |
+| `POST /provisioning/students`, `/provisioning/faculty` | authority | Invites into the authority's campus. Sends a real email. |
+| `GET /provisioning/departments` | authority | Departments on the authority's campus only. |
+| `POST /provisioning/authority`, `/provisioning/management` | Super Admin | Invites with a campus chosen by Super Admin (required for authority). Sends a real email. |
+| `GET /provisioning/campuses` | Super Admin | Campus list for the invitation form. |
+| `GET /admin/accounts` | Super Admin | Account fields only, from `super_admin_list_accounts()` (the database re-checks the role). |
+
+**Super Admin bootstrap runbook (one time, after migration 20261109130000 is approved and applied)**
+
+1. Invite the Super Admin's account from the Supabase dashboard (Authentication → Users →
+   Invite). This sends an email, so do it deliberately, with the university address.
+2. Copy that user's UUID from the dashboard.
+3. In the SQL editor, as the owner, run:
+
+   ```sql
+   select public.bootstrap_super_admin('<user-uuid>', 'name@nst.rishihood.edu.in');
+   ```
+
+   It refuses a second Super Admin, a non-university domain, and an unknown user. No API role
+   can run it. Record the run in your own change log; the function also writes an audit row.
+
+**Verified locally:** the migration's SQL (`tests/sql/super_admin_test.sql`, plus the older
+suites, all in the local runner); 191 backend tests covering the invitation rules, approval and
+rejection, and the route boundaries; 14 frontend tests and a production build.
+
+**Not verified:** any live invitation, email delivery, the invite and reset links, password
+setting, sign-in with a new account, the Super Admin bootstrap, and the live approval flow.
 
 ## Open decisions
 

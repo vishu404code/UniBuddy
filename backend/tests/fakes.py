@@ -17,6 +17,7 @@ RESERVED_PARAMS = {"select", "order", "limit", "offset"}
 UNIQUE_COLUMNS = {"tickets": ["source_message_id"], "registration_requests": ["email"]}
 # Columns PostgREST returns even when a row omits them (database defaults or nulls).
 ROW_DEFAULTS = {
+    "registration_requests": {"status": "pending", "decided_at": None, "decided_by": None, "decision_reason": None},
     "documents": {
         "original_filename": None, "mime_type": None, "file_size_bytes": None, "department_id": None,
         "page_count": None, "last_error": None, "processing_started_at": None,
@@ -121,6 +122,10 @@ class FakeSupabase:
             return self._publish(payload["p_document_id"])
         if function == "provisioning_precheck":
             return self._provisioning_precheck(payload)
+        if function == "super_admin_provision_precheck":
+            return self._super_admin_precheck(payload)
+        if function == "super_admin_provision_complete":
+            return self._super_admin_complete(payload)
         if function == "provisioning_complete":
             return self._provisioning_complete(payload)
         if function == "provisioning_record_failure":
@@ -162,6 +167,38 @@ class FakeSupabase:
             self._audit(p["p_actor"], email, role, "rejected", reason)
             return {"ok": False, "reason": reason}
         return {"ok": True, "campus_id": actor["campus_id"]}
+
+    def _super_admin_precheck(self, p):
+        actor = self._actor(p["p_actor"])
+        role, campus, email = p["p_role"], p.get("p_campus"), p["p_email"].lower()
+        reason = None
+        if actor is None or actor["role"] != "super_admin":
+            reason = "not_super_admin"
+        elif role not in ("authority", "management"):
+            reason = "invalid_role"
+        elif role == "authority" and not campus:
+            reason = "campus_required"
+        elif campus and not any(c["id"] == campus for c in self.tables["campuses"]):
+            reason = "campus_not_found"
+        elif any(r["email"] == email for r in self.tables["profiles"]):
+            reason = "email_exists"
+        if reason:
+            self._audit(p["p_actor"], email, role, "rejected", reason)
+            return {"ok": False, "reason": reason}
+        return {"ok": True}
+
+    def _super_admin_complete(self, p):
+        actor = self._actor(p["p_actor"])
+        if actor is None or actor["role"] != "super_admin":
+            raise SupabaseError(400, "provisioning_not_permitted")
+        profile = {
+            "id": p["p_user_id"], "email": p["p_email"].lower(), "full_name": p["p_full_name"],
+            "role": p["p_role"], "campus_id": p.get("p_campus"), "department_id": None,
+            "cross_campus_record_access": False,
+        }
+        self.tables["profiles"].append(profile)
+        self._audit(p["p_actor"], p["p_email"], p["p_role"], "invited", None, p["p_user_id"])
+        return {k: profile[k] for k in ("id", "email", "full_name", "role", "campus_id", "department_id")}
 
     def _provisioning_complete(self, p):
         actor = self._actor(p["p_actor"])
@@ -216,8 +253,10 @@ class FakeSupabase:
 
     async def rpc_as_user(self, access_token, function, payload):
         self.rpc_calls.append((access_token, function, payload))
+        if function in self.rpc_responses:
+            return copy.deepcopy(self.rpc_responses[function])
         if function == "staff_dashboard_stats":
-            return copy.deepcopy(self.rpc_responses.get(function, {}))
+            return {}
         return copy.deepcopy(self.rpc_rows)
 
 

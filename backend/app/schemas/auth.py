@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-Role = Literal["student", "faculty", "authority", "management"]
+Role = Literal["student", "faculty", "authority", "management", "super_admin"]
 
 
 class CurrentUser(BaseModel):

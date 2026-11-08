@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Comma-separated origins allowed to call this API. Defaults to the
     # frontend's local dev server (server.js runs on :3000).
-    allowed_origins: str = "http://localhost:3000"
+    allowed_origins: str = "http://localhost:3000,http://localhost:5173"
 
     # Supabase project URL, e.g. https://<project-ref>.supabase.co
     supabase_url: str | None = None
