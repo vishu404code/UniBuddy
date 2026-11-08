@@ -3,6 +3,7 @@ export const ROLE_HOME = {
   faculty: "/faculty/dashboard",
   authority: "/authority/dashboard",
   management: "/management/dashboard",
+  super_admin: "/super-admin/accounts",
 };
 
 export function dashboardPathForRole(role) {

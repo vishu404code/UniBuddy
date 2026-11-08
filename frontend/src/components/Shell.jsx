@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const ROLE_LABEL = {
@@ -6,9 +6,10 @@ const ROLE_LABEL = {
   faculty: "Faculty",
   authority: "Authority",
   management: "Management",
+  super_admin: "Super Admin",
 };
 
-export default function Shell({ title, children }) {
+export default function Shell({ title, links = [], children }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +23,9 @@ export default function Shell({ title, children }) {
       <header className="topbar">
         <strong>UniBuddy</strong>
         <span className="role-badge">{ROLE_LABEL[profile?.role] ?? ""}</span>
+        {links.map((link) => (
+          <Link key={link.to} to={link.to}>{link.label}</Link>
+        ))}
         <button type="button" className="secondary" onClick={handleSignOut}>Sign out</button>
       </header>
       <main>

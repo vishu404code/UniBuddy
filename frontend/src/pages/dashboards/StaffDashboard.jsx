@@ -1,4 +1,5 @@
 import Shell from "../../components/Shell";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { useApi } from "./useApi";
 
@@ -6,8 +7,10 @@ export default function StaffDashboard() {
   const { profile } = useAuth();
   const { data, error, loading } = useApi("/dashboard/staff");
   const title = profile?.role === "authority" ? "Authority dashboard" : "Faculty dashboard";
+  const isAuthority = profile?.role === "authority";
   return (
     <Shell title={title}>
+      {isAuthority && <p><Link to="/authority/invitations">Invitations and registration approvals</Link></p>}
       {loading && <p role="status">Loading…</p>}
       {error && <p role="alert" className="error">{error}</p>}
       {data && (

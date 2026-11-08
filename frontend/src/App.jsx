@@ -8,6 +8,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import StaffDashboard from "./pages/dashboards/StaffDashboard";
 import ManagementDashboard from "./pages/dashboards/ManagementDashboard";
+import AuthorityInvitationsPage from "./pages/authority/AuthorityInvitationsPage";
+import SuperAdminAccountsPage from "./pages/superadmin/SuperAdminAccountsPage";
 
 export default function App() {
   return (
@@ -33,6 +35,14 @@ export default function App() {
       <Route
         path="/management/dashboard"
         element={<RequireRole roles={["management"]}><ManagementDashboard /></RequireRole>}
+      />
+      <Route
+        path="/authority/invitations"
+        element={<RequireRole roles={["authority"]}><AuthorityInvitationsPage /></RequireRole>}
+      />
+      <Route
+        path="/super-admin/accounts"
+        element={<RequireRole roles={["super_admin"]}><SuperAdminAccountsPage /></RequireRole>}
       />
       <Route path="*" element={<p role="alert">Page not found.</p>} />
     </Routes>

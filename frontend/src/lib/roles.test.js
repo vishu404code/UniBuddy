@@ -12,7 +12,13 @@ describe("dashboardPathForRole", () => {
   });
 
   it("does not send an unknown role anywhere", () => {
-    expect(dashboardPathForRole("super_admin")).toBeNull();
+    expect(dashboardPathForRole("admin")).toBeNull();
     expect(dashboardPathForRole(undefined)).toBeNull();
+  });
+});
+
+describe("super admin routing", () => {
+  it("sends Super Admin to account management and nowhere else", () => {
+    expect(dashboardPathForRole("super_admin")).toBe("/super-admin/accounts");
   });
 });

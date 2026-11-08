@@ -37,6 +37,8 @@ Other scripts: `npm test` (unit tests), `npm run build` (production bundle in `d
 | `/faculty/dashboard` | faculty | `GET /dashboard/staff` |
 | `/authority/dashboard` | authority | `GET /dashboard/staff` |
 | `/management/dashboard` | management | `GET /management/stats`: aggregates only |
+| `/authority/invitations` | authority | Invite students and faculty to the authority's campus; approve or reject pending registrations |
+| `/super-admin/accounts` | Super Admin | Invite authority and management accounts; list accounts (account fields only) |
 
 ## How the connection works
 
