@@ -3,18 +3,34 @@
 FastAPI backend for UniBuddy. Implemented: auth and role/campus authorization, PDF
 upload and processing, embeddings, RAG chat with citations and abstention, forwarding
 unanswered questions to faculty, ticket handling, announcements, notifications, and
-dashboards. The code and its 128 pytest tests are complete. The live flow still needs
+dashboards. The code and its 130 pytest tests are complete. The live flow still needs
 the approvals listed below before it can run against the dev project.
 
 ## Setup
 
-From the `backend/` directory:
+From the `backend/` directory. Two equivalent ways:
+
+With `uv` (recommended; the lockfile pins every dependency, Python 3.11+):
+
+```bash
+uv sync
+uv run uvicorn app.main:app --reload
+uv run pytest
+```
+
+With pip (the deployment path; `requirements.txt` mirrors `pyproject.toml`):
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+When you change a dependency, update `pyproject.toml`, run `uv lock`, and regenerate
+`requirements.txt` with
+`uv export --frozen --no-hashes --no-emit-project --no-dev --format requirements-txt`.
+Both files must list the same runtime versions. Dev-only tools (pytest) are in the `dev`
+group.
 
 Copy the environment template:
 
@@ -47,7 +63,7 @@ curl http://localhost:8000/api/v1/health
 pytest
 ```
 
-Expected: 128 tests pass. The tests use a locally generated signing key, in-memory
+Expected: 130 tests pass. The tests use a locally generated signing key, in-memory
 Supabase and OpenAI test doubles, and real PDFs generated with PyMuPDF. They make no
 network calls. The HTTP client tests use mocked transports, so they check request
 shape, not live Supabase or OpenAI behaviour.
@@ -233,9 +249,10 @@ model replies `INSUFFICIENT_EVIDENCE`, or gives no citation to a retrieved sourc
 response also abstains. Citations are built from the retrieved chunk's document and page,
 never from the model's text. Abstained responses set `escalation_available: true`.
 
-### OCR for scanned PDFs: assessment
+### OCR for scanned PDFs: unavailable
 
-Not implemented. Scanned PDFs fail with a clear reason. OCR would need:
+Status: **unavailable**. Scanned PDFs (no text layer) fail with a clear reason. OCR is not
+deployed. It would need:
 
 - the Tesseract binary and its language data installed on the host. PyMuPDF does not
   include them, and this backend's requirements are pure Python wheels;
@@ -243,21 +260,38 @@ Not implemented. Scanned PDFs fail with a clear reason. OCR would need:
   `apt-get install tesseract-ocr tesseract-ocr-eng`. No container is set up yet;
 - an OCR timing test on real campus scans, since OCR is much slower than text extraction.
 
-Remaining dependency: choose the hosting runtime for the worker, then decide whether
-scanned PDFs are common enough to justify the image size and latency.
+Remaining dependency: choose the hosting runtime for the worker. Only then decide whether
+scanned PDFs are common enough to justify the image size and latency. No container or
+paid service has been created for this.
 
 ### Live setup status
 
-Done on the dev project: migrations `20261108120700` and the private `documents` bucket.
+Applied to the dev project (`unibuddy-dev`, ref in `.env`):
 
-Waiting for your approval: migration `20261108120800_document_lifecycle_and_scale.sql`.
-It adds the job columns, `claim_document_jobs`, `publish_document_version`, the SQL
-dashboard and management aggregates, the indexes, and the RLS subquery rewrite. It has
-been tested on a local PostgreSQL 17 + pgvector database (`tests/sql/run_local_db_tests.sh`),
-not on the dev project.
+- migrations `20261108120000` to `20261108120800`, including `20261108120800_document_lifecycle_and_scale.sql`
+- the private `documents` Storage bucket
+- the seeded RLS test data (8 profiles, documents, tickets). It is kept on purpose.
 
-Still needed before the live flow can run: `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY`
-in `backend/.env`.
+Verified on the live dev project: the 80-check RLS visibility matrix passes, and the
+staff dashboard and management aggregate return real data for the seeded users.
+
+**Live checks not yet run, and why:**
+
+1. Live OpenAI calls (embeddings and answers). Blocked: no `OPENAI_API_KEY` yet.
+2. The upload-to-answer flow on the dev project: upload, worker processing, publish, a
+   cited answer, an abstention, and a forward to faculty. Blocked: needs the OpenAI key,
+   and real campus PDFs for meaningful answers.
+3. User-scoped reads through the publishable key with a real signed-in session.
+   Blocked: no `SUPABASE_PUBLISHABLE_KEY` yet. Until then the RLS checks used SQL role
+   impersonation, not HTTP sessions.
+4. The worker's storage download and processing against real objects. Blocked by item 1.
+5. Real campus PDFs, for tuning the similarity threshold and top-5 limit. Blocked: none
+   provided yet.
+6. Production deployment and the worker runtime. Blocked: hosting not chosen. Development
+   runs the worker in the web process.
+7. The 3,000+ daily-user target. Blocked: needs a load test against a deployed environment.
+
+Keys go in `backend/.env` only. Do not paste them into chat.
 
 ### Capacity: measured so far
 
@@ -280,6 +314,25 @@ API, against the real Supabase plan, with concurrent users and real documents. T
 - The similarity threshold of 0.3 and the top-5 limit are starting values, not tuned
   against real campus documents.
 - Load testing, rate limiting and caching.
+
+## Accounts, roles and campus assignment
+
+- **Who can create accounts.** Supabase Auth creates the login. The backend never creates
+  or edits users. Signup does not create a profile, and no endpoint accepts a role, campus,
+  department, or owner from the client. A contract test
+  (`tests/test_request_contracts.py`) fails if any request body starts accepting such a
+  field.
+- **Where role and campus come from.** Only the `profiles` row. Token claims such as
+  `user_metadata` are never read for authorization.
+- **How profiles are created today.** An operator with database owner access inserts the
+  row (SQL editor or CLI) after the Auth user exists. The `authenticated` role can read
+  profiles but cannot write them. The `service_role` key can read `profiles` but cannot
+  write them. This is deliberate, and it is safe for development.
+- **Before production.** The provisioning path is not built yet. An admin provisioning
+  function, restricted to an approved admin role and written to an audit log, is needed.
+  That needs your approval because it changes grants, so it is not started.
+- **Cross-campus access.** `cross_campus_record_access` is `false` for every user, and
+  nothing sets it. Management reporting uses aggregates only.
 
 ## Open decisions
 
@@ -323,9 +376,9 @@ must be granted explicitly in the migrations. Nothing is granted to `anon`.
 
 Migration `20261108120700_backend_operations.sql` adds the write and read-back grants
 the endpoints use. It is applied to the dev project.
-Migration `20261108120800_document_lifecycle_and_scale.sql` (pending approval) adds
+Migration `20261108120800_document_lifecycle_and_scale.sql` (applied to the dev project) adds
 `DELETE` on `document_chunks` for reprocessing, `EXECUTE` on the job and aggregate
-functions, and the RLS subquery rewrite. It is not applied to the dev project yet.
+functions, and the RLS subquery rewrite.
 
 Assumption to verify after applying: the secret key runs as the `service_role`
 Postgres role. If the profile lookup returns an empty result for a known user, check
@@ -356,8 +409,8 @@ backend/
       documents.py chat.py tickets.py announcements.py notifications.py dashboards.py
     repositories/profiles.py      Profile lookup via Supabase REST
     schemas/                      Pydantic request and response models, incl. Page envelope
-  supabase/migrations/            Schema, RLS, indexes, grants (0800 is pending approval)
-  tests/                          pytest suite (128 tests) and in-memory test doubles
+  supabase/migrations/            Schema, RLS, indexes, grants (all applied to dev)
+  tests/                          pytest suite (130 tests) and in-memory test doubles
   tests/sql/                      SQL assertions and a local-only database runner
   requirements.txt
   .env.example

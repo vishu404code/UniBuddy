@@ -1,0 +1,30 @@
+[project]
+name = "unibuddy-backend"
+version = "0.1.0"
+description = "UniBuddy campus assistant backend (FastAPI, Supabase, OpenAI RAG)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.162.2",
+    "uvicorn[standard]==0.54.0",
+    "pydantic-settings==2.16.2",
+    "python-dotenv==1.2.4",
+    "python-multipart==0.0.33",
+    "httpx==0.28.1",
+    "PyJWT[crypto]==2.15.1",
+    "certifi==2026.10.23",
+    "pymupdf==2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "pytest-asyncio==1.4.1.post1",
+]
+
+[tool.uv]
+# The backend is run from source (uvicorn app.main:app), not installed as a package.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
