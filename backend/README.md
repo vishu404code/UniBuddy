@@ -6,6 +6,60 @@ unanswered questions to faculty, ticket handling, announcements, notifications, 
 dashboards. The code and its 158 pytest tests are complete. The live flow still needs
 the approvals listed below before it can run against the dev project.
 
+## Status checklist
+
+Four states, kept separate on purpose. "Locally verified" means tests or local PostgreSQL
+passed. It does not mean the live project was tested.
+
+### Implemented (code in the repo)
+
+- Auth: Supabase token verification (ES256/RS256), profile lookup, roles, campus rule, `GET /auth/me`
+- Documents: upload (202), replace, publish, archive, detail, paged and filtered list, background worker
+- Chat: grounded answers with citations or abstention, conversation list and messages, forward to faculty
+- Tickets: paged list with filters, detail with timeline, take, status change and reply
+- Announcements (scope rule), notifications (paged, mark read)
+- Dashboards: student (exact counts), staff (SQL, RLS-scoped), management (SQL aggregates only)
+- Provisioning: authority invites students and faculty into its own campus; audit trail
+- Build: `pyproject.toml` with `uv.lock`; `requirements.txt` kept for pip deployment
+
+### Locally verified (no live project)
+
+- 158 pytest tests pass under pip and under `uv`, on Python 3.11 and 3.14
+- Migrations `20261108120000` to `20261108120900` parse under PostgreSQL's grammar
+- Lifecycle and provisioning SQL assertions pass on PostgreSQL 17 with pgvector (`tests/sql/run_local_db_tests.sh`)
+- RLS visibility matrix: 80/80 on a local database with the final policies
+- The server starts with the worker lifespan, and the worker idles without an OpenAI key
+
+### Live verified (Mumbai dev project, ref in `.env`)
+
+- Migrations `20261108120000` to `20261108120800` applied; the seeded RLS test data is kept
+- RLS visibility matrix: 80/80 on the live project after migration 0800
+- Function privileges: `service_role`, `authenticated` and `anon` match the intended grants
+- `staff_dashboard_stats` and `management_ticket_stats` return real data
+- Private `documents` bucket exists; a probe upload and a service-key insert succeeded, and the probes were removed
+
+### Not applied, pending your approval
+
+- Migration `20261108120900_campus_provisioning.sql`: tested locally, not applied to dev
+
+### Blocked (cannot be verified without the items listed)
+
+- **OpenAI key** (`OPENAI_API_KEY`): live embeddings, live answers and citations, the upload-to-answer flow, and worker processing of real PDFs
+- **Publishable key** (`SUPABASE_PUBLISHABLE_KEY`): user-scoped reads over HTTP with a real session
+- **Sample campus PDF(s)**: retrieval tuning (similarity threshold, top-k) and a meaningful end-to-end test
+- **Live provisioning**: needs migration 0900 approved, an email policy, and a controlled test inbox, because an invite sends a real email
+- **OCR**: unavailable. It needs a container runtime with Tesseract, which is not set up
+- **Deployment**: no hosting chosen, no Render service, and no worker runtime. The worker plan is in the README
+- **Capacity (3,000+ daily users)**: not verified. Needs a load test against a deployed environment
+
+### Remaining steps
+
+1. **Keys.** Add `SUPABASE_PUBLISHABLE_KEY` and `OPENAI_API_KEY` to `backend/.env`. Do not paste them into chat. Then start the server with `uv run uvicorn app.main:app --reload`.
+2. **Sample PDF.** Give me one or more real campus PDFs, or place them somewhere I can read. Then run the upload, publish, ask, abstain and forward sequence against the dev project and report the real results.
+3. **Provisioning.** Approve migration 0900. Then invite one test address you control, and confirm the email and the profile.
+4. **Deployment.** Choose the hosting for the web service and the worker, and approve any paid resource before it is created.
+5. **Capacity.** Run a load test against the deployed API and the real Supabase plan, with concurrent users, real documents, and a measured p95 latency. Only then state a capacity figure.
+
 ## Setup
 
 From the `backend/` directory. Two equivalent ways:
