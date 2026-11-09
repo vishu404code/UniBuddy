@@ -1,19 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { AUTH_CALLBACK_PATH, GOOGLE_HOSTED_DOMAIN, googleSignInRequest } from "./googleSignIn";
+import { describe, expect, it, vi } from "vitest";
+import { googleButtonOptions, googleInitOptions } from "./googleSignIn";
 
-describe("googleSignInRequest", () => {
-  it("requests Google and returns to the app's callback route", () => {
-    const request = googleSignInRequest("http://localhost:5173");
+describe("googleInitOptions", () => {
+  it("uses the public client ID and forwards only the credential", () => {
+    const received = vi.fn();
+    const options = googleInitOptions("client-id.apps.googleusercontent.com", received);
 
-    expect(request.provider).toBe("google");
-    expect(request.options.redirectTo).toBe("http://localhost:5173/auth/callback");
-    expect(AUTH_CALLBACK_PATH).toBe("/auth/callback");
+    options.callback({ credential: "id-token-value", select_by: "btn" });
+
+    expect(options.client_id).toBe("client-id.apps.googleusercontent.com");
+    expect(received).toHaveBeenCalledWith("id-token-value");
   });
 
-  it("only hints the campus domain and never carries a role", () => {
-    const request = googleSignInRequest("https://example.test");
+  it("never sends a secret, role or campus from the browser", () => {
+    const serialised = JSON.stringify(googleInitOptions("id", () => {}), (_key, value) =>
+      typeof value === "function" ? "[fn]" : value,
+    );
 
-    expect(request.options.queryParams).toEqual({ hd: GOOGLE_HOSTED_DOMAIN });
-    expect(JSON.stringify(request)).not.toMatch(/role|admin|authority|faculty|student/i);
+    expect(serialised).not.toMatch(/secret|role|campus|admin/i);
+  });
+});
+
+describe("googleButtonOptions", () => {
+  it("renders the standard button with no extra data", () => {
+    expect(googleButtonOptions()).toEqual({ theme: "outline", size: "large", text: "continue_with", width: 320 });
   });
 });

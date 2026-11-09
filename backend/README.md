@@ -58,6 +58,39 @@ passed. It does not mean the live project was tested.
 - Publishable key accepted: six anonymous read or RPC requests (profiles, documents, campuses, both staff and management RPCs, audit table) each returned `42501` (permission denied for `anon`). Anonymous access is closed.
 - Migration `20261108120900`: the three provisioning functions are callable only by `service_role`; `provisioning_audit` has RLS on and no grants to API roles. The provisioning endpoints have not been called live, so the audit table is still empty
 
+### Replacement build (local, not deployed, not pushed)
+
+The replacement is built behind settings. Defaults keep Supabase, so the current demo is unchanged.
+
+- **Selection:** `DATA_BACKEND`, `AUTH_BACKEND`, `STORAGE_BACKEND`. Set all three to `postgres`, `google` and `r2` only after the migration is verified.
+- **Data:** `app/services/postgres_client.py` has the same methods as the Supabase client. It uses parameterized SQL and strict identifier checks. Service calls run as `service_role`. User calls run as `authenticated` with `app.user_id` set from the session token.
+- **Migrations:** `app/db/bootstrap` and `app/db/migrations` are generated from `supabase/migrations` by `tools/port_supabase_migrations.py`. Do not edit them by hand; a test fails if they drift. `account_identities` replaces `auth.users`.
+- **Sign-in:** `POST /auth/google` verifies a Google ID token, links it to an existing account (by subject, or by an exact verified email on an unlinked account), and returns a UniBuddy session token. Roles come only from `profiles`. An account without a profile gets no session.
+- **Sign-up:** `POST /auth/google/access-request` files a pending Student request for a verified person. It grants nothing.
+- **Invitations:** provisioning creates an `account_identities` row instead of calling Supabase Auth. The person links it by signing in with Google using the same verified email.
+- **Domains:** the `@nst.rishihood.edu.in` restriction is removed from configuration, provisioning, registration and the frontend checks. One exception is noted below.
+- **Storage:** with `STORAGE_BACKEND=r2`, PDFs go through the R2 adapter (`app/storage`). Keys are limited to `<campus>/<document>.pdf`.
+
+**Tests**
+
+- Default run (no database needed): backend 276 passed, 36 skipped. Frontend 28 passed. Frontend build succeeds.
+- Local PostgreSQL run: start the local server (PostgreSQL 17 with pgvector), then:
+  - `tests/sql/run_portable_db_tests.sh` rebuilds `unibuddy_portable` and runs the ported SQL tests.
+  - `TEST_DATABASE_URL=postgresql://<your-user>@localhost:54329/unibuddy_portable pytest tests/test_postgres_client.py`
+  - `TEST_DATABASE_URL=postgresql://<your-user>@localhost:54329/unibuddy_stage1 pytest tests/test_access_rules_stage1.py` (its own database, because it creates tables)
+
+**Not verified**
+
+- Live Neon, live R2, live Google sign-in, and the Render deployment. None of these was connected to during this work.
+- The data migration: nothing has been copied from Supabase.
+
+**Decisions and open items**
+
+1. **Super Admin bootstrap:** the owner-only SQL function `bootstrap_super_admin` still checks for `nst.rishihood.edu.in` (migration `20261109130000`). Changing it means a new migration and an updated test, so it needs your approval.
+2. **Public typed-email registration:** `POST /auth/registrations` still accepts a typed email without Google verification. It grants nothing, but it should be removed once the Google request path is live. That removal needs your approval.
+3. **Session storage:** the session token is held in the browser's local storage. An httpOnly cookie is the stronger option and needs backend cookie handling.
+4. **Production check:** the backend must connect as a non-superuser role granted `authenticated` and `service_role` (superusers bypass row rules).
+
 ### Verified status (2026-11-09)
 
 **Verified by automated tests, and by minimal live or read-only checks**

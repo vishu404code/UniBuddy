@@ -2,10 +2,6 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import RequireRole from "./components/RequireRole";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import AcceptInvitationPage from "./pages/AcceptInvitationPage";
-import SetPasswordPage from "./pages/SetPasswordPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import StaffDashboard from "./pages/dashboards/StaffDashboard";
 import ManagementDashboard from "./pages/dashboards/ManagementDashboard";
@@ -21,10 +17,6 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
-      <Route path="/set-password" element={<SetPasswordPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route
         path="/student/dashboard"
         element={<RequireRole roles={["student"]}><StudentDashboard /></RequireRole>}

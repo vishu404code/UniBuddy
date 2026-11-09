@@ -1,73 +1,83 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
+import GoogleSignIn from "../components/GoogleSignIn";
 import { useAuth } from "../auth/AuthContext";
-import { supabase, supabaseConfigured } from "../lib/supabase";
+import { apiRequest } from "../lib/api";
+import { config } from "../lib/config";
+import { destinationAfterSignIn } from "../lib/accessDecision";
 import { dashboardPathForRole } from "../lib/roles";
-import { googleSignInRequest } from "../lib/googleSignIn";
 
 export default function LoginPage() {
-  const { session, profile, refreshProfile } = useAuth();
+  const { session, profile, signInWithToken } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [credential, setCredential] = useState(null);
+  const [needsAccess, setNeedsAccess] = useState(false);
+  const [receipt, setReceipt] = useState(null);
 
   if (session && profile && dashboardPathForRole(profile.role)) {
     return <Navigate to={dashboardPathForRole(profile.role)} replace />;
   }
 
-  async function handleGoogle() {
-    if (!supabaseConfigured) return setError("Sign-in is not configured for this environment.");
-    setError(null);
-    const { error: oauthError } = await supabase.auth.signInWithOAuth(
-      googleSignInRequest(window.location.origin),
-    );
-    if (oauthError) setError("Google sign-in is not available right now. Use your email and password.");
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    if (!supabaseConfigured) return setError("Sign-in is not configured for this environment.");
+  async function handleCredential(idToken) {
     setBusy(true);
     setError(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-    if (signInError) {
+    setReceipt(null);
+    setNeedsAccess(false);
+    setCredential(idToken);
+    try {
+      const { access_token: accessToken } = await apiRequest("/auth/google", {
+        method: "POST",
+        body: { id_token: idToken },
+      });
+      const me = await signInWithToken(accessToken);
+      const destination = destinationAfterSignIn(me);
+      if (destination.kind === "dashboard") {
+        navigate(destination.path, { replace: true });
+      } else {
+        setError("Your account is not set up yet. Contact your campus office.");
+      }
+    } catch (err) {
+      setNeedsAccess(err.code === "no_profile");
+      setError(err.message || "Sign-in did not complete. Try again.");
+    } finally {
       setBusy(false);
-      setError("Email or password is incorrect.");
-      return;
     }
-    const me = await refreshProfile();
-    setBusy(false);
-    if (me && dashboardPathForRole(me.role)) {
-      navigate(dashboardPathForRole(me.role), { replace: true });
-    } else {
-      setError("Your account is not set up yet. Contact your campus office.");
+  }
+
+  async function requestAccess() {
+    if (!credential) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiRequest("/auth/google/access-request", {
+        method: "POST",
+        body: { id_token: credential },
+      });
+      setReceipt(result.message ?? "Thanks. Your request is waiting for review.");
+    } catch (err) {
+      setError(err.message || "The request could not be sent. Try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <AuthLayout title="Sign in">
-      <form onSubmit={handleSubmit} className="stack">
-        <label>
-          University email
-          <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Password
-          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {error && <p role="alert" className="error">{error}</p>}
-        <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-      </form>
-      <p className="links">or</p>
-      <button type="button" onClick={handleGoogle} disabled={busy}>Continue with Google</button>
+      <p className="hint">Sign in with your Google account.</p>
+      <GoogleSignIn clientId={config.googleClientId} onCredential={handleCredential} />
+      {busy && <p className="status">Checking your account…</p>}
+      {error && <p role="alert" className="error">{error}</p>}
+      {needsAccess && !receipt && (
+        <button type="button" className="secondary" onClick={requestAccess} disabled={busy}>
+          Request Student access
+        </button>
+      )}
+      {receipt && <p role="status">{receipt}</p>}
       <p className="links">
-        <Link to="/forgot-password">Forgot password?</Link> · <Link to="/register">Request access as a student</Link>
+        New to UniBuddy? <Link to="/register">Learn about requesting access</Link>
       </p>
     </AuthLayout>
   );
