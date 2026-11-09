@@ -125,6 +125,17 @@ class FakeDataClient:
                 "campus_id": None, "department_id": None, "cross_campus_record_access": False,
             })
             return {"id": account, "role": "student"}
+        if function == "open_preauthorized_faculty_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if payload.get("p_campus") is None:
+                raise DataServiceError(400, "invalid_account")
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "faculty",
+                "campus_id": payload["p_campus"], "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "faculty"}
         if function == "claim_document_jobs":
             return self._claim(payload)
         if function == "publish_document_version":

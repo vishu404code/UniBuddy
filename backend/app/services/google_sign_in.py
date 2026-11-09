@@ -4,7 +4,9 @@ Google verifies the person and the email. The database decides access:
 - A known Google account signs in to its existing profile, whatever its role.
 - A verified Google person with no profile becomes a Student (open signup). A new Student gets the only existing campus when the database has exactly one;
   no department is assigned here.
-- Faculty, Authority and Management are never created here. They come only from authorized provisioning.
+- Faculty, Authority and Management are never created here, except for the server-side
+  pre-authorized Faculty emails below. Those get a Faculty profile on first verified sign-in,
+  never a Student profile first. Authority and Management still come only from authorized provisioning.
 """
 
 from collections.abc import Callable
@@ -18,6 +20,13 @@ from app.services.errors import DataServiceError
 
 ACCOUNT_COLUMNS = "id,email,google_subject"
 Verifier = Callable[[str, str], dict[str, Any]]
+
+# Pre-authorized Faculty, decided on the server. A verified Google email listed here gets a Faculty
+# profile on its first sign-in. Faculty needs a campus to see its campus records, so the campus is
+# set by name. No department is set here.
+PREAUTHORIZED_FACULTY_CAMPUS: dict[str, str] = {
+    "tarun.s26366@nst.rishihood.edu.in": "Rishihood University, Sonipat",
+}
 
 
 class GoogleSignInError(Exception):
@@ -46,6 +55,33 @@ async def _candidates(sb, identity: GoogleIdentity) -> list[ProfileRecord]:
             id=UUID(str(row["id"])), email=(row["email"] or "").lower(), google_subject=row["google_subject"]
         )
     return list(seen.values())
+
+
+async def _create_profile(sb, account_id: UUID, identity: GoogleIdentity) -> None:
+    """The pre-authorized Faculty check runs first, so a listed email never gets a Student profile."""
+    campus_name = PREAUTHORIZED_FACULTY_CAMPUS.get(identity.email.strip().lower())
+    if campus_name is None:
+        await _create_student_profile(sb, account_id, identity)
+    else:
+        await _create_faculty_profile(sb, account_id, identity, campus_name)
+
+
+async def _create_faculty_profile(sb, account_id: UUID, identity: GoogleIdentity, campus_name: str) -> None:
+    campuses = await sb.select_service("campuses", {"select": "id", "name": f"eq.{campus_name}"})
+    if len(campuses) != 1:
+        raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.")
+    try:
+        await sb.rpc_service(
+            "open_preauthorized_faculty_signup",
+            {
+                "p_account": str(account_id),
+                "p_email": identity.email,
+                "p_full_name": identity.full_name,
+                "p_campus": str(campuses[0]["id"]),
+            },
+        )
+    except DataServiceError as exc:
+        raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.") from exc
 
 
 async def _create_student_profile(sb, account_id: UUID, identity: GoogleIdentity) -> None:
@@ -94,12 +130,12 @@ async def _resolve_account(sb, identity: GoogleIdentity, verifier_ok: bool = Tru
             if exc.status_code == 409:
                 raise GoogleSignInError(409, "conflict", "This Google account was just linked. Try again.") from exc
             raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.") from exc
-        await _create_student_profile(sb, account_id, identity)
+        await _create_profile(sb, account_id, identity)
         return account_id
 
     account_id = decision.profile_id
     if not await _profile_exists(sb, account_id):
-        await _create_student_profile(sb, account_id, identity)
+        await _create_profile(sb, account_id, identity)
 
     if decision.outcome is SignInOutcome.LINK:
         linked = await sb.update_service(
