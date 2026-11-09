@@ -258,6 +258,7 @@ async function loadViewData(view=S.view){
   await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
   S.loading=false;R();
+  watchOpenTicket();
 }
 
 // Google Sign-In Credential Handler
@@ -487,10 +488,16 @@ function modal(){
 function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   const prevScroll=$('.page')?.scrollTop||0;
+  // Fields in an open dialog and the search box keep what was typed or chosen when the page is redrawn.
+  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#gs')]
+    .filter(el=>el.type!=='file').map(el=>({id:el.id,value:el.value,checked:el.checked}));
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
   const html=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
   // Only rewrite the page when its markup actually changed: a refresh with the same data causes no blink.
-  if(html!==window.__lastRenderHtml){window.__lastRenderHtml=html;a.innerHTML=html}
+  if(html!==window.__lastRenderHtml){
+    window.__lastRenderHtml=html;a.innerHTML=html;
+    kept.forEach(k=>{const el=document.getElementById(k.id);if(!el)return;if(el.type==='checkbox')el.checked=k.checked;else el.value=k.value});
+  }
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
@@ -516,27 +523,40 @@ function initGoogleAuth(){
   }else if(S.scr==='login'&&UB_GOOGLE_CLIENT_ID&&!window.__ubGoogleRetry){window.__ubGoogleRetry=setTimeout(()=>{window.__ubGoogleRetry=null;if(S.scr==='login')initGoogleAuth()},500)}
 }
 
-// An open ticket re-checks its status and replies every 15 s. It never redraws while a field has focus,
-// a write is in flight or a modal is open, so typed text is not lost.
+// My Queries and the staff ticket list re-check every 15 s: the list (status, assignment) and the open
+// ticket (status, replies). A redraw happens only when something changed, and never while a field has
+// focus, a write is in flight or a dialog is open, so typed text and the reply draft are not lost.
 let detailPollTimer=null;
 function watchOpenTicket(){
   clearTimeout(detailPollTimer);detailPollTimer=null;
-  if(!S.user||!S.detail?.ticket||!['tix','queries'].includes(S.view))return;
+  if(!S.user||!['tix','queries'].includes(S.view))return;
   detailPollTimer=setTimeout(refreshOpenTicket,15000);
+}
+function ticketsBusy(){
+  const a=document.activeElement;
+  return !!(a&&['TEXTAREA','INPUT','SELECT'].includes(a.tagName))||!!S.actionBusy||!!S.modal;
 }
 async function refreshOpenTicket(){
   detailPollTimer=null;
+  if(!S.user||!['tix','queries'].includes(S.view))return;
+  if(ticketsBusy()){watchOpenTicket();return}
   const t=S.detail?.ticket;
-  if(!t||!S.user||!['tix','queries'].includes(S.view))return;
-  const a=document.activeElement;
-  const typing=a&&['TEXTAREA','INPUT','SELECT'].includes(a.tagName);
-  if(typing||S.actionBusy||S.modal){watchOpenTicket();return}
-  const res=await apiCall(`/tickets/${t.uuid}`);
-  if(res.ok){
-    const next={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
-    const sig=x=>JSON.stringify([x.ticket.status,(x.events||[]).length]);
-    if(sig(next)!==sig(S.detail)){S.detail=next;R()}
+  const [list,detail]=await Promise.all([
+    apiCall('/tickets?limit=50'),
+    t?apiCall(`/tickets/${t.uuid}`):Promise.resolve(null)
+  ]);
+  let changed=false;
+  if(list.ok){
+    const next=pageItems(list).map(ticketView).map(x=>({...x,dept:S.departments.find(d=>d.id===x.department_id)?.name||'Department'}));
+    const sig=l=>JSON.stringify(l.map(x=>[x.uuid,x.status,x.assigned_faculty_id||null]));
+    if(sig(next)!==sig(S.tickets)){S.tickets=next;changed=true}
   }
+  if(detail?.ok){
+    const next={ticket:{...ticketView(detail.data.ticket),events:detail.data.events||[]},events:detail.data.events||[]};
+    const sig=x=>JSON.stringify([x.ticket.status,x.ticket.assigned_faculty_id||null,(x.events||[]).length]);
+    if(sig(next)!==sig(S.detail)){S.detail=next;changed=true}
+  }
+  if(changed&&!ticketsBusy())R();
   watchOpenTicket();
 }
 
@@ -565,12 +585,15 @@ document.addEventListener('click',async e=>{
   else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
   else if(a=='ann-modal'){S.modal={type:'new-ann'};R()}
   else if(a=='submit-doc-upload'){
+    // One click = one POST. apiCall never retries a POST, and the button stays disabled until the answer arrives.
+    if(S.actionBusy)return;
     const title=$('#doc-title')?.value.trim(),file=$('#doc-file')?.files?.[0],vis=$('#doc-vis')?.value||'public_students',scope=$('#doc-scope')?.value||'campus';
     if(!title||!file){toast('Enter a title and choose a PDF.');return}
     if(file.type!=='application/pdf'&& !file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
     const body=new FormData();body.append('title',title);body.append('file',file);body.append('visibility',vis);body.append('scope',scope);
-    const button=el;button.disabled=true;button.textContent='Uploading…';
+    const button=el;S.actionBusy=true;button.disabled=true;button.textContent='Uploading…';
     const res=await apiCall('/documents',{method:'POST',body});
+    S.actionBusy=false;
     if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
     if(res.data&&res.data.id){S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)]}
     S.modal=null;R();await loadViewData('docs');toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
@@ -611,18 +634,24 @@ document.addEventListener('click',async e=>{
     R();toast('Announcement published.');
   }
   else if(a=='ms'){
+    if(S.actionBusy)return;
     const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value;
     if(!departmentId){toast('No department is configured for your campus yet.');return}
     if(!msg?.mid){toast('The question is missing its server reference. Ask it again, then forward it.');return}
+    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Submitting…';
     const res=await apiCall(`/chat/messages/${msg.mid}/forward`,{method:'POST',body:JSON.stringify({department_id:departmentId,priority:$('#mp').value,description:$('#mx').value||null})});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not forward this question.');return}
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not forward this question. Your text is still in the form.');return}
     if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await loadViewData('queries');R();
   }
   else if(a=='vt'){S.modal=null;S.view='queries';S.fx='view';R();loadViewData('queries')}
   else if(a=='take-ticket'){
+    if(S.actionBusy)return;
     const t=S.detail?.ticket;if(!t)return;
+    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Taking…';
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify({take_ticket:true})});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
     S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);watchOpenTicket();
   }
   else if(a=='respond'||a=='resolve'){
@@ -650,6 +679,8 @@ document.addEventListener('keydown',e=>{
   if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}
 });
 document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
+// Coming back to the tab refreshes My Queries and the staff ticket list at once, not after the next 15 s tick.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.user&&['tix','queries'].includes(S.view))refreshOpenTicket()});
 document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
 
 // Restore the signed-in session from the backend (the server checks the token)
