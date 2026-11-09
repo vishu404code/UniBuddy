@@ -29,6 +29,11 @@ def _s3_configured() -> bool:
     )
 
 
+def storage_configured() -> bool:
+    """True when the configured file storage can be used (local demo only outside production)."""
+    return _storage_configured()
+
+
 def _storage_configured() -> bool:
     if settings.storage_backend == "local":
         return bool(settings.local_storage_dir) and settings.app_env != "production"
@@ -74,11 +79,12 @@ def build_data_client() -> PostgresClient:
 
 @lru_cache
 def get_data_client() -> PostgresClient:
+    """Database access for every route. File storage is optional here: sign-in, chat and tickets
+    work without it, and only file operations report that storage is not configured."""
     if not settings.database_url or not settings.session_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, DATABASE_SETTINGS_MISSING)
-    if not _storage_configured():
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, R2_SETTINGS_MISSING)
-    return build_data_client()
+    store = build_object_store() if _storage_configured() else None
+    return PostgresClient(settings.database_url, settings.session_secret, object_store=store)
 
 
 @lru_cache
