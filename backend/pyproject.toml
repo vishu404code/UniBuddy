@@ -15,6 +15,7 @@ dependencies = [
     "pymupdf==2.1",
     "google-genai==2.33.0",
     "google-auth==2.62.0",
+    "psycopg[binary]==3.3.6",
 ]
 
 [dependency-groups]
