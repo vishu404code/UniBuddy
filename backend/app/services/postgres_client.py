@@ -9,6 +9,7 @@ so services don't change when the backend is switched.
 """
 
 import asyncio
+import logging
 import re
 from collections.abc import Callable
 from typing import Any
@@ -23,6 +24,7 @@ from app.services.errors import DataServiceError
 from app.storage.objects import ObjectNotFound, ObjectStore, ObjectStoreError
 
 IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
+logger = logging.getLogger("unibuddy.data")
 RESERVED = frozenset({"select", "order", "limit", "offset"})
 COMPARISONS = {"eq": "=", "neq": "<>", "lt": "<", "lte": "<=", "gt": ">", "gte": ">="}
 TABLE_FUNCTIONS = frozenset({"match_document_chunks", "claim_document_jobs", "publish_document_version"})
@@ -303,6 +305,7 @@ class PostgresClient:
 
     def _store(self) -> ObjectStore:
         if self._objects is None:
+            logger.warning("file storage is not configured in this process")
             raise DataServiceError(503, "file storage is not configured")
         return self._objects
 
@@ -310,6 +313,7 @@ class PostgresClient:
         try:
             await self._store().put_pdf(path, content)
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc
 
     async def download_object(self, bucket: str, path: str) -> bytes:
@@ -318,10 +322,12 @@ class PostgresClient:
         except ObjectNotFound as exc:
             raise DataServiceError(404, "file not found") from exc
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc
 
     async def delete_object(self, bucket: str, path: str) -> None:
         try:
             await self._store().delete(path)
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc
