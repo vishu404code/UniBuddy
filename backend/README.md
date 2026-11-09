@@ -73,11 +73,12 @@ The replacement is built behind settings. Defaults keep Supabase, so the current
 
 **Tests**
 
-- Default run (no database needed): backend 276 passed, 36 skipped. Frontend 28 passed. Frontend build succeeds.
+- Default run (no database needed): backend 284 passed, 39 skipped. Frontend 19 passed (the friend's restored suite). Frontend build succeeds.
 - Local PostgreSQL run: start the local server (PostgreSQL 17 with pgvector), then:
   - `tests/sql/run_portable_db_tests.sh` rebuilds `unibuddy_portable` and runs the ported SQL tests.
   - `TEST_DATABASE_URL=postgresql://<your-user>@localhost:54329/unibuddy_portable pytest tests/test_postgres_client.py`
-  - `TEST_DATABASE_URL=postgresql://<your-user>@localhost:54329/unibuddy_stage1 pytest tests/test_access_rules_stage1.py` (its own database, because it creates tables)
+  - `TEST_ACCESS_DATABASE_URL=postgresql://<your-user>@localhost:54329/unibuddy_stage1 pytest tests/test_access_rules_stage1.py` (its own database, because it creates tables)
+  - `TEST_DATABASE_URL=postgresql://<your-user>@localhost:54329/postgres pytest tests/test_migration_snapshot.py` (creates and drops `unibuddy_import_test`)
 
 **Not verified**
 

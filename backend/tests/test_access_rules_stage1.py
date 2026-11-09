@@ -14,8 +14,8 @@ import pytest
 
 from app.db.postgres import connect, execute, fetch_all, fetch_one, set_session_user
 
-DSN = os.environ.get("TEST_DATABASE_URL")
-pytestmark = pytest.mark.skipif(not DSN, reason="TEST_DATABASE_URL is not set")
+DSN = os.environ.get("TEST_ACCESS_DATABASE_URL")  # its own database: it creates tables
+pytestmark = pytest.mark.skipif(not DSN, reason="TEST_ACCESS_DATABASE_URL is not set")
 
 HELPERS = (Path(__file__).resolve().parents[1] / "app" / "db" / "sql" / "access_helpers.sql").read_text()
 APP_ROLE = "unibuddy_stage1_app"
