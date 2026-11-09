@@ -1,7 +1,8 @@
 -- Documents and their chunks/embeddings.
 --
 -- Access rules:
---   published + public_students  -> every authenticated user, across all campuses
+--   published + public_students  -> every authenticated user, for university-wide documents, and
+--                                   for documents of the reader's own campus
 --   published + staff_only       -> faculty and authority on the document's campus;
 --                                   any campus only when scope = 'university_wide'.
 --                                   Management has no access to staff content here.
@@ -86,6 +87,7 @@ as $$
     or (
       doc.publication_status = 'published'
       and doc.visibility = 'public_students'
+      and (doc.scope = 'university_wide' or doc.campus_id = public.app_campus_id())
     )
     or (
       doc.publication_status = 'published'
