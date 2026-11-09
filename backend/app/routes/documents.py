@@ -8,6 +8,7 @@ from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
+    stored_bytes_estimate,
     archive_document,
     require_university_wide_permission,
     processing_note,
@@ -18,6 +19,9 @@ from app.services.documents import (
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
 
+import logging
+
+logger = logging.getLogger("unibuddy.documents")
 router = APIRouter(prefix="/documents", tags=["documents"])
 STAFF_ROLES = ("faculty", "authority")
 ALL_SIGNED_IN = ("student", "faculty", "authority", "management")
@@ -71,6 +75,15 @@ async def upload(
                 f"This PDF is already in the library as \"{existing[0]['title']}\" "
                 f"({existing[0]['publication_status']}). Use Replace on that document instead.",
             )
+    stored = await stored_bytes_estimate(sb)
+    if stored + len(data) > settings.storage_budget_bytes:
+        raise HTTPException(
+            status.HTTP_507_INSUFFICIENT_STORAGE,
+            "File storage is nearly full for this demo (app estimate). Nothing was uploaded; "
+            "archive or ask the administrator before adding files.",
+        )
+    if stored + len(data) > settings.storage_warn_bytes:
+        logger.warning("Document storage above warning level (app estimate)")
     row = await upload_document(
         sb=sb,
         uploader=session.user,
