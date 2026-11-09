@@ -1,4 +1,4 @@
--- Account identities: the replacement for Supabase's auth.users (Stage 1).
+-- Account identities: one row per UniBuddy account. Google verifies the person; roles never live here.
 --
 -- One row per UniBuddy account. Google verifies the person, and google_subject is the
 -- stable Google ID. Profiles reference this table, so profile IDs stay the same when

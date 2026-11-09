@@ -12,11 +12,12 @@ from app.auth.session import read_session_token
 from app.config import settings
 from app.main import app
 from app.middleware.auth import get_profile_repository, get_token_verifier
-from app.repositories.profiles import ClientProfileRepository
-from app.services.account_directory import PostgresAccountDirectory
+from app.repositories.profiles import ProfileRepository
+from app.services.account_directory import AccountDirectory
+from app.services.token_verifier import SessionTokenVerifier
 from app.services.google_sign_in import GoogleSignInError, request_student_access, sign_in
-from app.services.providers import get_google_verifier, get_supabase_client
-from tests.fakes import FakeSupabase
+from app.services.providers import get_google_verifier, get_data_client
+from tests.fakes import FakeDataClient
 
 CLIENT_ID = "stage2-test.apps.googleusercontent.com"
 SECRET = "t" * 40
@@ -62,7 +63,7 @@ async def _sign_in(sb, **kwargs):
 
 @pytest.mark.asyncio
 async def test_unverified_google_email_is_refused_and_nothing_changes():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     _account(sb)
 
     with pytest.raises(GoogleSignInError) as info:
@@ -74,7 +75,7 @@ async def test_unverified_google_email_is_refused_and_nothing_changes():
 
 @pytest.mark.asyncio
 async def test_new_google_account_with_no_profile_gets_no_session():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
 
     with pytest.raises(GoogleSignInError) as info:
         await _sign_in(sb)
@@ -86,7 +87,7 @@ async def test_new_google_account_with_no_profile_gets_no_session():
 
 @pytest.mark.asyncio
 async def test_linked_account_signs_in_and_the_token_carries_no_role():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     account = _account(sb, subject="google-sub-1", role="authority")
 
     session = await _sign_in(sb)
@@ -103,7 +104,7 @@ def _decoded_claims(token):
 
 @pytest.mark.asyncio
 async def test_invited_profile_is_linked_on_first_google_sign_in_keeping_its_id():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     account = _account(sb, subject=None, email="person@example.com", role="faculty")
 
     session = await _sign_in(sb, verifier=_verifier(subject="google-sub-new", email="person@example.com"))
@@ -114,7 +115,7 @@ async def test_invited_profile_is_linked_on_first_google_sign_in_keeping_its_id(
 
 @pytest.mark.asyncio
 async def test_email_linked_to_another_google_account_is_a_conflict():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     _account(sb, subject="owner-sub", email="person@example.com")
 
     with pytest.raises(GoogleSignInError) as info:
@@ -126,7 +127,7 @@ async def test_email_linked_to_another_google_account_is_a_conflict():
 
 @pytest.mark.asyncio
 async def test_account_row_without_a_profile_grants_no_session_and_links_nothing():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     _account(sb, subject=None, email="person@example.com", with_profile=False)
 
     with pytest.raises(GoogleSignInError) as info:
@@ -138,7 +139,7 @@ async def test_account_row_without_a_profile_grants_no_session_and_links_nothing
 
 @pytest.mark.asyncio
 async def test_any_verified_domain_can_sign_in_once_it_has_a_profile():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     account = _account(sb, subject="google-sub-1", email="person@gmail.com")
 
     session = await _sign_in(sb, verifier=_verifier(email="person@gmail.com"))
@@ -149,7 +150,7 @@ async def test_any_verified_domain_can_sign_in_once_it_has_a_profile():
 @pytest.mark.asyncio
 async def test_sign_in_is_refused_when_google_is_not_configured():
     with pytest.raises(GoogleSignInError) as info:
-        await sign_in(sb=FakeSupabase(), id_token=TOKEN, client_id=None, session_secret=SECRET, verifier=_verifier())
+        await sign_in(sb=FakeDataClient(), id_token=TOKEN, client_id=None, session_secret=SECRET, verifier=_verifier())
 
     assert info.value.status_code == 503
 
@@ -158,7 +159,7 @@ async def test_sign_in_is_refused_when_google_is_not_configured():
 
 @pytest.mark.asyncio
 async def test_new_google_person_files_a_pending_student_request_and_gets_no_account():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
 
     receipt = await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID,
                                            verifier=_verifier(email="New.Student@Gmail.com", name="New Student"))
@@ -173,7 +174,7 @@ async def test_new_google_person_files_a_pending_student_request_and_gets_no_acc
 
 @pytest.mark.asyncio
 async def test_a_person_who_already_has_an_account_gets_no_new_request():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     _account(sb, subject="google-sub-1", email="person@example.com")
 
     result = await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID, verifier=_verifier())
@@ -184,20 +185,20 @@ async def test_a_person_who_already_has_an_account_gets_no_new_request():
 
 @pytest.mark.asyncio
 async def test_repeat_request_does_not_create_a_second_row():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     for _ in range(2):
         await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID, verifier=_verifier())
 
     assert len(sb.tables["registration_requests"]) == 1
 
 
-# --- invitation accounts (replaces Supabase's invite call) -----------------------------
+# --- invitation accounts ---------------------------------------------------------------
 
 @pytest.mark.asyncio
 async def test_invitation_creates_an_account_row_without_a_google_subject():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
 
-    account_id = await PostgresAccountDirectory(sb).invite_user("Invitee@Example.com", "Invitee")
+    account_id = await AccountDirectory(sb).invite_user("Invitee@Example.com", "Invitee")
 
     row = sb.tables["account_identities"][0]
     assert row["id"] == str(account_id)
@@ -207,8 +208,8 @@ async def test_invitation_creates_an_account_row_without_a_google_subject():
 
 @pytest.mark.asyncio
 async def test_retry_reuses_the_account_row_left_without_a_profile():
-    sb = FakeSupabase()
-    directory = PostgresAccountDirectory(sb)
+    sb = FakeDataClient()
+    directory = AccountDirectory(sb)
     first = await directory.invite_user("invitee@example.com", "Invitee")
 
     second = await directory.invite_user("invitee@example.com", "Invitee")
@@ -221,15 +222,13 @@ async def test_retry_reuses_the_account_row_left_without_a_profile():
 
 @pytest.fixture
 def google_mode(monkeypatch):
-    monkeypatch.setattr(settings, "auth_backend", "google")
     monkeypatch.setattr(settings, "google_client_id", CLIENT_ID)
     monkeypatch.setattr(settings, "session_secret", SECRET)
-    sb = FakeSupabase()
-    app.dependency_overrides[get_supabase_client] = lambda: sb
+    sb = FakeDataClient()
+    app.dependency_overrides[get_data_client] = lambda: sb
     app.dependency_overrides[get_google_verifier] = lambda: _verifier(email="person@example.com")
-    app.dependency_overrides[get_profile_repository] = lambda: ClientProfileRepository(sb)
-    app.dependency_overrides[get_token_verifier] = lambda: __import__(
-        "app.services.token_verifier", fromlist=["SessionTokenVerifier"]).SessionTokenVerifier(SECRET)
+    app.dependency_overrides[get_profile_repository] = lambda: ProfileRepository(sb)
+    app.dependency_overrides[get_token_verifier] = lambda: SessionTokenVerifier(SECRET)
     try:
         yield sb
     finally:

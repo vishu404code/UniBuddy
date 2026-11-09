@@ -1,5 +1,5 @@
 \set ON_ERROR_STOP on
-insert into auth.users (id) values
+insert into public.account_identities (id) values
  ('60000000-0000-4000-8000-000000000001'),('60000000-0000-4000-8000-000000000002');
 insert into public.campuses (id, name, code) values ('c6000000-0000-4000-8000-000000000001','Scope Campus','sc1');
 insert into public.profiles (id, email, role, campus_id) values

@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 -- Fixtures (as postgres). Actors: super admin (to be bootstrapped), campus authority, student, management.
-insert into auth.users (id) values
+insert into public.account_identities (id) values
  ('40000000-0000-4000-8000-000000000001'),('40000000-0000-4000-8000-000000000002'),
  ('40000000-0000-4000-8000-000000000003'),('40000000-0000-4000-8000-000000000004'),
  ('40000000-0000-4000-8000-000000000005');
@@ -27,7 +27,7 @@ do $$ declare caught text; begin
 end $$;
 
 -- 2. Bootstrap once, from the owner's session, for an invited auth user.
-insert into auth.users (id) values ('40000000-0000-4000-8000-000000000009');
+insert into public.account_identities (id) values ('40000000-0000-4000-8000-000000000009');
 select public.bootstrap_super_admin('40000000-0000-4000-8000-000000000009', 'root@nst.rishihood.edu.in');
 do $$ declare caught text; begin
   assert (select role from public.profiles where id = '40000000-0000-4000-8000-000000000009') = 'super_admin', 'bootstrap creates a super_admin profile';
@@ -75,7 +75,7 @@ reset role;
 
 -- 5. Completion creates the account with the campus the super admin chose, and the audit row.
 -- The invite creates the auth user before the profile is completed.
-insert into auth.users (id) values ('50000000-0000-4000-8000-000000000001');
+insert into public.account_identities (id) values ('50000000-0000-4000-8000-000000000001');
 set role service_role;
 do $$ declare caught text; begin
   perform public.super_admin_provision_complete('40000000-0000-4000-8000-000000000009', '50000000-0000-4000-8000-000000000001',
@@ -95,7 +95,7 @@ do $$ begin
 end $$;
 
 -- 6. Super Admin is aggregate and account-only: no academic records through RLS.
-select set_config('request.jwt.claims', '{"sub":"40000000-0000-4000-8000-000000000009","role":"authenticated"}', false);
+select set_config('app.user_id', '40000000-0000-4000-8000-000000000009', false);
 set role authenticated;
 do $$ begin
   assert (select count(*) from public.profiles) = 1, 'super admin sees only its own profile through RLS';
@@ -107,7 +107,7 @@ end $$;
 reset role;
 
 -- 7. The account list works for a Super Admin session, returns account fields only, and is refused to others.
-select set_config('request.jwt.claims', '{"sub":"40000000-0000-4000-8000-000000000009","role":"authenticated"}', false);
+select set_config('app.user_id', '40000000-0000-4000-8000-000000000009', false);
 set role authenticated;
 do $$ declare accounts jsonb; begin
   accounts := public.super_admin_list_accounts();
@@ -117,7 +117,7 @@ do $$ declare accounts jsonb; begin
 end $$;
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"40000000-0000-4000-8000-000000000002","role":"authenticated"}', false);
+select set_config('app.user_id', '40000000-0000-4000-8000-000000000002', false);
 set role authenticated;
 do $$ declare caught text; begin
   caught := null;

@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from app.schemas.auth import CurrentUser
 from app.schemas.tickets import TicketUpdateRequest
 from app.services.documents import DocumentConflict, DocumentError, DocumentForbidden, DocumentNotFound
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 
 STATUS_ORDER = {"submitted": 0, "assigned": 1, "in_progress": 2, "resolved": 3}
 STATUS_LABELS = {
@@ -15,7 +15,7 @@ STATUS_LABELS = {
 }
 
 
-async def get_ticket_detail(sb: SupabaseClient, access_token: str, ticket_id: UUID) -> dict[str, Any]:
+async def get_ticket_detail(sb: PostgresClient, access_token: str, ticket_id: UUID) -> dict[str, Any]:
     rows = await sb.select_as_user(access_token, "tickets", {"select": "*", "id": f"eq.{ticket_id}"})
     if not rows:
         raise DocumentNotFound("Ticket not found")
@@ -36,7 +36,7 @@ def _check_transition(current: str, requested: str) -> None:
 
 async def update_ticket(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     user: CurrentUser,
     access_token: str,
     ticket_id: UUID,

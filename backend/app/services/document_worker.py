@@ -8,7 +8,8 @@ from app.ai.chunking import chunk_pages
 from app.ai.gemini_client import AIServiceError, GeminiClient
 from app.ai.pdf_extractor import PdfProcessingError, extract_pages
 from app.config import settings
-from app.services.supabase_client import SupabaseClient, SupabaseError
+from app.services.postgres_client import PostgresClient
+from app.services.errors import DataServiceError
 
 logger = logging.getLogger("unibuddy.worker")
 
@@ -17,7 +18,7 @@ def _vector_literal(vector: list[float]) -> str:
     return "[" + ",".join(repr(value) for value in vector) + "]"
 
 
-async def _finish_failed(sb: SupabaseClient, document: dict[str, Any], reason: str) -> None:
+async def _finish_failed(sb: PostgresClient, document: dict[str, Any], reason: str) -> None:
     await sb.update_service(
         "documents",
         {"id": f"eq.{document['id']}"},
@@ -25,7 +26,7 @@ async def _finish_failed(sb: SupabaseClient, document: dict[str, Any], reason: s
     )
 
 
-async def _requeue_or_fail(sb: SupabaseClient, document: dict[str, Any], reason: str, max_attempts: int) -> str:
+async def _requeue_or_fail(sb: PostgresClient, document: dict[str, Any], reason: str, max_attempts: int) -> str:
     exhausted = int(document.get("processing_attempts") or 0) >= max_attempts
     status = "failed" if exhausted else "pending"
     message = reason if not exhausted else f"{reason} (gave up after {max_attempts} attempts)"
@@ -39,7 +40,7 @@ async def _requeue_or_fail(sb: SupabaseClient, document: dict[str, Any], reason:
 
 async def process_document(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     ai: GeminiClient,
     document: dict[str, Any],
     bucket: str,
@@ -85,7 +86,7 @@ async def process_document(
     except PdfProcessingError as exc:
         await _finish_failed(sb, document, str(exc))
         return "failed"
-    except (AIServiceError, SupabaseError, httpx.HTTPError) as exc:
+    except (AIServiceError, DataServiceError, httpx.HTTPError) as exc:
         # str(exc) holds only a safe, key-free reason such as "Gemini returned HTTP 403".
         logger.warning(
             "Document %s processing attempt failed: %s (%s)", document_id, type(exc).__name__, exc
@@ -99,7 +100,7 @@ async def process_document(
         return await _requeue_or_fail(sb, document, "Unexpected processing error; it will be retried", max_attempts)
 
 
-async def claim_jobs(sb: SupabaseClient, limit: int) -> list[dict[str, Any]]:
+async def claim_jobs(sb: PostgresClient, limit: int) -> list[dict[str, Any]]:
     return await sb.rpc_service(
         "claim_document_jobs",
         {
@@ -110,14 +111,14 @@ async def claim_jobs(sb: SupabaseClient, limit: int) -> list[dict[str, Any]]:
     )
 
 
-async def run_once(sb: SupabaseClient, ai: GeminiClient) -> int:
+async def run_once(sb: PostgresClient, ai: GeminiClient) -> int:
     jobs = await claim_jobs(sb, settings.document_worker_batch_size)
     for job in jobs:
         await process_document(
             sb=sb,
             ai=ai,
             document=job,
-            bucket=settings.supabase_storage_bucket,
+            bucket=settings.r2_bucket,
             chunk_max_chars=settings.chunk_max_chars,
             chunk_overlap_chars=settings.chunk_overlap_chars,
             max_attempts=settings.document_max_attempts,
@@ -125,7 +126,7 @@ async def run_once(sb: SupabaseClient, ai: GeminiClient) -> int:
     return len(jobs)
 
 
-async def run_forever(sb: SupabaseClient, ai: GeminiClient) -> None:
+async def run_forever(sb: PostgresClient, ai: GeminiClient) -> None:
     waiting_logged = False
     while True:
         try:

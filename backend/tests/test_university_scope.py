@@ -15,9 +15,9 @@ from app.services.documents import (
     replace_document,
     upload_document,
 )
-from app.services.providers import get_ai_client, get_supabase_client
+from app.services.providers import get_ai_client, get_data_client
 from tests.conftest import FakeProfileRepository, make_profile
-from tests.fakes import FakeAI, FakeSupabase
+from tests.fakes import FakeAI, FakeDataClient
 
 CAMPUS = uuid4()
 BUCKET = "documents"
@@ -59,18 +59,18 @@ async def _upload(sb, user, scope):
 @pytest.mark.asyncio
 async def test_faculty_cannot_upload_university_wide_documents():
     with pytest.raises(DocumentForbidden):
-        await _upload(FakeSupabase(), _user("faculty"), "university_wide")
+        await _upload(FakeDataClient(), _user("faculty"), "university_wide")
 
 
 @pytest.mark.asyncio
 async def test_authority_can_upload_university_wide_documents():
-    doc = await _upload(FakeSupabase(), _user("authority"), "university_wide")
+    doc = await _upload(FakeDataClient(), _user("authority"), "university_wide")
     assert doc["scope"] == "university_wide"
 
 
 @pytest.mark.asyncio
 async def test_faculty_cannot_publish_archive_or_replace_a_university_wide_document():
-    sb = FakeSupabase(visible=lambda token, table, row: True)
+    sb = FakeDataClient(visible=lambda token, table, row: True)
     faculty = _user("faculty")
     doc_id = _seed(sb, _user("authority"), "university_wide")
 
@@ -86,7 +86,7 @@ async def test_faculty_cannot_publish_archive_or_replace_a_university_wide_docum
 
 @pytest.mark.asyncio
 async def test_authority_publishes_a_university_wide_document():
-    sb = FakeSupabase(visible=lambda token, table, row: True)
+    sb = FakeDataClient(visible=lambda token, table, row: True)
     authority = _user("authority")
     doc_id = _seed(sb, authority, "university_wide")
 
@@ -100,7 +100,7 @@ def test_faculty_upload_route_refuses_university_wide_scope():
     app.dependency_overrides[get_token_verifier] = lambda: type("V", (), {"verify": lambda self, t: __import__("uuid").UUID(t)})()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(
         {str(verifier_user.id): make_profile(str(verifier_user.id), role="faculty", campus_id=str(CAMPUS))})
-    app.dependency_overrides[get_supabase_client] = lambda: FakeSupabase()
+    app.dependency_overrides[get_data_client] = lambda: FakeDataClient()
     app.dependency_overrides[get_ai_client] = lambda: FakeAI()
     try:
         response = TestClient(app).post(
@@ -116,12 +116,12 @@ def test_faculty_upload_route_refuses_university_wide_scope():
 
 def test_faculty_publish_route_refuses_a_university_wide_document():
     faculty = _user("faculty")
-    sb = FakeSupabase(visible=lambda token, table, row: True)
+    sb = FakeDataClient(visible=lambda token, table, row: True)
     doc_id = _seed(sb, _user("authority"), "university_wide")
     app.dependency_overrides[get_token_verifier] = lambda: type("V", (), {"verify": lambda self, t: __import__("uuid").UUID(t)})()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(
         {str(faculty.id): make_profile(str(faculty.id), role="faculty", campus_id=str(CAMPUS))})
-    app.dependency_overrides[get_supabase_client] = lambda: sb
+    app.dependency_overrides[get_data_client] = lambda: sb
     try:
         response = TestClient(app).post(
             f"{settings.api_v1_prefix}/documents/{doc_id}/publish",

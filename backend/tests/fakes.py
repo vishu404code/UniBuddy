@@ -1,4 +1,4 @@
-"""In-memory test doubles for the Supabase and Gemini clients.
+"""In-memory test doubles for the data and Gemini clients.
 
 These model only what the service tests need. Row visibility under RLS is
 modelled by the `visible` callable passed in; the real RLS behaviour is verified
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Any, Callable
 
-from app.services.supabase_client import SupabaseError
+from app.services.errors import DataServiceError
 
 RESERVED_PARAMS = {"select", "order", "limit", "offset"}
 UNIQUE_COLUMNS = {"tickets": ["source_message_id"], "registration_requests": ["email"]}
@@ -44,7 +44,7 @@ def _matches(row: dict[str, Any], params: dict[str, str]) -> bool:
     return True
 
 
-class FakeSupabase:
+class FakeDataClient:
     def __init__(self, visible: Callable[[str, str, dict[str, Any]], bool] | None = None):
         self.tables: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self.storage: dict[str, bytes] = {}
@@ -68,7 +68,7 @@ class FakeSupabase:
                 if row.get(column) is not None and any(
                     existing.get(column) == row[column] for existing in self.tables[table]
                 ):
-                    raise SupabaseError(409, f"duplicate key on {table}.{column}")
+                    raise DataServiceError(409, f"duplicate key on {table}.{column}")
             stored = copy.deepcopy(row)
             stored.setdefault("created_at", datetime.now(timezone.utc).isoformat())
             for column, default in ROW_DEFAULTS.get(table, {}).items():
@@ -87,13 +87,13 @@ class FakeSupabase:
 
     async def upload_object(self, bucket, path, content, content_type):
         if self.fail_storage:
-            raise SupabaseError(500, "storage down")
+            raise DataServiceError(500, "storage down")
         self.storage[f"{bucket}/{path}"] = content
 
     async def download_object(self, bucket, path):
         key = f"{bucket}/{path}"
         if key not in self.storage:
-            raise SupabaseError(404, "object not found")
+            raise DataServiceError(404, "object not found")
         return self.storage[key]
 
     async def delete_object(self, bucket, path):
@@ -136,7 +136,7 @@ class FakeSupabase:
             return self.rpc_responses[function]
         raise NotImplementedError(f"fake has no service RPC {function}")
 
-    # Emulates the SQL provisioning functions in supabase/migrations/20261108120900. The SQL
+    # Emulates the SQL provisioning functions in app/db/migrations/20261108120900. The SQL
     # itself is validated against PostgreSQL in tests/sql/provisioning_test.sql.
     def _audit(self, actor_id, email, role, outcome, reason, user_id=None):
         self.tables["provisioning_audit"].append({
@@ -190,7 +190,7 @@ class FakeSupabase:
     def _super_admin_complete(self, p):
         actor = self._actor(p["p_actor"])
         if actor is None or actor["role"] != "super_admin":
-            raise SupabaseError(400, "provisioning_not_permitted")
+            raise DataServiceError(400, "provisioning_not_permitted")
         profile = {
             "id": p["p_user_id"], "email": p["p_email"].lower(), "full_name": p["p_full_name"],
             "role": p["p_role"], "campus_id": p.get("p_campus"), "department_id": None,
@@ -203,12 +203,12 @@ class FakeSupabase:
     def _provisioning_complete(self, p):
         actor = self._actor(p["p_actor"])
         if actor is None or actor["role"] != "authority" or not actor.get("campus_id"):
-            raise SupabaseError(400, "provisioning_not_permitted")
+            raise DataServiceError(400, "provisioning_not_permitted")
         if p["p_role"] not in ("student", "faculty"):
-            raise SupabaseError(400, "provisioning_invalid_role")
+            raise DataServiceError(400, "provisioning_invalid_role")
         dept = p["p_department"]
         if dept and not any(d["id"] == dept and d["campus_id"] == actor["campus_id"] for d in self.tables["departments"]):
-            raise SupabaseError(400, "provisioning_department_not_in_campus")
+            raise DataServiceError(400, "provisioning_department_not_in_campus")
         profile = {
             "id": p["p_user_id"], "email": p["p_email"].lower(), "full_name": p["p_full_name"],
             "role": p["p_role"], "campus_id": actor["campus_id"], "department_id": dept,
@@ -233,14 +233,14 @@ class FakeSupabase:
         for row in self.tables["documents"]:
             if row["id"] == document_id:
                 if row["publication_status"] != "draft" or row["processing_status"] != "ready":
-                    raise SupabaseError(400, '{"message":"document_not_publishable"}')
+                    raise DataServiceError(400, '{"message":"document_not_publishable"}')
                 row["publication_status"] = "published"
                 if row.get("replaces_document_id"):
                     for old in self.tables["documents"]:
                         if old["id"] == row["replaces_document_id"] and old["publication_status"] == "published":
                             old["publication_status"] = "archived"
                 return copy.deepcopy(row)
-        raise SupabaseError(400, '{"message":"document_not_publishable"}')
+        raise DataServiceError(400, '{"message":"document_not_publishable"}')
 
     # user calls (RLS simulated through the visible callable)
     async def select_as_user(self, access_token, table, params):
@@ -289,8 +289,8 @@ class FakeAI:
         return self.reply
 
 
-class FakeAuthAdmin:
-    """Records invitations instead of sending them. Never contacts Supabase."""
+class FakeAccountDirectory:
+    """Records invitations instead of sending them. Never contacts any service."""
 
     def __init__(self, invite_error=None, delete_error=None):
         self.invites: list[tuple[str, str, Any]] = []

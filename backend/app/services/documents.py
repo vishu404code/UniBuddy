@@ -2,7 +2,8 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.schemas.auth import CurrentUser
-from app.services.supabase_client import SupabaseClient, SupabaseError
+from app.services.postgres_client import PostgresClient
+from app.services.errors import DataServiceError
 
 PDF_CONTENT_TYPE = "application/pdf"
 MAX_TITLE_LENGTH = 200
@@ -46,7 +47,7 @@ def validate_upload(data: bytes, content_type: str | None, title: str, max_bytes
         raise DocumentError("File content is not a PDF")
 
 
-async def _check_department(sb: SupabaseClient, department_id: UUID, campus_id: UUID) -> None:
+async def _check_department(sb: PostgresClient, department_id: UUID, campus_id: UUID) -> None:
     rows = await sb.select_service(
         "departments",
         {"select": "id", "id": f"eq.{department_id}", "campus_id": f"eq.{campus_id}"},
@@ -57,7 +58,7 @@ async def _check_department(sb: SupabaseClient, department_id: UUID, campus_id: 
 
 async def _store_and_queue(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     uploader: CurrentUser,
     title: str,
     visibility: str,
@@ -99,7 +100,7 @@ async def _store_and_queue(
     }
     try:
         await sb.insert_service("documents", [row])
-    except SupabaseError:
+    except DataServiceError:
         await _best_effort_remove_object(sb, storage_bucket, storage_path)
         raise
 
@@ -107,16 +108,16 @@ async def _store_and_queue(
     return rows[0]
 
 
-async def _best_effort_remove_object(sb: SupabaseClient, bucket: str, path: str) -> None:
+async def _best_effort_remove_object(sb: PostgresClient, bucket: str, path: str) -> None:
     try:
         await sb.delete_object(bucket, path)
-    except SupabaseError:
+    except DataServiceError:
         pass
 
 
 async def upload_document(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     uploader: CurrentUser,
     title: str,
     visibility: str,
@@ -135,7 +136,7 @@ async def upload_document(
     )
 
 
-async def _load_visible_document(sb: SupabaseClient, access_token: str, document_id: UUID) -> dict[str, Any]:
+async def _load_visible_document(sb: PostgresClient, access_token: str, document_id: UUID) -> dict[str, Any]:
     rows = await sb.select_as_user(access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
     if not rows:
         raise DocumentNotFound("Document not found")
@@ -162,7 +163,7 @@ def _can_manage(user: CurrentUser, document: dict[str, Any]) -> bool:
 
 async def replace_document(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     user: CurrentUser,
     access_token: str,
     document_id: UUID,
@@ -211,7 +212,7 @@ async def replace_document(
 
 async def archive_document(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     user: CurrentUser,
     access_token: str,
     document_id: UUID,
@@ -232,7 +233,7 @@ async def archive_document(
 
 async def publish_document(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     user: CurrentUser,
     access_token: str,
     document_id: UUID,
@@ -248,7 +249,7 @@ async def publish_document(
 
     try:
         published = await sb.rpc_service("publish_document_version", {"p_document_id": str(document_id)})
-    except SupabaseError as exc:
+    except DataServiceError as exc:
         if PUBLISH_NOT_READY in exc.detail:
             raise DocumentConflict("Document changed before it could be published; reload and try again") from exc
         raise

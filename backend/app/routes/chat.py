@@ -17,8 +17,8 @@ from app.schemas.chat import (
 )
 from app.schemas.common import Page
 from app.services.chat import ask_question, forward_message_to_faculty
-from app.services.providers import get_ai_client, get_supabase_client
-from app.services.supabase_client import SupabaseClient
+from app.services.providers import get_ai_client, get_data_client
+from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 STUDENT_ONLY = ("student",)
@@ -28,7 +28,7 @@ STUDENT_ONLY = ("student",)
 async def ask(
     body: AskRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
     ai: GeminiClient = Depends(get_ai_client),
 ):
     result = await ask_question(
@@ -58,7 +58,7 @@ async def list_conversations(
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     rows, total = await sb.select_page_as_user(
         session.access_token,
@@ -76,7 +76,7 @@ async def list_messages(
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     rows, total = await sb.select_page_as_user(
         session.access_token,
@@ -97,7 +97,7 @@ async def forward(
     message_id: UUID,
     body: ForwardRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     ticket = await forward_message_to_faculty(
         sb=sb,

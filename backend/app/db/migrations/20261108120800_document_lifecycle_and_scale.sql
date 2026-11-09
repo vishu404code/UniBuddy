@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120800_document_lifecycle_and_scale.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Document lifecycle, resilient processing, and database-side aggregates.
 -- Unapplied until explicitly approved. Tested on a local PostgreSQL 17 + pgvector
 -- database before being proposed for the dev project.

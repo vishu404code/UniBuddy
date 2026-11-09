@@ -15,8 +15,8 @@ from app.services.documents import (
     replace_document,
     upload_document,
 )
-from app.services.providers import get_supabase_client
-from app.services.supabase_client import SupabaseClient
+from app.services.providers import get_data_client
+from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 STAFF_ROLES = ("faculty", "authority")
@@ -45,7 +45,7 @@ async def upload(
     visibility: Annotated[str, Form()] = "public_students",
     scope: Annotated[str, Form()] = "campus",
     department_id: Annotated[UUID | None, Form()] = None,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}."""
     _check_form(visibility, scope)
@@ -62,7 +62,7 @@ async def upload(
         content_type=file.content_type,
         data=data,
         max_bytes=settings.max_upload_bytes,
-        storage_bucket=settings.supabase_storage_bucket,
+        storage_bucket=settings.r2_bucket,
     )
     response.headers["Location"] = f"{settings.api_v1_prefix}/documents/{row['id']}"
     return _to_out(row)
@@ -75,7 +75,7 @@ async def replace(
     session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
     file: Annotated[UploadFile, File()],
     title: Annotated[str | None, Form()] = None,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     """Uploads a new version. It stays a draft until published; publishing archives the old version."""
     data = await file.read(settings.max_upload_bytes + 1)
@@ -89,7 +89,7 @@ async def replace(
         filename=file.filename,
         data=data,
         max_bytes=settings.max_upload_bytes,
-        storage_bucket=settings.supabase_storage_bucket,
+        storage_bucket=settings.r2_bucket,
     )
     response.headers["Location"] = f"{settings.api_v1_prefix}/documents/{row['id']}"
     return _to_out(row)
@@ -99,7 +99,7 @@ async def replace(
 async def publish(
     document_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     row = await publish_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
     return _to_out(row)
@@ -109,7 +109,7 @@ async def publish(
 async def archive(
     document_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     row = await archive_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
     return _to_out(row)
@@ -119,7 +119,7 @@ async def archive(
 async def get_document(
     document_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles(*ALL_SIGNED_IN))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     rows = await sb.select_as_user(session.access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
     if not rows:
@@ -138,7 +138,7 @@ async def list_documents(
     scope: Literal["campus", "university_wide"] | None = None,
     campus_id: UUID | None = None,
     department_id: UUID | None = None,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     """Documents the caller may see. Filters narrow the results; they never widen access."""
     filters = {"order": "created_at.desc"}

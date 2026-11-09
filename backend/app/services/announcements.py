@@ -4,10 +4,10 @@ from uuid import uuid4
 from app.schemas.announcements import AnnouncementCreate
 from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentForbidden
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 
 
-async def create_announcement(*, sb: SupabaseClient, user: CurrentUser, body: AnnouncementCreate) -> dict[str, Any]:
+async def create_announcement(*, sb: PostgresClient, user: CurrentUser, body: AnnouncementCreate) -> dict[str, Any]:
     if body.scope == "university_wide" and user.role != "authority":
         raise DocumentForbidden("Only authority can publish university-wide announcements")
     if body.scope == "campus" and user.campus_id is None:

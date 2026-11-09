@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120900_campus_provisioning.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Campus-scoped user provisioning and its audit trail.
 --
 -- An authority user onboards students and faculty for their own campus only. The

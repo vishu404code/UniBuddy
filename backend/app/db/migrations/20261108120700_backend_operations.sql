@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120700_backend_operations.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Backend operations: write and read-back grants for the secret-key backend,
 -- one duplicate-ticket guard, and the retrieval function used by /chat/ask.
 -- Each grant covers an endpoint that exists in app/. Nothing is granted to anon.

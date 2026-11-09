@@ -20,9 +20,8 @@ from app.routes.provisioning import router as provisioning_router
 from app.routes.tickets import router as tickets_router
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
-from app.services.providers import get_supabase_client
-from app.services.supabase_client import SupabaseError
-from app.worker import build_clients
+from app.services.errors import DataServiceError
+from app.services.providers import get_ai_client, get_data_client
 
 logger = logging.getLogger("unibuddy")
 
@@ -30,9 +29,9 @@ logger = logging.getLogger("unibuddy")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     worker_task = None
-    if settings.document_worker_enabled and settings.supabase_url and settings.supabase_secret_key:
-        _sb, ai = build_clients()
-        worker_task = asyncio.create_task(run_forever(get_supabase_client(), ai))
+    if settings.document_worker_enabled and settings.database_url and settings.session_secret:
+        ai = get_ai_client() if settings.gemini_api_key else None
+        worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
         logger.info("Document worker started in this process")
     try:
         yield
@@ -57,10 +56,22 @@ async def document_error_handler(_request: Request, exc: DocumentError):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
-@app.exception_handler(SupabaseError)
-async def supabase_error_handler(_request: Request, exc: SupabaseError):
-    logger.error("Supabase request failed with HTTP %s", exc.status_code)
-    return JSONResponse(status_code=502, content={"detail": "Database request failed"})
+# Client-facing messages are generic. Database detail stays in the server log only.
+_DATA_MESSAGES = {
+    400: "The request could not be processed.",
+    403: "You are not allowed to do that.",
+    404: "Not found.",
+    409: "This conflicts with existing data.",
+    503: "The service is temporarily unavailable.",
+}
+
+
+@app.exception_handler(DataServiceError)
+async def data_error_handler(_request: Request, exc: DataServiceError):
+    logger.error("Data request failed with HTTP %s", exc.status_code)
+    status_code = exc.status_code if exc.status_code in _DATA_MESSAGES else 502
+    message = _DATA_MESSAGES.get(exc.status_code, "Database request failed.")
+    return JSONResponse(status_code=status_code, content={"detail": message})
 
 
 @app.exception_handler(AIServiceError)

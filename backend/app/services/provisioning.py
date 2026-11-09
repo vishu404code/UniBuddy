@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from app.schemas.auth import CurrentUser
-from app.services.auth_admin import AuthAdminClient, AuthAdminError
+from app.services.account_directory import AccountDirectory, AccountDirectoryError
 from app.services.documents import DocumentError
-from app.services.supabase_client import SupabaseClient, SupabaseError
+from app.services.postgres_client import PostgresClient
+from app.services.errors import DataServiceError
 
 REJECTION_STATUS = {
     "not_authority": (403, "Only authority users can onboard students and faculty"),
@@ -27,7 +28,7 @@ class ProvisioningError(DocumentError):
         self.status_code = status_code
 
 
-async def _record(sb: SupabaseClient, actor: CurrentUser, email: str, role: str, department_id: UUID | None,
+async def _record(sb: PostgresClient, actor: CurrentUser, email: str, role: str, department_id: UUID | None,
                   outcome: str, reason: str, user_id: UUID | None = None) -> None:
     await sb.rpc_service(
         "provisioning_record_failure",
@@ -45,8 +46,8 @@ async def _record(sb: SupabaseClient, actor: CurrentUser, email: str, role: str,
 
 async def _run_provisioning(
     *,
-    sb: SupabaseClient,
-    auth_admin: AuthAdminClient,
+    sb: PostgresClient,
+    accounts: AccountDirectory,
     actor: CurrentUser,
     email: str,
     full_name: str,
@@ -72,8 +73,8 @@ async def _run_provisioning(
         raise ProvisioningError(status_code, message)
 
     try:
-        user_id = await auth_admin.invite_user(email, full_name)
-    except AuthAdminError as exc:
+        user_id = await accounts.invite_user(email, full_name)
+    except AccountDirectoryError as exc:
         if exc.code == "account_exists":
             await _record(sb, actor, email, role, department_id, "failed", "account_exists_in_auth")
             raise ProvisioningError(409, "This email already has a login. Ask the user to sign in instead.") from exc
@@ -92,11 +93,11 @@ async def _run_provisioning(
                 **scope_args["complete"],
             },
         )
-    except SupabaseError as exc:
+    except DataServiceError as exc:
         try:
-            await auth_admin.delete_user(user_id)
+            await accounts.delete_user(user_id)
             await _record(sb, actor, email, role, department_id, "compensated", "profile_failed", user_id)
-        except AuthAdminError:
+        except AccountDirectoryError:
             await _record(sb, actor, email, role, department_id, "failed", "cleanup_failed", user_id)
         raise ProvisioningError(502, "The account could not be completed. Nothing was left behind.") from exc
 
@@ -105,8 +106,8 @@ async def _run_provisioning(
 
 async def provision_user(
     *,
-    sb: SupabaseClient,
-    auth_admin: AuthAdminClient,
+    sb: PostgresClient,
+    accounts: AccountDirectory,
     actor: CurrentUser,
     email: str,
     full_name: str,
@@ -119,7 +120,7 @@ async def provision_user(
     """
     department = str(department_id) if department_id else None
     return await _run_provisioning(
-        sb=sb, auth_admin=auth_admin, actor=actor, email=email, full_name=full_name, role=role,
+        sb=sb, accounts=accounts, actor=actor, email=email, full_name=full_name, role=role,
         department_id=department_id, rpcs=AUTHORITY_RPCS,
         scope_args={"precheck": {"p_department": department}, "complete": {"p_department": department}},
     )
@@ -127,8 +128,8 @@ async def provision_user(
 
 async def provision_by_super_admin(
     *,
-    sb: SupabaseClient,
-    auth_admin: AuthAdminClient,
+    sb: PostgresClient,
+    accounts: AccountDirectory,
     actor: CurrentUser,
     email: str,
     full_name: str,
@@ -142,7 +143,7 @@ async def provision_by_super_admin(
     """
     campus = str(campus_id) if campus_id else None
     return await _run_provisioning(
-        sb=sb, auth_admin=auth_admin, actor=actor, email=email, full_name=full_name, role=role,
+        sb=sb, accounts=accounts, actor=actor, email=email, full_name=full_name, role=role,
         department_id=None, rpcs=SUPER_ADMIN_RPCS,
         scope_args={"precheck": {"p_campus": campus}, "complete": {"p_campus": campus}},
     )

@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120400_conversations_messages.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Chat conversations and messages.
 
 create table public.conversations (

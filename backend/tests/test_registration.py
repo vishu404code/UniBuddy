@@ -8,8 +8,8 @@ from app.main import app
 from app.schemas.registration import RegistrationRequestIn
 from app.services.provisioning import ProvisioningError
 from app.services.registrations import RECEIPT_MESSAGE, submit_registration
-from app.services.providers import get_supabase_client
-from tests.fakes import FakeSupabase
+from app.services.providers import get_data_client
+from tests.fakes import FakeDataClient
 
 API = settings.api_v1_prefix
 
@@ -20,7 +20,7 @@ def _body(email="Student.One@NST.rishihood.edu.in", name="  Student   One "):
 
 @pytest.mark.asyncio
 async def test_registration_stores_a_pending_request_and_grants_nothing():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.tables["profiles"] = []
 
     receipt = await submit_registration(sb=sb, body=_body())
@@ -34,7 +34,7 @@ async def test_registration_stores_a_pending_request_and_grants_nothing():
 
 @pytest.mark.asyncio
 async def test_repeat_submission_gets_the_same_receipt_without_a_second_row():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     first = await submit_registration(sb=sb, body=_body())
     second = await submit_registration(sb=sb, body=_body())
 
@@ -43,8 +43,8 @@ async def test_repeat_submission_gets_the_same_receipt_without_a_second_row():
 
 
 def test_public_route_accepts_only_email_and_name(monkeypatch):
-    sb = FakeSupabase()
-    app.dependency_overrides[get_supabase_client] = lambda: sb
+    sb = FakeDataClient()
+    app.dependency_overrides[get_data_client] = lambda: sb
     try:
         client = TestClient(app)
         ok = client.post(f"{API}/auth/registrations",

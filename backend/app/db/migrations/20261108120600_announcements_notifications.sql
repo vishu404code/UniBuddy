@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120600_announcements_notifications.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Announcements and notifications.
 --
 -- Access rules:

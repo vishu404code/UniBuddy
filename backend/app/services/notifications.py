@@ -2,11 +2,11 @@ from typing import Any
 from uuid import UUID
 
 from app.services.documents import DocumentNotFound
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 
 
 async def mark_notification_read(
-    *, sb: SupabaseClient, access_token: str, notification_id: UUID
+    *, sb: PostgresClient, access_token: str, notification_id: UUID
 ) -> dict[str, Any]:
     rows = await sb.select_as_user(
         access_token, "notifications", {"select": "*", "id": f"eq.{notification_id}"}

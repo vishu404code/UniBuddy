@@ -6,9 +6,9 @@ from app.schemas.auth import CurrentUser
 from app.schemas.registration import RegistrationReceiptOut, RegistrationRequestIn
 from app.schemas.auth import GoogleTokenIn, SessionOut
 from app.services.google_sign_in import GoogleSignInError, request_student_access, sign_in
-from app.services.providers import get_google_verifier, get_supabase_client
+from app.services.providers import get_google_verifier, get_data_client
 from app.services.registrations import submit_registration
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 from fastapi import HTTPException
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -22,7 +22,7 @@ async def read_current_user(user: CurrentUser = Depends(get_current_user)) -> Cu
 @router.post("/registrations", response_model=RegistrationReceiptOut, status_code=202)
 async def register_student(
     body: RegistrationRequestIn,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     """Public. Queues a student registration for review. Grants nothing."""
     receipt = await submit_registration(
@@ -34,7 +34,7 @@ async def register_student(
 @router.post("/google", response_model=SessionOut)
 async def google_sign_in(
     body: GoogleTokenIn,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
     verifier=Depends(get_google_verifier),
 ):
     """Signs in a person whose Google identity matches an existing UniBuddy account."""
@@ -51,7 +51,7 @@ async def google_sign_in(
 @router.post("/google/access-request", status_code=202)
 async def google_access_request(
     body: GoogleTokenIn,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
     verifier=Depends(get_google_verifier),
 ):
     """Files a pending Student request for a Google-verified person. Grants nothing."""

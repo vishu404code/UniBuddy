@@ -1,5 +1,6 @@
 from app.schemas.registration import RegistrationRequestIn
-from app.services.supabase_client import SupabaseClient, SupabaseError
+from app.services.postgres_client import PostgresClient
+from app.services.errors import DataServiceError
 
 RECEIPT_MESSAGE = (
     "Thanks. If this address is eligible, you will receive an invitation to set your password "
@@ -8,7 +9,7 @@ RECEIPT_MESSAGE = (
 
 
 async def submit_registration(
-    *, sb: SupabaseClient, body: RegistrationRequestIn
+    *, sb: PostgresClient, body: RegistrationRequestIn
 ) -> dict:
     """Stores a pending request. It grants no role and creates no account.
 
@@ -21,7 +22,7 @@ async def submit_registration(
             "registration_requests",
             [{"email": body.email, "full_name": body.full_name}],
         )
-    except SupabaseError as exc:
+    except DataServiceError as exc:
         if exc.status_code != 409:
             raise
     return {"status": "received", "message": RECEIPT_MESSAGE}

@@ -1,4 +1,4 @@
-"""Data client on direct Postgres. It has the same methods and filter syntax as SupabaseClient,
+"""Data client on direct Postgres. It has the same methods and filter syntax as PostgresClient,
 so services don't change when the backend is switched.
 
 - Service calls run as the service_role (bypasses row rules). Callers must authorize first.

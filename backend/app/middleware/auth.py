@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from functools import lru_cache
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -8,11 +6,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.config import settings
 from app.repositories.profiles import ProfileLookupError, ProfileRepository
 from app.schemas.auth import CurrentUser, Role
-from app.services.token_verifier import (
-    AuthServiceUnavailable,
-    InvalidAccessToken,
-    SupabaseTokenVerifier,
-)
+from app.services.providers import get_data_client
+from app.services.token_verifier import InvalidAccessToken, SessionTokenVerifier
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -25,37 +20,19 @@ class CurrentSession:
     access_token: str
 
 
-@lru_cache
-def _build_token_verifier() -> SupabaseTokenVerifier:
-    if not settings.supabase_url:
+def get_token_verifier() -> SessionTokenVerifier:
+    if not settings.session_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
-    return SupabaseTokenVerifier.for_project(settings.supabase_url)
+    return SessionTokenVerifier(settings.session_secret)
 
 
-def get_token_verifier():
-    if settings.auth_backend == "google":
-        from app.services.token_verifier import SessionTokenVerifier
-
-        if not settings.session_secret:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
-        return SessionTokenVerifier(settings.session_secret)
-    return _build_token_verifier()
-
-
-def get_profile_repository():
-    if settings.auth_backend == "google":
-        from app.repositories.profiles import ClientProfileRepository
-        from app.services.providers import get_supabase_client
-
-        return ClientProfileRepository(get_supabase_client())
-    if not settings.supabase_url or not settings.supabase_secret_key:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
-    return ProfileRepository(settings.supabase_url, settings.supabase_secret_key)
+def get_profile_repository() -> ProfileRepository:
+    return ProfileRepository(get_data_client())
 
 
 async def get_current_session(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    verifier: SupabaseTokenVerifier = Depends(get_token_verifier),
+    verifier: SessionTokenVerifier = Depends(get_token_verifier),
     profiles: ProfileRepository = Depends(get_profile_repository),
 ) -> CurrentSession:
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -65,8 +42,6 @@ async def get_current_session(
         user_id: UUID = verifier.verify(credentials.credentials)
     except InvalidAccessToken as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token", _UNAUTHORIZED_HEADERS) from exc
-    except AuthServiceUnavailable as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication service unavailable") from exc
 
     try:
         profile = await profiles.get_by_id(user_id)

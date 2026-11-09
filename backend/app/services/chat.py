@@ -6,7 +6,8 @@ from app.ai.gemini_client import AIServiceError, GeminiClient
 from app.ai.rag import Answer, answer_question, select_evidence
 from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
-from app.services.supabase_client import SupabaseClient, SupabaseError
+from app.services.postgres_client import PostgresClient
+from app.services.errors import DataServiceError
 
 MAX_TITLE_LENGTH = 60
 # Saved as the answer when the AI service fails. It has no citations, so the student can
@@ -30,7 +31,7 @@ def _vector_literal(vector: list[float]) -> str:
     return "[" + ",".join(repr(value) for value in vector) + "]"
 
 
-async def _conversation_for_user(sb: SupabaseClient, user: CurrentUser, conversation_id: UUID) -> dict:
+async def _conversation_for_user(sb: PostgresClient, user: CurrentUser, conversation_id: UUID) -> dict:
     rows = await sb.select_service(
         "conversations",
         {"select": "id,user_id", "id": f"eq.{conversation_id}", "user_id": f"eq.{user.id}"},
@@ -42,7 +43,7 @@ async def _conversation_for_user(sb: SupabaseClient, user: CurrentUser, conversa
 
 async def ask_question(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     ai: GeminiClient,
     user: CurrentUser,
     access_token: str,
@@ -113,7 +114,7 @@ async def ask_question(
 
 async def forward_message_to_faculty(
     *,
-    sb: SupabaseClient,
+    sb: PostgresClient,
     user: CurrentUser,
     message_id: UUID,
     department_id: UUID,
@@ -169,7 +170,7 @@ async def forward_message_to_faculty(
                 }
             ],
         )
-    except SupabaseError as exc:
+    except DataServiceError as exc:
         if exc.status_code == 409:
             raise DocumentConflict("This question was already forwarded to faculty") from exc
         raise

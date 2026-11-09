@@ -6,10 +6,10 @@ import pytest
 
 from app.config import settings
 from app.services import document_worker as worker
-from app.services.supabase_client import SupabaseError
-from tests.fakes import FakeAI, FakeSupabase
+from app.services.errors import DataServiceError
+from tests.fakes import FakeAI, FakeDataClient
 
-BUCKET = "documents"
+BUCKET = settings.r2_bucket
 
 
 def _pdf(text="Fee policy: pay in week two."):
@@ -50,7 +50,7 @@ async def _process(sb, ai, doc_id, max_attempts=3):
 
 @pytest.mark.asyncio
 async def test_successful_processing_marks_ready_and_stores_page_numbered_chunks():
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb)
 
     status = await _process(sb, ai, doc_id)
@@ -66,7 +66,7 @@ async def test_successful_processing_marks_ready_and_stores_page_numbered_chunks
 
 @pytest.mark.asyncio
 async def test_reprocessing_replaces_old_chunks_instead_of_duplicating_them():
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb)
     sb.tables["document_chunks"].append({"document_id": str(doc_id), "chunk_index": 0, "page_number": 9,
                                          "content": "stale chunk from an interrupted run", "embedding": "[]"})
@@ -80,7 +80,7 @@ async def test_reprocessing_replaces_old_chunks_instead_of_duplicating_them():
 
 @pytest.mark.asyncio
 async def test_unreadable_pdf_fails_permanently_with_a_reason():
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb, data=b"%PDF-1.4 truncated garbage")
 
     status = await _process(sb, ai, doc_id)
@@ -95,7 +95,7 @@ async def test_scanned_pdf_fails_with_the_ocr_reason():
     document.new_page()
     blank = document.tobytes()
     document.close()
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb, data=blank)
 
     status = await _process(sb, ai, doc_id)
@@ -106,7 +106,7 @@ async def test_scanned_pdf_fails_with_the_ocr_reason():
 
 @pytest.mark.asyncio
 async def test_temporary_ai_failure_returns_the_document_to_the_queue():
-    sb, ai = FakeSupabase(), FakeAI(fail_embed=True)
+    sb, ai = FakeDataClient(), FakeAI(fail_embed=True)
     doc_id = _pending_doc(sb)
 
     status = await _process(sb, ai, doc_id, max_attempts=3)
@@ -119,7 +119,7 @@ async def test_temporary_ai_failure_returns_the_document_to_the_queue():
 
 @pytest.mark.asyncio
 async def test_temporary_failure_after_the_last_attempt_is_failed():
-    sb, ai = FakeSupabase(), FakeAI(fail_embed=True)
+    sb, ai = FakeDataClient(), FakeAI(fail_embed=True)
     doc_id = _pending_doc(sb, attempts=3)
 
     status = await _process(sb, ai, doc_id, max_attempts=3)
@@ -130,7 +130,7 @@ async def test_temporary_failure_after_the_last_attempt_is_failed():
 
 @pytest.mark.asyncio
 async def test_storage_download_error_is_treated_as_temporary():
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb)
     sb.storage.clear()
 
@@ -141,7 +141,7 @@ async def test_storage_download_error_is_treated_as_temporary():
 
 @pytest.mark.asyncio
 async def test_unexpected_error_requeues_instead_of_crashing_the_worker(monkeypatch):
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     doc_id = _pending_doc(sb)
 
     async def boom(*args, **kwargs):
@@ -156,7 +156,7 @@ async def test_unexpected_error_requeues_instead_of_crashing_the_worker(monkeypa
 
 @pytest.mark.asyncio
 async def test_run_once_claims_each_job_once_and_processes_it():
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     first = _pending_doc(sb)
     second = _pending_doc(sb)
 
@@ -171,7 +171,7 @@ async def test_run_once_claims_each_job_once_and_processes_it():
 
 @pytest.mark.asyncio
 async def test_worker_does_not_claim_while_the_ai_key_is_missing(monkeypatch):
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     _pending_doc(sb)
     claims = []
     original = sb.rpc_service
@@ -193,13 +193,13 @@ async def test_worker_does_not_claim_while_the_ai_key_is_missing(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_claim_failure_does_not_stop_the_loop(monkeypatch):
-    sb, ai = FakeSupabase(), FakeAI()
+    sb, ai = FakeDataClient(), FakeAI()
     attempts = []
 
     async def flaky_rpc(function, payload):
         attempts.append(function)
         if len(attempts) == 1:
-            raise SupabaseError(503, "temporarily unavailable")
+            raise DataServiceError(503, "temporarily unavailable")
         return []
 
     sb.rpc_service = flaky_rpc

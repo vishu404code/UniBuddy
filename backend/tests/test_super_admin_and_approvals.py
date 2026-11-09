@@ -6,12 +6,12 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.main import app
 from app.middleware.auth import get_profile_repository, get_token_verifier
-from app.services.providers import get_auth_admin_client, get_supabase_client
+from app.services.providers import get_account_directory, get_data_client
 from app.services.provisioning import ProvisioningError, provision_by_super_admin
 from app.services.registration_review import approve_registration, reject_registration
 from app.services.documents import DocumentConflict, DocumentNotFound
 from tests.conftest import FakeProfileRepository, make_profile
-from tests.fakes import FakeAuthAdmin, FakeSupabase
+from tests.fakes import FakeAccountDirectory, FakeDataClient
 
 API = settings.api_v1_prefix
 CAMPUS_A = str(uuid4())
@@ -24,7 +24,7 @@ MANAGER = str(uuid4())
 
 
 def _world():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.tables["campuses"] += [{"id": CAMPUS_A, "name": "Campus A", "code": "a"},
                               {"id": CAMPUS_B, "name": "Campus B", "code": "b"}]
     sb.tables["departments"] += [{"id": DEPT_A, "campus_id": CAMPUS_A, "name": "CS"}]
@@ -42,9 +42,9 @@ def _actor(user_id, role, campus=None):
 
 @pytest.mark.asyncio
 async def test_super_admin_invites_an_authority_to_the_campus_it_chooses():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
 
-    created = await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
+    created = await provision_by_super_admin(sb=sb, accounts=auth, actor=_actor(SUPER, "super_admin"),
                                              email="new.auth@nst.rishihood.edu.in", full_name="New Authority",
                                              role="authority", campus_id=CAMPUS_B)
 
@@ -55,10 +55,10 @@ async def test_super_admin_invites_an_authority_to_the_campus_it_chooses():
 
 @pytest.mark.asyncio
 async def test_authority_account_without_a_campus_is_refused_before_any_invitation():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
 
     with pytest.raises(ProvisioningError) as info:
-        await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
+        await provision_by_super_admin(sb=sb, accounts=auth, actor=_actor(SUPER, "super_admin"),
                                        email="x@nst.rishihood.edu.in", full_name="X Y", role="authority",
                                        campus_id=None)
     assert info.value.status_code == 422
@@ -67,9 +67,9 @@ async def test_authority_account_without_a_campus_is_refused_before_any_invitati
 
 @pytest.mark.asyncio
 async def test_management_may_be_invited_without_a_campus():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
 
-    created = await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
+    created = await provision_by_super_admin(sb=sb, accounts=auth, actor=_actor(SUPER, "super_admin"),
                                              email="mgr@nst.rishihood.edu.in", full_name="Manager",
                                              role="management", campus_id=None)
 
@@ -79,10 +79,10 @@ async def test_management_may_be_invited_without_a_campus():
 
 @pytest.mark.asyncio
 async def test_unknown_campus_is_refused_by_the_database_rules():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
 
     with pytest.raises(ProvisioningError) as info:
-        await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
+        await provision_by_super_admin(sb=sb, accounts=auth, actor=_actor(SUPER, "super_admin"),
                                        email="x@nst.rishihood.edu.in", full_name="X Y", role="authority",
                                        campus_id=str(uuid4()))
     assert info.value.status_code == 422
@@ -91,13 +91,13 @@ async def test_unknown_campus_is_refused_by_the_database_rules():
 
 @pytest.mark.asyncio
 async def test_registration_approval_joins_the_approvers_campus_and_marks_the_request():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     request_id = str(uuid4())
     sb.tables["registration_requests"].append({"id": request_id, "email": "new.student@nst.rishihood.edu.in",
                                                "full_name": "New Student", "status": "pending",
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
 
-    created = await approve_registration(sb=sb, auth_admin=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
+    created = await approve_registration(sb=sb, accounts=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
                                          request_id=request_id)
 
     assert created["role"] == "student"
@@ -109,22 +109,22 @@ async def test_registration_approval_joins_the_approvers_campus_and_marks_the_re
 
 @pytest.mark.asyncio
 async def test_a_request_can_only_be_decided_once():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     request_id = str(uuid4())
     sb.tables["registration_requests"].append({"id": request_id, "email": "once@nst.rishihood.edu.in",
                                                "full_name": "Once", "status": "pending",
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
     actor = _actor(AUTH_A, "authority", CAMPUS_A)
-    await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id)
+    await approve_registration(sb=sb, accounts=auth, actor=actor, request_id=request_id)
 
     with pytest.raises(DocumentConflict):
-        await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id)
+        await approve_registration(sb=sb, accounts=auth, actor=actor, request_id=request_id)
     assert len(auth.invites) == 1
 
 
 @pytest.mark.asyncio
 async def test_approval_for_an_email_that_already_has_a_profile_leaves_the_request_pending():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     request_id = str(uuid4())
     sb.tables["profiles"].append({"id": str(uuid4()), "email": "taken@nst.rishihood.edu.in", "role": "student",
                                   "campus_id": CAMPUS_B, "department_id": None,
@@ -134,7 +134,7 @@ async def test_approval_for_an_email_that_already_has_a_profile_leaves_the_reque
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
 
     with pytest.raises(ProvisioningError) as info:
-        await approve_registration(sb=sb, auth_admin=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
+        await approve_registration(sb=sb, accounts=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
                                    request_id=request_id)
     assert info.value.status_code == 409
     assert sb.tables["registration_requests"][0]["status"] == "pending"
@@ -179,8 +179,8 @@ def _client(sb, auth):
         profiles[row["id"]] = make_profile(row["id"], role=row["role"], campus_id=row["campus_id"])
     app.dependency_overrides[get_token_verifier] = lambda: _Verifier()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(profiles)
-    app.dependency_overrides[get_supabase_client] = lambda: sb
-    app.dependency_overrides[get_auth_admin_client] = lambda: auth
+    app.dependency_overrides[get_data_client] = lambda: sb
+    app.dependency_overrides[get_account_directory] = lambda: auth
     return TestClient(app)
 
 
@@ -195,7 +195,7 @@ def _h(user_id):
 
 
 def test_authority_cannot_invite_authority_or_management_accounts():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     for path in ("authority", "management"):
         response = client.post(f"{API}/provisioning/{path}", headers=_h(AUTH_A),
@@ -205,7 +205,7 @@ def test_authority_cannot_invite_authority_or_management_accounts():
 
 
 def test_super_admin_cannot_invite_students_or_faculty_here():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     response = client.post(f"{API}/provisioning/students", headers=_h(SUPER),
                            json={"email": "s@nst.rishihood.edu.in", "full_name": "S T"})
@@ -214,7 +214,7 @@ def test_super_admin_cannot_invite_students_or_faculty_here():
 
 
 def test_super_admin_invite_route_refuses_a_campus_field_on_students_and_role_fields_everywhere():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     response = client.post(f"{API}/provisioning/authority", headers=_h(SUPER),
                            json={"email": "a@nst.rishihood.edu.in", "full_name": "A B", "campus_id": CAMPUS_B,
@@ -224,7 +224,7 @@ def test_super_admin_invite_route_refuses_a_campus_field_on_students_and_role_fi
 
 
 def test_campus_authority_sees_pending_requests_and_its_own_departments_only():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     sb.tables["registration_requests"].append({"id": str(uuid4()), "email": "p@nst.rishihood.edu.in",
                                                "full_name": "P Q", "status": "pending",
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
@@ -239,7 +239,7 @@ def test_campus_authority_sees_pending_requests_and_its_own_departments_only():
 
 
 def test_students_cannot_read_pending_registrations_or_the_account_list():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     student = str(uuid4())
     sb.tables["profiles"].append({"id": student, "email": "st@nst.rishihood.edu.in", "role": "student",
@@ -250,14 +250,14 @@ def test_students_cannot_read_pending_registrations_or_the_account_list():
 
 
 def test_management_cannot_read_the_account_list_or_review_registrations():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     assert client.get(f"{API}/admin/accounts", headers=_h(MANAGER)).status_code == 403
     assert client.get(f"{API}/provisioning/registrations", headers=_h(MANAGER)).status_code == 403
 
 
 def test_super_admin_account_list_comes_from_the_database_function():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     sb.rpc_responses["super_admin_list_accounts"] = [{"id": AUTH_A, "email": "a@nst.rishihood.edu.in",
                                                      "full_name": "A", "role": "authority", "campus_id": CAMPUS_A,
                                                      "campus_name": "Campus A", "created_at": "2026-11-01T10:00:00+00:00"}]
@@ -270,7 +270,7 @@ def test_super_admin_account_list_comes_from_the_database_function():
 
 
 def test_super_admin_lists_campuses_for_the_invitation_form():
-    sb, auth = _world(), FakeAuthAdmin()
+    sb, auth = _world(), FakeAccountDirectory()
     client = _client(sb, auth)
     response = client.get(f"{API}/provisioning/campuses", headers=_h(SUPER))
     assert response.status_code == 200

@@ -7,8 +7,8 @@ from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.announcements import AnnouncementCreate, AnnouncementOut
 from app.schemas.common import Page
 from app.services.announcements import create_announcement
-from app.services.providers import get_supabase_client
-from app.services.supabase_client import SupabaseClient
+from app.services.providers import get_data_client
+from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/announcements", tags=["announcements"])
 
@@ -22,7 +22,7 @@ async def list_announcements(
     scope: Literal["campus", "university_wide"] | None = None,
     campus_id: UUID | None = None,
     is_important: bool | None = None,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     filters = {"order": "created_at.desc"}
     if audience:
@@ -43,6 +43,6 @@ async def list_announcements(
 async def publish_announcement(
     body: AnnouncementCreate,
     session: Annotated[CurrentSession, Depends(session_with_roles("faculty", "authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     return await create_announcement(sb=sb, user=session.user, body=body)

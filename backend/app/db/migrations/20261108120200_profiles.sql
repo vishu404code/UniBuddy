@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120200_profiles.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Profiles (roles, campus, department) and the RLS helper functions that
 -- policies in later migrations depend on.
 --

@@ -1,11 +1,11 @@
 \set ON_ERROR_STOP on
 -- Fixtures (as postgres). Actors: authority c1, authority c2, management, student, faculty.
-insert into auth.users (id) values
+insert into public.account_identities (id) values
  ('20000000-0000-4000-8000-000000000001'),('20000000-0000-4000-8000-000000000002'),
  ('20000000-0000-4000-8000-000000000003'),('20000000-0000-4000-8000-000000000004'),
  ('20000000-0000-4000-8000-000000000005');
 -- The invite creates the auth user before the profile is completed.
-insert into auth.users (id) values ('30000000-0000-4000-8000-000000000001');
+insert into public.account_identities (id) values ('30000000-0000-4000-8000-000000000001');
 insert into public.campuses (id, name, code) values
  ('c2000000-0000-4000-8000-000000000001','Prov Campus 1','pv1'),
  ('c2000000-0000-4000-8000-000000000002','Prov Campus 2','pv2');

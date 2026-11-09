@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 -- Fixtures (as postgres, bypassing RLS)
-insert into auth.users (id) values
+insert into public.account_identities (id) values
  ('10000000-0000-4000-8000-000000000001'),  -- faculty c1
  ('10000000-0000-4000-8000-000000000002'),  -- authority c1
  ('10000000-0000-4000-8000-000000000003'),  -- authority c2
@@ -93,7 +93,7 @@ do $$ begin
 end $$;
 
 -- 5. Staff dashboards are scoped by RLS (security invoker).
-select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', false);
+select set_config('app.user_id', '10000000-0000-4000-8000-000000000001', false);
 set role authenticated;
 do $$ declare s jsonb := public.staff_dashboard_stats(); begin
   assert (s->>'open_tickets')::int = 1, 'faculty f1 sees 1 open ticket';
@@ -104,7 +104,7 @@ do $$ declare s jsonb := public.staff_dashboard_stats(); begin
 end $$;
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}', false);
+select set_config('app.user_id', '10000000-0000-4000-8000-000000000003', false);
 set role authenticated;
 do $$ declare s jsonb := public.staff_dashboard_stats(); begin
   assert (s->>'open_tickets')::int = 1 and (s->>'resolved_tickets')::int = 0, 'authority c2 sees only the campus-2 ticket';
@@ -112,7 +112,7 @@ do $$ declare s jsonb := public.staff_dashboard_stats(); begin
 end $$;
 reset role;
 
-select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}', false);
+select set_config('app.user_id', '10000000-0000-4000-8000-000000000002', false);
 set role authenticated;
 do $$ declare s jsonb := public.staff_dashboard_stats(); begin
   assert (s->>'open_tickets')::int = 1 and (s->>'resolved_tickets')::int = 1 and (s->>'unassigned_queue')::int = 1, 'authority c1 sees campus-1 tickets only';

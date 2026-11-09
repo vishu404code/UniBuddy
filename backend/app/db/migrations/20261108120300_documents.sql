@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120300_documents.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Documents and their chunks/embeddings.
 --
 -- Access rules:

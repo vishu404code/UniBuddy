@@ -8,7 +8,7 @@ from app.ai.gemini_client import AIServiceError
 from app.ai.rag import Evidence, answer_question
 from app.schemas.auth import CurrentUser
 from app.services.chat import UNAVAILABLE_MESSAGE, ask_question
-from tests.fakes import FakeAI, FakeSupabase
+from tests.fakes import FakeAI, FakeDataClient
 
 CAMPUS = uuid4()
 DOC = uuid4()
@@ -41,7 +41,7 @@ class BrokenAI(FakeAI):
 
 @pytest.mark.asyncio
 async def test_ai_outage_saves_the_question_and_an_unavailable_reply_with_no_citations():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     student = _student()
 
     result = await ask_question(
@@ -60,7 +60,7 @@ async def test_ai_outage_saves_the_question_and_an_unavailable_reply_with_no_cit
 
 @pytest.mark.asyncio
 async def test_ai_outage_does_not_claim_an_answer_or_invent_a_source():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
 
     await ask_question(
         sb=sb, ai=BrokenAI(), user=_student(), access_token="student-token",

@@ -1,4 +1,4 @@
-"""Creates the account row for an invitation, replacing Supabase Auth's invite call.
+"""Creates the account row for an invitation. Google sign-in later links the person to it.
 
 The row has no Google subject yet. The person links it by signing in with Google using the
 same verified email. Until then the row grants no access, because roles live only on profiles.
@@ -7,7 +7,16 @@ same verified email. Until then the row grants no access, because roles live onl
 from uuid import UUID, uuid4
 
 
-class PostgresAccountDirectory:
+class AccountDirectoryError(Exception):
+    """An account could not be created. The code is safe to show to the caller."""
+
+    def __init__(self, code: str, status_code: int):
+        super().__init__(code)
+        self.code = code
+        self.status_code = status_code
+
+
+class AccountDirectory:
     def __init__(self, sb):
         self._sb = sb
 

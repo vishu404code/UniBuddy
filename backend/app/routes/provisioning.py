@@ -14,15 +14,15 @@ from app.schemas.provisioning import (
     RejectRegistrationRequest,
     SuperAdminInviteRequest,
 )
-from app.services.auth_admin import AuthAdminClient
+from app.services.account_directory import AccountDirectory
 from app.services.provisioning import provision_by_super_admin, provision_user
-from app.services.providers import get_auth_admin_client, get_supabase_client
+from app.services.providers import get_account_directory, get_data_client
 from app.services.registration_review import (
     approve_registration,
     list_pending_registrations,
     reject_registration,
 )
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/provisioning", tags=["provisioning"])
 
@@ -31,12 +31,12 @@ router = APIRouter(prefix="/provisioning", tags=["provisioning"])
 async def provision_student(
     body: ProvisionUserRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
-    auth_admin: AuthAdminClient = Depends(get_auth_admin_client),
+    sb: PostgresClient = Depends(get_data_client),
+    accounts: AccountDirectory = Depends(get_account_directory),
 ):
     """Invites a student into the authority's own campus. Sends a real invitation email."""
     created = await provision_user(
-        sb=sb, auth_admin=auth_admin, actor=session.user,
+        sb=sb, accounts=accounts, actor=session.user,
         email=body.email, full_name=body.full_name, role="student", department_id=body.department_id,
     )
     return ProvisionedUserOut(**created)
@@ -46,12 +46,12 @@ async def provision_student(
 async def provision_faculty(
     body: ProvisionUserRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
-    auth_admin: AuthAdminClient = Depends(get_auth_admin_client),
+    sb: PostgresClient = Depends(get_data_client),
+    accounts: AccountDirectory = Depends(get_account_directory),
 ):
     """Invites a faculty member into the authority's own campus. Department is required."""
     created = await provision_user(
-        sb=sb, auth_admin=auth_admin, actor=session.user,
+        sb=sb, accounts=accounts, actor=session.user,
         email=body.email, full_name=body.full_name, role="faculty", department_id=body.department_id,
     )
     return ProvisionedUserOut(**created)
@@ -61,12 +61,12 @@ async def provision_faculty(
 async def provision_authority(
     body: SuperAdminInviteRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles("super_admin"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
-    auth_admin: AuthAdminClient = Depends(get_auth_admin_client),
+    sb: PostgresClient = Depends(get_data_client),
+    accounts: AccountDirectory = Depends(get_account_directory),
 ):
     """Super Admin only. Invites an authority user to the campus Super Admin chooses. Sends a real email."""
     created = await provision_by_super_admin(
-        sb=sb, auth_admin=auth_admin, actor=session.user, email=body.email, full_name=body.full_name,
+        sb=sb, accounts=accounts, actor=session.user, email=body.email, full_name=body.full_name,
         role="authority", campus_id=body.campus_id,
     )
     return ProvisionedUserOut(**created)
@@ -76,12 +76,12 @@ async def provision_authority(
 async def provision_management(
     body: SuperAdminInviteRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles("super_admin"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
-    auth_admin: AuthAdminClient = Depends(get_auth_admin_client),
+    sb: PostgresClient = Depends(get_data_client),
+    accounts: AccountDirectory = Depends(get_account_directory),
 ):
     """Super Admin only. Invites a management user. Management stays aggregate-only. Sends a real email."""
     created = await provision_by_super_admin(
-        sb=sb, auth_admin=auth_admin, actor=session.user, email=body.email, full_name=body.full_name,
+        sb=sb, accounts=accounts, actor=session.user, email=body.email, full_name=body.full_name,
         role="management", campus_id=body.campus_id,
     )
     return ProvisionedUserOut(**created)
@@ -90,7 +90,7 @@ async def provision_management(
 @router.get("/campuses", response_model=list[CampusOut])
 async def list_campuses(
     _session: Annotated[CurrentSession, Depends(session_with_roles("super_admin"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     return await sb.select_service("campuses", {"select": "id,name,code", "order": "name.asc"})
 
@@ -98,7 +98,7 @@ async def list_campuses(
 @router.get("/departments", response_model=list[DepartmentOut])
 async def list_departments(
     session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     """Departments on the authority's own campus only."""
     if session.user.campus_id is None:
@@ -112,7 +112,7 @@ async def list_departments(
 @router.get("/registrations", response_model=list[RegistrationOut])
 async def pending_registrations(
     _session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     return await list_pending_registrations(sb)
 
@@ -121,12 +121,12 @@ async def pending_registrations(
 async def approve(
     request_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
-    auth_admin: AuthAdminClient = Depends(get_auth_admin_client),
+    sb: PostgresClient = Depends(get_data_client),
+    accounts: AccountDirectory = Depends(get_account_directory),
 ):
     """Approves a pending student request. The student joins the approver's campus. Sends a real email."""
     created = await approve_registration(
-        sb=sb, auth_admin=auth_admin, actor=session.user, request_id=request_id,
+        sb=sb, accounts=accounts, actor=session.user, request_id=request_id,
     )
     return ProvisionedUserOut(**created)
 
@@ -136,7 +136,7 @@ async def reject(
     request_id: UUID,
     body: RejectRegistrationRequest,
     session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     row = await reject_registration(sb=sb, actor=session.user, request_id=request_id, reason=body.reason)
     return RegistrationOut(**row)

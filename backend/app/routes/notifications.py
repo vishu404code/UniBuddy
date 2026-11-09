@@ -7,8 +7,8 @@ from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.common import Page
 from app.schemas.notifications import NotificationOut
 from app.services.notifications import mark_notification_read
-from app.services.providers import get_supabase_client
-from app.services.supabase_client import SupabaseClient
+from app.services.providers import get_data_client
+from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 ANY_SIGNED_IN = ("student", "faculty", "authority", "management")
@@ -20,7 +20,7 @@ async def list_notifications(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
     is_read: bool | None = None,
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     filters = {"order": "created_at.desc"}
     if is_read is not None:
@@ -35,6 +35,6 @@ async def list_notifications(
 async def read_notification(
     notification_id: UUID,
     session: Annotated[CurrentSession, Depends(session_with_roles(*ANY_SIGNED_IN))],
-    sb: SupabaseClient = Depends(get_supabase_client),
+    sb: PostgresClient = Depends(get_data_client),
 ):
     return await mark_notification_read(sb=sb, access_token=session.access_token, notification_id=notification_id)

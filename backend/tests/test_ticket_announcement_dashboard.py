@@ -11,7 +11,7 @@ from app.services.dashboards import student_dashboard
 from app.services.documents import DocumentConflict, DocumentError, DocumentForbidden, DocumentNotFound
 from app.services.notifications import mark_notification_read
 from app.services.tickets import update_ticket
-from tests.fakes import FakeSupabase
+from tests.fakes import FakeDataClient
 
 CAMPUS = uuid4()
 DEPT = uuid4()
@@ -46,7 +46,7 @@ async def _update(sb, user, ticket_id, **body):
 @pytest.mark.asyncio
 async def test_faculty_takes_an_unassigned_ticket_and_moves_it_to_assigned():
     faculty, student = _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     ticket = _ticket(student)
     sb.tables["tickets"].append(ticket)
 
@@ -61,7 +61,7 @@ async def test_faculty_takes_an_unassigned_ticket_and_moves_it_to_assigned():
 @pytest.mark.asyncio
 async def test_status_change_and_reply_are_recorded_and_notify_the_student():
     faculty, student = _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     ticket = _ticket(student, assigned=faculty, status="assigned")
     sb.tables["tickets"].append(ticket)
 
@@ -76,7 +76,7 @@ async def test_status_change_and_reply_are_recorded_and_notify_the_student():
 @pytest.mark.asyncio
 async def test_faculty_who_is_not_the_assignee_cannot_reply():
     owner, other, student = _user("faculty"), _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=owner, status="assigned"))
     ticket_id = sb.tables["tickets"][0]["id"]
 
@@ -87,7 +87,7 @@ async def test_faculty_who_is_not_the_assignee_cannot_reply():
 @pytest.mark.asyncio
 async def test_status_cannot_move_backwards():
     faculty, student = _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=faculty, status="in_progress"))
     ticket_id = sb.tables["tickets"][0]["id"]
 
@@ -98,7 +98,7 @@ async def test_status_cannot_move_backwards():
 @pytest.mark.asyncio
 async def test_resolved_ticket_is_final():
     faculty, student = _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=faculty, status="resolved"))
     ticket_id = sb.tables["tickets"][0]["id"]
 
@@ -109,7 +109,7 @@ async def test_resolved_ticket_is_final():
 @pytest.mark.asyncio
 async def test_ticket_already_taken_by_another_faculty_cannot_be_taken():
     owner, other, student = _user("faculty"), _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=owner, status="assigned"))
     ticket_id = sb.tables["tickets"][0]["id"]
 
@@ -120,7 +120,7 @@ async def test_ticket_already_taken_by_another_faculty_cannot_be_taken():
 @pytest.mark.asyncio
 async def test_concurrent_status_change_is_detected():
     faculty, student = _user("faculty"), _user("student")
-    sb = FakeSupabase(visible=_visible_to_all)
+    sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=faculty, status="assigned"))
     ticket_id = sb.tables["tickets"][0]["id"]
     original_update = sb.update_service
@@ -140,7 +140,7 @@ async def test_concurrent_status_change_is_detected():
 @pytest.mark.asyncio
 async def test_ticket_outside_visibility_is_not_found():
     student = _user("student")
-    sb = FakeSupabase(visible=lambda token, table, row: False)
+    sb = FakeDataClient(visible=lambda token, table, row: False)
     sb.tables["tickets"].append(_ticket(student))
     ticket_id = sb.tables["tickets"][0]["id"]
 
@@ -150,7 +150,7 @@ async def test_ticket_outside_visibility_is_not_found():
 
 @pytest.mark.asyncio
 async def test_only_authority_publishes_university_wide_announcements():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     body = AnnouncementCreate(title="Exams", body="Timetable out.", scope="university_wide")
 
     with pytest.raises(DocumentForbidden):
@@ -163,7 +163,7 @@ async def test_only_authority_publishes_university_wide_announcements():
 
 @pytest.mark.asyncio
 async def test_campus_announcement_is_attributed_to_the_publishers_campus():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     body = AnnouncementCreate(title="Hostel", body="Water off Friday.", scope="campus", audience="staff_only")
 
     created = await create_announcement(sb=sb, user=_user("faculty"), body=body)
@@ -174,7 +174,7 @@ async def test_campus_announcement_is_attributed_to_the_publishers_campus():
 
 @pytest.mark.asyncio
 async def test_notification_is_marked_read_only_when_visible():
-    sb = FakeSupabase(visible=lambda token, table, row: row["user_id"] == me)
+    sb = FakeDataClient(visible=lambda token, table, row: row["user_id"] == me)
     me = str(uuid4())
     note_id = uuid4()
     sb.tables["notifications"].append({"id": str(note_id), "user_id": me, "text": "x", "is_read": False,
@@ -187,7 +187,7 @@ async def test_notification_is_marked_read_only_when_visible():
 
 @pytest.mark.asyncio
 async def test_other_users_notification_is_not_found():
-    sb = FakeSupabase(visible=lambda token, table, row: False)
+    sb = FakeDataClient(visible=lambda token, table, row: False)
     note_id = uuid4()
     sb.tables["notifications"].append({"id": str(note_id), "user_id": str(uuid4()), "text": "x",
                                        "is_read": False, "ticket_id": None,
@@ -200,7 +200,7 @@ async def test_other_users_notification_is_not_found():
 @pytest.mark.asyncio
 async def test_student_dashboard_counts_only_what_rls_returns():
     student = _user("student")
-    sb = FakeSupabase(visible=lambda token, table, row: row.get("student_id", row.get("user_id")) == str(student.id)
+    sb = FakeDataClient(visible=lambda token, table, row: row.get("student_id", row.get("user_id")) == str(student.id)
                       or table == "messages")
     sb.tables["tickets"] += [_ticket(student, status="resolved", number="UB-1"),
                              _ticket(student, status="submitted", number="UB-2"),

@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261109120000_student_registration.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Student registration requests. A request grants nothing: it only queues a person for review.
 -- Approval (which creates the account through the audited provisioning path) is not built yet,
 -- because campus routing and the approver are open decisions.

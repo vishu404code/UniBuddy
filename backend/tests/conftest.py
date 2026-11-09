@@ -1,65 +1,50 @@
-from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import UUID
 
 import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import ec
 
+from app.auth.session import issue_session_token
 from app.schemas.auth import CurrentUser
 
-TEST_ISSUER = "https://test-project.supabase.co/auth/v1"
+TEST_SECRET = "test-only-session-secret-with-more-than-32-chars"
 
 
 @pytest.fixture
 def signing_key():
-    return ec.generate_private_key(ec.SECP256R1())
+    return TEST_SECRET
 
 
 @pytest.fixture
-def make_token(signing_key):
-    def _make(
-        sub: str,
-        *,
-        key=None,
-        aud: str = "authenticated",
-        iss: str = TEST_ISSUER,
-        expires_in: int = 3600,
-        algorithm: str = "ES256",
-        extra_claims: dict | None = None,
-    ) -> str:
-        now = datetime.now(timezone.utc)
+def make_token():
+    """Issues a UniBuddy session token for a user ID. Extra claims are signed too, so tests can
+    prove that claims are ignored: the role always comes from the profile."""
+
+    def _make(sub: str, *, extra_claims: dict | None = None, aud: str | None = None,
+              key: str | None = None, algorithm: str = "HS256") -> str:
+        if not extra_claims and aud is None and key is None and algorithm == "HS256":
+            return issue_session_token(UUID(sub), TEST_SECRET)
+        import time
+
+        now = int(time.time())
         payload = {
             "sub": sub,
-            "aud": aud,
-            "iss": iss,
+            "iss": "unibuddy-api",
+            "aud": aud or "unibuddy-web",
             "iat": now,
-            "exp": now + timedelta(seconds=expires_in),
+            "exp": now + 3600,
             **(extra_claims or {}),
         }
-        return jwt.encode(payload, key or signing_key, algorithm=algorithm)
+        return jwt.encode(payload, key or TEST_SECRET, algorithm=algorithm)
 
     return _make
 
 
-class FakeJWKSClient:
-    """Stands in for PyJWKClient so tests never fetch Supabase's real keys."""
-
-    def __init__(self, public_key):
-        self._public_key = public_key
-
-    def get_signing_key_from_jwt(self, token: str):
-        return SimpleNamespace(key=self._public_key)
-
-
 @pytest.fixture
-def verifier(signing_key):
-    from app.services.token_verifier import SupabaseTokenVerifier
+def verifier():
+    from app.services.token_verifier import SessionTokenVerifier
 
-    return SupabaseTokenVerifier(
-        issuer=TEST_ISSUER,
-        jwks_client=FakeJWKSClient(signing_key.public_key()),
-    )
+    return SessionTokenVerifier(TEST_SECRET)
 
 
 def make_profile(

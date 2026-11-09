@@ -1,6 +1,6 @@
 -- UniBuddy access helpers for the replacement database (Stage 1).
 --
--- These replace the Supabase helpers that read auth.uid(). The backend sets
+-- Helpers that read the signed-in user from app.user_id. The backend sets
 -- app.user_id for each transaction (see app/db/postgres.py set_session_user).
 -- With no user set, every helper returns NULL, so policies that compare against
 -- them match nothing. Profiles are read with SECURITY DEFINER so policies on other

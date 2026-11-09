@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120100_campuses_departments.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Campuses and departments.
 -- Campus/department matter for user assignment, ticket routing, and
 -- reporting -- NOT for restricting which documents a student can retrieve.

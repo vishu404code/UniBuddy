@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261109130000_super_admin_and_approvals.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Super Admin: account provisioning only. It is never created through the API.
 -- Also: super-admin provisioning for authority and management accounts, and an account
 -- list that exposes no academic records.

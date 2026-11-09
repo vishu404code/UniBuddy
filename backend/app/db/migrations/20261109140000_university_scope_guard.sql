@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261109140000_university_scope_guard.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Only authority (and Super Admin) may create, publish or archive university-wide documents.
 -- Faculty cannot set scope to university_wide, so they can never publish one. The API checks the
 -- same rule; this trigger makes the database refuse it even if the API is bypassed.

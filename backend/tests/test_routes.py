@@ -8,10 +8,10 @@ from app.ai.rag import ABSTAIN_MESSAGE
 from app.config import settings
 from app.main import app
 from app.middleware.auth import get_token_verifier, get_profile_repository
-from app.services.providers import get_ai_client, get_supabase_client
-from app.services.supabase_client import SupabaseError
+from app.services.providers import get_ai_client, get_data_client
+from app.services.errors import DataServiceError
 from tests.conftest import FakeProfileRepository, make_profile
-from tests.fakes import FakeAI, FakeSupabase
+from tests.fakes import FakeAI, FakeDataClient
 
 API = settings.api_v1_prefix
 CAMPUS = str(uuid4())
@@ -44,11 +44,11 @@ def harness():
         FACULTY_ID: make_profile(FACULTY_ID, role="faculty", campus_id=CAMPUS),
         MANAGER_ID: make_profile(MANAGER_ID, role="management", campus_id=CAMPUS),
     }
-    sb, ai = FakeSupabase(), FakeAI(reply="Pay in week two [1].")
+    sb, ai = FakeDataClient(), FakeAI(reply="Pay in week two [1].")
     sb.tables["departments"].append({"id": str(uuid4()), "campus_id": CAMPUS, "name": "CS"})
     app.dependency_overrides[get_token_verifier] = lambda: _Verifier()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(profiles)
-    app.dependency_overrides[get_supabase_client] = lambda: sb
+    app.dependency_overrides[get_data_client] = lambda: sb
     app.dependency_overrides[get_ai_client] = lambda: ai
     try:
         yield TestClient(app), sb, ai
@@ -139,7 +139,7 @@ def test_publish_conflict_from_database_is_a_409(harness):
     })
 
     async def raise_not_publishable(function, payload):
-        raise SupabaseError(400, '{"message":"document_not_publishable"}')
+        raise DataServiceError(400, '{"message":"document_not_publishable"}')
 
     sb.rpc_service = raise_not_publishable
     response = client.post(f"{API}/documents/{doc_id}/publish", headers=_auth(FACULTY_ID))
@@ -255,13 +255,14 @@ def test_upstream_database_error_is_hidden_behind_a_generic_message(harness):
     client, sb, _ = harness
 
     async def broken(*args, **kwargs):
-        raise SupabaseError(500, "relation secret_internal_table does not exist")
+        raise DataServiceError(500, "relation secret_internal_table does not exist")
 
     sb.select_as_user = broken
     response = client.get(f"{API}/tickets", headers=_auth(STUDENT_ID))
 
     assert response.status_code == 502
-    assert response.json() == {"detail": "Database request failed"}
+    assert response.json() == {"detail": "Database request failed."}
+    assert "secret_internal_table" not in response.text
     assert "secret_internal_table" not in response.text
 
 

@@ -1,7 +1,7 @@
 """Stage 1 row-level rules, run as a non-owner role on the local database.
 
 Each test runs in one transaction that is rolled back, so nothing persists. The
-policies here are a small example of the rules that will replace the Supabase
+policies here are a small example of the rules that the migrations also define
 policies. They show the mechanism: campus scoping, published-only reads, and no
 access without a signed-in user.
 """

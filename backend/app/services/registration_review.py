@@ -2,13 +2,13 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from app.schemas.auth import CurrentUser
-from app.services.auth_admin import AuthAdminClient
+from app.services.account_directory import AccountDirectory
 from app.services.documents import DocumentConflict, DocumentNotFound
 from app.services.provisioning import provision_user
-from app.services.supabase_client import SupabaseClient
+from app.services.postgres_client import PostgresClient
 
 
-async def list_pending_registrations(sb: SupabaseClient) -> list[dict]:
+async def list_pending_registrations(sb: PostgresClient) -> list[dict]:
     return await sb.select_service(
         "registration_requests",
         {"select": "id,email,full_name,requested_at", "status": "eq.pending", "order": "requested_at.asc",
@@ -16,7 +16,7 @@ async def list_pending_registrations(sb: SupabaseClient) -> list[dict]:
     )
 
 
-async def _pending_request(sb: SupabaseClient, request_id: UUID) -> dict:
+async def _pending_request(sb: PostgresClient, request_id: UUID) -> dict:
     rows = await sb.select_service("registration_requests", {"select": "*", "id": f"eq.{request_id}"})
     if not rows:
         raise DocumentNotFound("Registration request not found")
@@ -27,8 +27,8 @@ async def _pending_request(sb: SupabaseClient, request_id: UUID) -> dict:
 
 async def approve_registration(
     *,
-    sb: SupabaseClient,
-    auth_admin: AuthAdminClient,
+    sb: PostgresClient,
+    accounts: AccountDirectory,
     actor: CurrentUser,
     request_id: UUID,
 ) -> dict:
@@ -39,7 +39,7 @@ async def approve_registration(
     """
     request = await _pending_request(sb, request_id)
     created = await provision_user(
-        sb=sb, auth_admin=auth_admin, actor=actor, email=request["email"], full_name=request["full_name"],
+        sb=sb, accounts=accounts, actor=actor, email=request["email"], full_name=request["full_name"],
         role="student", department_id=None,
     )
     await sb.update_service(
@@ -52,7 +52,7 @@ async def approve_registration(
 
 
 async def reject_registration(
-    *, sb: SupabaseClient, actor: CurrentUser, request_id: UUID, reason: str | None
+    *, sb: PostgresClient, actor: CurrentUser, request_id: UUID, reason: str | None
 ) -> dict:
     await _pending_request(sb, request_id)
     updated = await sb.update_service(

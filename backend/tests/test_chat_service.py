@@ -6,7 +6,7 @@ from app.ai.rag import ABSTAIN_MESSAGE
 from app.schemas.auth import CurrentUser
 from app.services.chat import ask_question, forward_message_to_faculty
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
-from tests.fakes import FakeAI, FakeSupabase
+from tests.fakes import FakeAI, FakeDataClient
 
 CAMPUS = uuid4()
 DEPT = uuid4()
@@ -32,7 +32,7 @@ async def _ask(sb, ai, student, question="When is the fee due?", conversation_id
 
 @pytest.mark.asyncio
 async def test_grounded_answer_is_saved_with_citations_and_retrieval_runs_as_the_user():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.rpc_rows = [_row(0.8)]
     ai = FakeAI(reply="Pay in week two [1].")
     student = _student()
@@ -51,7 +51,7 @@ async def test_grounded_answer_is_saved_with_citations_and_retrieval_runs_as_the
 
 @pytest.mark.asyncio
 async def test_weak_retrieval_abstains_and_does_not_call_the_model():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.rpc_rows = [_row(0.1)]
     ai = FakeAI(reply="should not be used")
 
@@ -66,12 +66,12 @@ async def test_weak_retrieval_abstains_and_does_not_call_the_model():
 @pytest.mark.asyncio
 async def test_empty_question_is_rejected():
     with pytest.raises(DocumentError):
-        await _ask(FakeSupabase(), FakeAI(), _student(), question="   ")
+        await _ask(FakeDataClient(), FakeAI(), _student(), question="   ")
 
 
 @pytest.mark.asyncio
 async def test_student_cannot_continue_someone_elses_conversation():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     owner = _student()
     conversation_id = uuid4()
     sb.tables["conversations"].append({"id": str(conversation_id), "user_id": str(owner.id), "title": "x"})
@@ -83,7 +83,7 @@ async def test_student_cannot_continue_someone_elses_conversation():
 
 @pytest.mark.asyncio
 async def test_forward_creates_a_submitted_ticket_for_the_students_campus():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     student = _student()
     conversation_id, message_id = uuid4(), uuid4()
     sb.tables["conversations"].append({"id": str(conversation_id), "user_id": str(student.id), "title": "t"})
@@ -108,7 +108,7 @@ async def test_forward_creates_a_submitted_ticket_for_the_students_campus():
 
 @pytest.mark.asyncio
 async def test_forwarding_the_same_question_twice_is_a_conflict():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     student = _student()
     conversation_id, message_id = uuid4(), uuid4()
     sb.tables["conversations"].append({"id": str(conversation_id), "user_id": str(student.id), "title": "t"})
@@ -125,7 +125,7 @@ async def test_forwarding_the_same_question_twice_is_a_conflict():
 
 @pytest.mark.asyncio
 async def test_forward_rejects_department_outside_students_campus():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     student = _student()
     conversation_id, message_id = uuid4(), uuid4()
     sb.tables["conversations"].append({"id": str(conversation_id), "user_id": str(student.id), "title": "t"})
@@ -140,7 +140,7 @@ async def test_forward_rejects_department_outside_students_campus():
 
 @pytest.mark.asyncio
 async def test_forward_rejects_assistant_messages():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     student = _student()
     conversation_id, message_id = uuid4(), uuid4()
     sb.tables["conversations"].append({"id": str(conversation_id), "user_id": str(student.id), "title": "t"})

@@ -1,4 +1,3 @@
--- GENERATED from supabase/migrations/20261108120500_tickets.sql by tools/port_supabase_migrations.py. Do not edit by hand.
 -- Tickets and their event timeline.
 --
 -- Visibility:

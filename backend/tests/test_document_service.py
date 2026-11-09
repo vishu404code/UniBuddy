@@ -14,8 +14,8 @@ from app.services.documents import (
     replace_document,
     upload_document,
 )
-from app.services.supabase_client import SupabaseError
-from tests.fakes import FakeSupabase
+from app.services.errors import DataServiceError
+from tests.fakes import FakeDataClient
 
 CAMPUS = uuid4()
 OTHER_CAMPUS = uuid4()
@@ -66,7 +66,7 @@ def _seed_ready_document(sb, uploader, *, status="published", processing="ready"
 
 @pytest.mark.asyncio
 async def test_upload_stores_file_and_queues_a_pending_draft_without_calling_ai():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     uploader = _user("faculty")
 
     doc = await _upload(sb, uploader)
@@ -80,7 +80,7 @@ async def test_upload_stores_file_and_queues_a_pending_draft_without_calling_ai(
 
 @pytest.mark.asyncio
 async def test_non_pdf_upload_is_rejected_before_storage():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     with pytest.raises(DocumentError, match="Only PDF"):
         await _upload(sb, _user("faculty"), content_type="image/png")
     assert sb.tables["documents"] == [] and sb.storage == {}
@@ -89,18 +89,18 @@ async def test_non_pdf_upload_is_rejected_before_storage():
 @pytest.mark.asyncio
 async def test_renamed_non_pdf_bytes_are_rejected():
     with pytest.raises(DocumentError, match="not a PDF"):
-        await _upload(FakeSupabase(), _user("faculty"), data=b"<html>not a pdf</html>")
+        await _upload(FakeDataClient(), _user("faculty"), data=b"<html>not a pdf</html>")
 
 
 @pytest.mark.asyncio
 async def test_oversize_upload_is_rejected():
     with pytest.raises(DocumentError, match="larger than"):
-        await _upload(FakeSupabase(), _user("faculty"), max_bytes=10)
+        await _upload(FakeDataClient(), _user("faculty"), max_bytes=10)
 
 
 @pytest.mark.asyncio
 async def test_department_from_another_campus_is_rejected():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.tables["departments"].append({"id": str(DEPT), "campus_id": str(OTHER_CAMPUS), "name": "CS"})
     with pytest.raises(DocumentError, match="does not belong to your campus"):
         await _upload(sb, _user("faculty"), department_id=DEPT)
@@ -108,22 +108,22 @@ async def test_department_from_another_campus_is_rejected():
 
 @pytest.mark.asyncio
 async def test_storage_failure_stores_nothing_in_the_database():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
     sb.fail_storage = True
-    with pytest.raises(SupabaseError):
+    with pytest.raises(DataServiceError):
         await _upload(sb, _user("faculty"))
     assert sb.tables["documents"] == []
 
 
 @pytest.mark.asyncio
 async def test_database_failure_removes_the_orphaned_file():
-    sb = FakeSupabase()
+    sb = FakeDataClient()
 
     async def broken_insert(table, rows):
-        raise SupabaseError(500, "database down")
+        raise DataServiceError(500, "database down")
 
     sb.insert_service = broken_insert
-    with pytest.raises(SupabaseError):
+    with pytest.raises(DataServiceError):
         await _upload(sb, _user("faculty"))
     assert sb.storage == {}
 
@@ -131,7 +131,7 @@ async def test_database_failure_removes_the_orphaned_file():
 @pytest.mark.asyncio
 async def test_uploader_publishes_their_ready_draft_through_the_database_function():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     doc_id = _seed_ready_document(sb, uploader, status="draft")
 
     published = await publish_document(sb=sb, user=uploader, access_token=str(uploader.id), document_id=doc_id)
@@ -142,7 +142,7 @@ async def test_uploader_publishes_their_ready_draft_through_the_database_functio
 @pytest.mark.asyncio
 async def test_faculty_cannot_publish_another_members_draft():
     uploader, other = _user("faculty"), _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     doc_id = _seed_ready_document(sb, uploader, status="draft")
 
     with pytest.raises(DocumentNotFound):
@@ -152,7 +152,7 @@ async def test_faculty_cannot_publish_another_members_draft():
 @pytest.mark.asyncio
 async def test_publishing_a_pending_document_is_a_conflict():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     doc = await _upload(sb, uploader)
 
     with pytest.raises(DocumentConflict, match="not ready"):
@@ -162,7 +162,7 @@ async def test_publishing_a_pending_document_is_a_conflict():
 @pytest.mark.asyncio
 async def test_replacement_is_a_new_draft_linked_to_the_old_version():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     old_id = _seed_ready_document(sb, uploader, status="published")
 
     new = await replace_document(sb=sb, user=uploader, access_token=str(uploader.id), document_id=old_id,
@@ -180,7 +180,7 @@ async def test_replacement_is_a_new_draft_linked_to_the_old_version():
 @pytest.mark.asyncio
 async def test_publishing_a_replacement_archives_the_old_version_in_one_step():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     old_id = _seed_ready_document(sb, uploader, status="published")
     new = await replace_document(sb=sb, user=uploader, access_token=str(uploader.id), document_id=old_id,
                                  title="v2", content_type="application/pdf", filename="v2.pdf",
@@ -197,7 +197,7 @@ async def test_publishing_a_replacement_archives_the_old_version_in_one_step():
 @pytest.mark.asyncio
 async def test_only_one_replacement_can_be_in_progress():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     old_id = _seed_ready_document(sb, uploader, status="published")
     kwargs = dict(sb=sb, user=uploader, access_token=str(uploader.id), document_id=old_id, title=None,
                   content_type="application/pdf", filename="v2.pdf", data=_pdf("v2"),
@@ -211,7 +211,7 @@ async def test_only_one_replacement_can_be_in_progress():
 @pytest.mark.asyncio
 async def test_archived_document_cannot_be_replaced():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     old_id = _seed_ready_document(sb, uploader, status="archived")
 
     with pytest.raises(DocumentConflict, match="Archived"):
@@ -223,7 +223,7 @@ async def test_archived_document_cannot_be_replaced():
 @pytest.mark.asyncio
 async def test_archive_marks_a_document_archived_and_is_idempotent():
     uploader = _user("faculty")
-    sb = FakeSupabase(visible=_visible_to_uploader)
+    sb = FakeDataClient(visible=_visible_to_uploader)
     doc_id = _seed_ready_document(sb, uploader, status="published")
 
     first = await archive_document(sb=sb, user=uploader, access_token=str(uploader.id), document_id=doc_id)
@@ -237,7 +237,7 @@ async def test_archive_marks_a_document_archived_and_is_idempotent():
 async def test_authority_outside_the_campus_cannot_archive():
     uploader = _user("faculty")
     other_authority = _user("authority", campus=OTHER_CAMPUS)
-    sb = FakeSupabase(visible=lambda token, table, row: True)
+    sb = FakeDataClient(visible=lambda token, table, row: True)
     doc_id = _seed_ready_document(sb, uploader, status="published")
 
     with pytest.raises(DocumentForbidden):
