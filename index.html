@@ -172,7 +172,7 @@ const S={
   tickets:[],notifs:[],docs:[],announcements:[],departments:[],dashboard:{},detail:null,loading:false
 };
 
-const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${Math.max(0,STG.indexOf(t.status))}">${(t.status||'submitted').replace('_',' ')}</span>`;
+const T=id=>S.tickets.find(t=>t.id==id),stl=t=>{const h=humanStatus(t.status);return `<span class="pill s${Math.max(0,STG.indexOf(h))}">${esc(h)}</span>`};
 const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
 const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2800)};
 
@@ -211,7 +211,7 @@ async function loadViewData(view=S.view){
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||view==='x')tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
-  await Promise.all(tasks);S.loading=false;R();
+  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});S.loading=false;R();
 }
 
 // Google Sign-In Credential Handler
@@ -281,8 +281,8 @@ function side(items){
   return `<aside class="side ${S.nav?'open':''}">${logo}
 ${isStu?`<button class="si nc" data-a="new">${I('plus')}New Chat</button>`:''}
 ${items.map(i=>`<button class="si ${S.view==i[0]?'on':''}" data-a="view" data-v="${i[0]}">${I(i[2])}${i[1]}</button>`).join('')}
-${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${h.title}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
-<div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="View profile"><span class="av">${ini()}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${pn()}</div><div class="mut" style="font-size:12px">${ROLES[S.role]?ROLES[S.role][1]:'User'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
+${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${esc(h.title)}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
+<div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="View profile"><span class="av">${esc(ini())}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${esc(pn())}</div><div class="mut" style="font-size:12px">${ROLES[S.role]?ROLES[S.role][1]:'User'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
 
 const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
 const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['docs','Documents','file'],['profile','Profile','user']];
@@ -311,7 +311,7 @@ function msg(x,i){
 async function ask(q){
   if(!q||!q.trim())return;
   const cleanQ=q.trim();
-  S.chat.push({r:'u',t:cleanQ.replace(/</g,'&lt;'),time:now(),n:1});
+  S.chat.push({r:'u',t:cleanQ,time:now(),n:1});
   S.chat.push({r:'a',k:'ty',n:1});
   S.view='chat';
   R();
@@ -344,9 +344,9 @@ function newChat(){if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.
 
 function dash(){
   const t=S.tickets,d=S.dashboard||{},ann=S.announcements;
-  return `<div class="pg"><h1 class="ed">Welcome back, ${pn()}</h1><p class="sub">Here’s what is happening on campus today.</p>
+  return `<div class="pg"><h1 class="ed">Welcome back, ${esc(pn())}</h1><p class="sub">Here’s what is happening on campus today.</p>
 <div class="askp"><div><h3>Ask UniBuddy</h3><p>Get an instant verified answer, or send it on to faculty.</p></div><div class="row"><input id="dq" placeholder="Ask UniBuddy anything..."><button class="btn p" data-a="dask">Ask</button></div></div>
-<div class="strip">${[['list','Total questions',d.total_questions??'—'],['tick','Resolved',d.tickets_by_status?.resolved??'—'],['clock','Open tickets',Math.max(0,(d.total_tickets||0)-(d.tickets_by_status?.resolved||0))]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
+<div class="strip">${[['list','Total questions',d.total_questions??'—'],['tick','Resolved',d.tickets_by_status?.resolved??'—'],['clock','Open tickets',d.total_tickets==null?null:Math.max(0,d.total_tickets-(d.tickets_by_status?.resolved||0))]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
 <div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div>${ann.slice(0,3).map(a=>`<article class="am blue"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div><h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No announcements available.</p>'}</section>
 <section><div class="sh2">Upcoming deadlines</div><p class="mut">Deadlines are not available from the connected backend yet.</p></section></div>
 <section><div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div><div class="qp">${t.slice(0,3).map(x=>`<div class="qr" data-a="open" data-v="${x.uuid}"><small>${esc(x.id)}</small><span>${esc(x.subj)}</span>${stl(x)}</div>`).join('')||'<p class="mut">No questions yet.</p>'}</div></section></div>`}
@@ -365,8 +365,8 @@ function detail(t,fac){
 
 function queries(){
   const f=S.tickets.filter(t=>(S.fs=='All'||humanStatus(t.status)==S.fs)&&(t.subj+t.id+t.dept).toLowerCase().includes(S.fq.toLowerCase())),t=S.detail?.ticket||null;
-  return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${S.fq}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td>${x.dept}</td><td>${x.fac}</td><td>${x.date}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
+  return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${esc(S.fq)}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
+<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${esc(x.id)}"><td><b>${esc(x.id)}</b></td><td>${esc(x.subj)}</td><td>${esc(x.dept)}</td><td>${esc(x.fac)}</td><td>${esc(x.date)}</td><td><span class="pri ${esc(x.pri)}">${esc(x.pri)}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
 
 const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',x:'Workspace'};
 
@@ -398,7 +398,7 @@ function faculty(){
 function placeholder(){
   const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
   const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
-  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
+  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
 
 // Modals
 function modal(){
@@ -539,7 +539,7 @@ async function restoreSession(){
     S.role=me.role;S.scr='app';
     S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
     R();await loadViewData(S.view);return;
-  }else{
+  }else if(r.status===401||r.status===403){
     try{localStorage.removeItem('ub-token')}catch(e){}
   }
   R();

@@ -46,5 +46,16 @@ Student under the current backend rule. Faculty, Authority, and Management must
 already have their protected account/profile provisioned. Ticket forwarding is
 unavailable when the account has no campus or the campus has no departments.
 
-These screens are wired to the API, but they are not live-verified until the
-new backend and database are deployed and configured.
+Local check, run once: the page was served at `http://127.0.0.1:8099` and used the
+current FastAPI backend on a local PostgreSQL database. Google and Gemini were
+replaced by stand-ins in that run. Verified there: sign-in and role routing, a
+student question that is not in the documents is refused and can be forwarded to a
+department, faculty take/reply/resolve, the student then sees the reply and status,
+authority dashboard counts, publishing a draft document, PDF upload, empty states,
+and escaping of user text.
+
+Not verified yet: the real Google button and ID token, answers with citations from
+real Gemini output, R2 storage, the hosted backend, and the GitHub Pages address.
+
+For a local preview against a local backend, set the backend's `ALLOWED_ORIGINS`
+to include `http://127.0.0.1:8099`. The default list does not include it.
