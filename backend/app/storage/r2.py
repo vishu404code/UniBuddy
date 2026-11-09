@@ -5,6 +5,7 @@ safe message with no endpoint, key or credential in it.
 """
 
 import asyncio
+import logging
 from typing import Any
 
 import boto3
@@ -14,6 +15,16 @@ from botocore.exceptions import BotoCoreError, ClientError
 from app.storage.objects import PDF_CONTENT_TYPE, ObjectNotFound, ObjectStoreError, sha256_hex, validate_key
 
 MISSING_CODES = frozenset({"NoSuchKey", "404", "NotFound"})
+logger = logging.getLogger("unibuddy.storage")
+
+
+def describe_storage_error(exc: BaseException) -> str:
+    """Safe summary for logs: exception class, AWS error code and HTTP status only."""
+    if isinstance(exc, ClientError):
+        err = exc.response.get("Error", {})
+        status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        return f"{type(exc).__name__} code={err.get('Code')} status={status}"
+    return type(exc).__name__
 
 
 def build_r2_client(account_id: str, access_key_id: str, secret_access_key: str) -> Any:
@@ -60,6 +71,7 @@ class R2ObjectStore:
                 Metadata={"sha256": digest},
             )
         except (ClientError, BotoCoreError) as exc:
+            logger.warning("object put failed: %s", describe_storage_error(exc))
             raise ObjectStoreError("file could not be stored") from exc
         return digest
 

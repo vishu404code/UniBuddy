@@ -1,5 +1,6 @@
 """Shared clients for the API and the worker. Everything here is server-side."""
 
+import logging
 from functools import lru_cache
 
 from fastapi import HTTPException, status
@@ -84,6 +85,8 @@ def get_data_client() -> PostgresClient:
     if not settings.database_url or not settings.session_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, DATABASE_SETTINGS_MISSING)
     store = build_object_store() if _storage_configured() else None
+    if store is None:
+        logging.getLogger("unibuddy.providers").warning("storage not configured: backend=%s", settings.storage_backend)
     return PostgresClient(settings.database_url, settings.session_secret, object_store=store)
 
 
