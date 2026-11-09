@@ -262,3 +262,11 @@ def processing_note(document: dict[str, Any], ai_configured: bool) -> str | None
     if document["processing_status"] == "failed":
         return document.get("last_error")
     return None
+
+
+async def stored_bytes_estimate(sb) -> int:
+    """Sum of recorded PDF sizes (an estimate of object storage in use). Rows are read with the
+    service role, so every document counts, including archived ones that still have a file."""
+    rows = await sb.select_service("documents", {"select": "file_size_bytes"})
+    return sum(int(r.get("file_size_bytes") or 0) for r in rows)
+

@@ -308,3 +308,15 @@ def test_different_file_with_the_same_name_is_still_accepted(harness):
     assert first.status_code == 202
     assert second.status_code == 202
     assert len(sb.tables["documents"]) == 2
+
+
+def test_upload_is_refused_before_the_app_storage_budget_is_passed(harness, monkeypatch):
+    client, sb, _ = harness
+    monkeypatch.setattr(settings, "storage_budget_bytes", 10)
+    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
+                           data={"title": "Too big", "visibility": "public_students", "scope": "campus"},
+                           files={"file": ("big.pdf", _pdf_bytes(), "application/pdf")})
+
+    assert response.status_code == 507
+    assert "Nothing was uploaded" in response.json()["detail"]
+    assert sb.tables["documents"] == []

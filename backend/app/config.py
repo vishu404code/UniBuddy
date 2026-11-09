@@ -49,6 +49,11 @@ class Settings(BaseSettings):
 
     # Ingestion and retrieval limits. Retrieval values are starting points and must be tuned.
     max_upload_bytes: int = 20 * 1024 * 1024
+    # App-side storage budget for uploaded files. Neon's Free plan allows 5 GB of Object Storage per
+    # project; new uploads are refused before the total would pass this margin. Only an estimate:
+    # the sum of stored PDF sizes recorded in the database.
+    storage_budget_bytes: int = 4 * 1024 * 1024 * 1024
+    storage_warn_bytes: int = 3 * 1024 * 1024 * 1024
     chunk_max_chars: int = 1000
     chunk_overlap_chars: int = 150
     retrieval_top_k: int = 5
