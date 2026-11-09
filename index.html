@@ -4,6 +4,7 @@
 <title>UniBuddy — Campus AI Assistant & Query Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="./runtime-config.js"></script>
 <style>
 :root{--bg:#FFFFFF;--ice:#EAF1FC;--lav:#F0EDFF;--bg2:#F4F6FA;--ind:#7187C9;--indd:#5a70b4;--navy:#263653;--deep:#263653;--ink:#263653;--slate:#687386;--bd:#E3E8F0;--sh:0 1px 2px rgba(38,54,83,.05),0 8px 22px -10px rgba(38,54,83,.14);--sh2:0 2px 4px rgba(38,54,83,.05),0 18px 38px -14px rgba(38,54,83,.24);--grad:linear-gradient(180deg,#6b81c3,#4f66a8);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 *{box-sizing:border-box}html,body{margin:0;height:100%}
@@ -149,18 +150,11 @@ const I=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]||P.check}</svg>`,IC=n=>`<d
 const GI=()=>`<svg style="width:18px;height:18px;flex:none" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>`;
 const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
-// Demo accounts registry — strictly assigned roles for email-based authentication
-// Public settings for this page. Never put a secret here.
-const UB_API_BASE='http://localhost:8010/api/v1'; // set to your backend's https URL before publishing
-const UB_GOOGLE_CLIENT_ID=''; // set to your public Google OAuth Web client ID
+// Public settings only. The deploy-specific URL and OAuth client ID live in runtime-config.js.
+const UB_API_BASE=String(window.UB_CONFIG?.apiBase||'').replace(/\/$/,'');
+const UB_GOOGLE_CLIENT_ID=String(window.UB_CONFIG?.googleClientId||'');
 
-const COURSES=['B.Tech CS & AI','B.Tech CS & DS','B.Tech Electrical','MBA Tech'];
-let PR={};try{PR=JSON.parse(localStorage.getItem('ub-profiles')||'{}')}catch(e){}
-const savePR=()=>{try{localStorage.setItem('ub-profiles',JSON.stringify(PR))}catch(e){}};
-const prof=()=>PR[S.user?.email]||{},pn=()=>prof().name||S.user?.name||'Campus User',ini=()=>pn()[0].toUpperCase();
-const stu=()=>{const p=PR['student@unibuddy.demo']||{};return {n:p.name||'Aarav Sharma',c:p.course||COURSES[0]}};
-function vProf(n,a,c,st){n=n.trim().replace(/\s+/g,' ');if(n.length<2)return 'Please enter your full name (at least 2 characters).';if(!/^[\p{L}][\p{L}\s.'’-]*$/u.test(n))return 'Name can only contain letters, spaces, dots, hyphens and apostrophes.';a=Number(a);if(!Number.isInteger(a)||a<16||a>80)return 'Please enter a valid age between 16 and 80.';if(st&&!COURSES.includes(c))return 'Please select your course.';return ''}
-const courseSel=(id,v)=>`<select id="${id}"><option value="">Select your course</option>${COURSES.map(c=>`<option ${c==v?'selected':''}>${c}</option>`).join('')}</select>`;
+const pn=()=>S.user?.full_name||S.user?.name||S.user?.email||'Campus User',ini=()=>pn()[0].toUpperCase();
 const STG=['Submitted','Assigned','In Progress','Resolved'];
 const ROLES={
   student:['user','Student','Ask verified questions and track tickets.'],
@@ -169,56 +163,24 @@ const ROLES={
   management:['bld','Management','University-level analytics & resolution stats.']
 };
 
-// Knowledge base with document sources for grounded citations
-const KB=[
-  {k:['internal','exam','midterm'],a:'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance on notice boards.',s:'Exam Schedule Circular',p:'p. 2'},
-  {k:['scholarship','financial'],a:'Scholarship applications open at the start of each semester through the student portal, with income and marks documents attached.',s:'Scholarship Guidelines',p:'p. 5'},
-  {k:['timetable','schedule','class'],a:'The academic timetable is published on the department notice board and the student portal before each semester begins.',s:'Academic Calendar',p:'p. 1'},
-  {k:['contact','faculty','office'],a:'Faculty office hours and email addresses are listed in the department directory. You may also forward a question as a ticket directly to their queue.',s:'Department Directory',p:'p. 4'},
-  {k:['fee','tuition','payment','receipt'],a:'Semester fee payment closes on the last working day of the second week. Receipts can be downloaded from the accounts portal within 48 hours.',s:'Fee Policy Handbook',p:'p. 12'},
-  {k:['attendance','75','absent'],a:'A minimum of 75% attendance is required to sit semester examinations. Medical leave requests must be submitted within 3 days.',s:'Academic Regulations',p:'p. 8'},
-  {k:['library','facility','books'],a:'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Digital access is available 24/7 with your student login.',s:'Campus Facilities Guide',p:'p. 3'}
-];
 const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
-
-// Initial mock tickets and notifications (synced with backend or localStorage)
-const defaultTickets=[
-  {id:'UB-2041',subj:'Re-evaluation of lab marks',dept:'Computer Science',fac:'Dr. Mehta',date:'02 Nov 2026',pri:'High',st:1,q:'Can I request a re-evaluation of my Data Structures lab marks?',desc:'Marks look lower than expected for Experiment 4.',reply:'',tl:['02 Nov','03 Nov']},
-  {id:'UB-2036',subj:'Hostel fee receipt',dept:'Accounts',fac:'Ms. Rao',date:'28 Oct 2026',pri:'Medium',st:3,q:'I did not receive my hostel fee receipt.',desc:'',reply:'Your receipt has been emailed again. Please check your spam folder.',tl:['28 Oct','28 Oct','29 Oct','30 Oct']}
-];
-const defaultNotifs=[
-  {t:'Ticket UB-2041 was assigned to Dr. Mehta.',u:1,tk:'UB-2041'},
-  {t:'Ticket UB-2036 was resolved.',u:0,tk:'UB-2036'}
-];
-let initTickets=defaultTickets,initNotifs=defaultNotifs;
-try{const st=JSON.parse(localStorage.getItem('ub-tickets'));if(Array.isArray(st)&&st.length)initTickets=st}catch(e){}
-try{const sn=JSON.parse(localStorage.getItem('ub-notifs'));if(Array.isArray(sn))initNotifs=sn}catch(e){}
-
-// Documents store
-const defaultDocs=[
-  {id:'DOC-101',title:'Academic Regulations 2026-27',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'01 Nov 2026'},
-  {id:'DOC-102',title:'Computer Science Lab Guidelines',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'25 Oct 2026'},
-  {id:'DOC-103',title:'Hostel Rules & Disciplinary Code',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'15 Oct 2026'}
-];
-let initDocs=defaultDocs;
-try{const sd=JSON.parse(localStorage.getItem('ub-docs'));if(Array.isArray(sd)&&sd.length)initDocs=sd}catch(e){}
 
 // Application state
 const S={
-  scr:'landing',role:null,user:null,view:'chat',sel:'UB-2041',modal:null,bell:false,nav:false,
+  scr:'landing',role:null,user:null,view:'chat',sel:null,modal:null,bell:false,nav:false,
   chat:[],hist:[],fq:'',fs:'All',toast:'',fx:'screen',conversationId:null,
-  tickets:initTickets,notifs:initNotifs,docs:initDocs
+  tickets:[],notifs:[],docs:[],announcements:[],departments:[],dashboard:{},detail:null,loading:false
 };
 
-const saveTickets=()=>{try{localStorage.setItem('ub-tickets',JSON.stringify(S.tickets));localStorage.setItem('ub-notifs',JSON.stringify(S.notifs));localStorage.setItem('ub-docs',JSON.stringify(S.docs))}catch(e){}};
-const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${t.st}">${STG[t.st]}</span>`;
+const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${Math.max(0,STG.indexOf(t.status))}">${(t.status||'submitted').replace('_',' ')}</span>`;
 const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
 const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2800)};
 
-// Backend API Client with graceful fallback
+// Backend API client. No local/demo data is used as a fallback.
 async function apiCall(endpoint,options={}){
+  if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
   const token=localStorage.getItem('ub-token');
-  const headers={'Content-Type':'application/json',...(options.headers||{})};
+  const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
   try{
     const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
@@ -227,11 +189,29 @@ async function apiCall(endpoint,options={}){
       try{errData=await res.json()}catch(e){}
       return {ok:false,status:res.status,error:errData.detail||'Request failed'};
     }
-    const data=await res.json();
+    let data=null;try{data=await res.json()}catch(e){}
     return {ok:true,status:res.status,data};
   }catch(err){
     return {ok:false,status:0,error:err.message};
   }
+}
+
+const pageItems=r=>Array.isArray(r?.data?.items)?r.data.items:[];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const humanStatus=s=>({submitted:'Submitted',assigned:'Assigned',in_progress:'In Progress',resolved:'Resolved'}[s]||s||'Submitted');
+function ticketView(t){return {...t,id:t.ticket_number||t.id,uuid:t.id,subj:t.subject,q:t.question,desc:t.description||'',pri:t.priority||'medium',status:t.status||'submitted',date:new Date(t.created_at).toLocaleDateString(),dept:t.department_name||'Department',fac:t.assigned_faculty_id?'Assigned':'Unassigned',reply:'',events:[]}}
+async function loadViewData(view=S.view){
+  if(!S.user)return;
+  S.loading=true;R();
+  const tasks=[];
+  if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
+  if(view==='docs'||view==='x')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
+  if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
+  if(['student','faculty','authority'].includes(S.role))tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
+  if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
+  if(view==='fdash'||view==='x')tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
+  if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
+  await Promise.all(tasks);S.loading=false;R();
 }
 
 // Google Sign-In Credential Handler
@@ -250,31 +230,17 @@ async function handleGoogleCredential(id_token){
     const meRes=await apiCall('/auth/me');
     if(meRes.ok&&meRes.data){
       const me=meRes.data;
-      S.user={email:me.email,name:me.full_name||me.email.split('@')[0],role:me.role};
+      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
       S.role=me.role;
-      localStorage.setItem('ub-current-user',me.email);
-      PR[me.email]={name:me.full_name||me.email.split('@')[0],age:20,course:COURSES[0]};
-      savePR();
-      go('app',{view:me.role=='student'?'chat':me.role=='faculty'?'tix':'x'});
+      S.scr='app';S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';R();await loadViewData(S.view);
       toast('Signed in as '+(me.full_name||me.email));
       return;
     }
+    localStorage.removeItem('ub-token');
   }
   
-  if(res.status===403&&res.error?.code==='no_profile'){
-    S.modal={
-      type:'access-request',
-      id_token,
-      msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'
-    };
-    R();
-    return;
-  }
-  
-  // If backend Google OAuth credentials are not yet configured on server
-  const msg=typeof res.error==='object'?(res.error.message||res.error.code):res.error;
-  if(er)er.textContent=msg||'Google Auth server is offline. Use demo accounts below.';
-  toast('Google login response: '+(msg||'Server not configured'));
+  const messages={0:'Cannot reach UniBuddy right now. Check the backend address and try again.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact the UniBuddy administrator.',503:'UniBuddy sign-in is not configured yet.'};
+  if(er)er.textContent=messages[res.status]||'Sign-in failed. Please try again or contact the UniBuddy administrator.';
 }
 
 // Email-Based Role Authentication
@@ -286,7 +252,7 @@ const logo=`<div class="logo" data-a="home"><span class="mark">U</span>UniBuddy<
 function landing(){
   return `<div class="land"><div class="nav">${logo}<div class="row"><button class="lnk" data-a="scroll" data-v="features">Features</button><button class="lnk" data-a="scroll" data-v="how">How it Works</button><button class="btn p sm" data-a="login-screen">Get Started</button></div></div>
 <div class="wrap"><section class="hero"><div><span class="badge">${I('spark')} AI assistant for your campus</span><h1 class="ed" style="margin-top:18px">One campus. One intelligent assistant.</h1><p>UniBuddy gives students verified answers grounded in university documents and routes everything else directly to the right faculty queue.</p><div class="row"><button class="btn p" data-a="login-screen">Get Started</button><button class="btn" data-a="scroll" data-v="features">Explore Features</button></div></div>
-<div class="stage"><div class="card prev"><div class="row" style="margin-bottom:14px"><span class="mark">U</span><div><b>UniBuddy</b><div class="on-ind"><span class="pu"></span>Online</div></div></div><div class="u" style="margin-top:0"><div class="ub">When is the next internal examination?</div></div><div class="a" style="margin-bottom:0"><div class="body"><p style="margin:0">Internal examinations are held in the seventh week of the semester.</p><div class="src">Exam Schedule Circular · p. 2 <span>Verified</span></div></div></div></div><div class="chipf c1"><span class="vb">${I('check')} Verified Answer</span></div><div class="chipf c2">${I('tick')} UB-2041 · Assigned</div></div></section>
+<div class="stage"><div class="card prev"><div class="row" style="margin-bottom:14px"><span class="mark">U</span><div><b>UniBuddy</b><div class="on-ind"><span class="pu"></span>Example preview</div></div></div><div class="u" style="margin-top:0"><div class="ub">A student asks a question</div></div><div class="a" style="margin-bottom:0"><div class="body"><p style="margin:0">Answers use documents published by your university.</p><div class="src">Real source and page citations appear when available.</div></div></div></div><div class="chipf c1"><span class="vb">${I('check')} Document-grounded answers</span></div><div class="chipf c2">${I('tick')} Track tickets</div></div></section>
 <section id="features" class="bento"><div class="bt tall">${IC('spark')}<h3>Answers you can trust</h3><p>AI-powered replies grounded in verified university documents, with citation and page source always one tap away.</p></div>
 <div class="bt b">${IC('inbox')}<h3>Smart Query Management</h3><p>Every forwarded question automatically becomes a trackable departmental ticket.</p></div>
 <div class="bt m">${IC('book')}<h3>Faculty Support</h3><p>Unanswered student queries reach the right department queue seamlessly.</p></div>
@@ -320,7 +286,7 @@ ${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.h
 
 const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
 const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['docs','Documents','file'],['profile','Profile','user']];
-const AN=[['x','Campus Overview','home'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
+const AN=[['x','Campus Overview','home'],['tix','Tickets','inbox'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
 const MN=[['x','Management Stats','home'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
 
 // Header
@@ -335,13 +301,13 @@ function chat(){
 <div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Verified answers from campus documents with source citations.</div></div></div>`}
 
 function msg(x,i){
-  const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
+  const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${esc(x.t)}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
   if(x.k=='err')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><p style="margin:8px 0 0">${x.t}</p></div></div>`;
   if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
-  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><span class="vb">${I('check')} Verified Answer</span><p style="margin:8px 0 0">${x.t}</p><div class="src"><span>${x.s} · ${x.p}</span><button data-a="vs" data-v="${i}">View source</button><span>Verified</span></div><div class="ts">${x.time}</div></div></div>`;
-  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>I couldn’t find a verified answer to your question in official documents. Would you like me to forward it to the appropriate faculty or department?<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${x.fw}</span>`:`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}</div><div class="ts">${x.time}</div></div></div>`}
+  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${x.citations?.length?'<span class="vb">'+I('check')+' Verified Answer</span>':''}<p style="margin:8px 0 0">${esc(x.t)}</p>${x.citations?.length?`<div class="src">${x.citations.map(c=>`<span>Source: ${esc(c.title)}${c.page?` · page ${c.page}`:''}</span>`).join('')}</div>`:''}<div class="ts">${x.time}</div></div></div>`;
+  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${esc(x.t||'I couldn’t find a verified answer in the published documents.')}<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${esc(x.fw)}</span>`:x.mid?`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`:''}</div><div class="ts">${x.time}</div></div></div>`}
 
-// Ask AI Assistant — calls backend RAG /chat/ask with local fallback
+// Ask AI Assistant — calls the real backend RAG endpoint.
 async function ask(q){
   if(!q||!q.trim())return;
   const cleanQ=q.trim();
@@ -350,7 +316,7 @@ async function ask(q){
   S.view='chat';
   R();
   
-  // Try backend AI RAG
+  // Ask the real backend RAG service; never fabricate a local answer.
   const backendRes=await apiCall('/chat/ask',{
     method:'POST',
     body:JSON.stringify({question:cleanQ,conversation_id:S.conversationId||null})
@@ -360,12 +326,12 @@ async function ask(q){
   
   if(backendRes.ok&&backendRes.data){
     const d=backendRes.data;
+    const userMessage=S.chat.at(-1);if(userMessage)userMessage.mid=d.user_message_id;
     if(d.conversation_id)S.conversationId=d.conversation_id;
     if(!d.abstained){
-      const cite=d.citations&&d.citations[0]?`${d.citations[0].title} · p. ${d.citations[0].page}`:'University Verified Document';
-      S.chat.push({r:'a',k:'ok',t:d.answer,s:cite,p:'Verified',time:now(),n:1,mid:d.assistant_message_id});
+      S.chat.push({r:'a',k:'ok',t:d.answer,citations:d.citations||[],time:now(),n:1,mid:d.assistant_message_id});
     }else{
-      S.chat.push({r:'a',k:'nf',time:now(),n:1,mid:d.assistant_message_id});
+      S.chat.push({r:'a',k:'nf',t:d.answer,time:now(),n:1,mid:d.assistant_message_id});
     }
   }else{
     S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
@@ -376,60 +342,45 @@ async function ask(q){
 const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
 function newChat(){if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=[];S.conversationId=null;S.view='chat';S.nav=false;S.fx='view';R()}
 
-const ANN=[
-  {c:'Exams',t:'Internal exam timetable released',d:'4 Nov',b:'Seventh-week internal examinations are scheduled. Check your department notice board for the full timetable.',big:1,tone:'lav',imp:1},
-  {c:'Library',t:'Library extends weekday hours',d:'2 Nov',b:'Open until 20:00 on weekdays to support students preparing for internals.',tone:'blue'},
-  {c:'Scholarships',t:'Scholarship applications open',d:'1 Nov',b:'Applications are accepted through the student portal with income certificates.',tone:'mist'},
-  {c:'Events',t:'Hackathon registrations open',d:'30 Oct',b:'Teams of up to four. Open to all engineering departments.',tone:'blue'},
-  {c:'Campus',t:'Hostel maintenance window',d:'28 Oct',b:'Water supply paused Saturday 10:00 to 14:00.',tone:'lav'}
-];
-
 function dash(){
-  const t=S.tickets,res=t.filter(x=>x.st==3).length,f=ANN[0];
+  const t=S.tickets,d=S.dashboard||{},ann=S.announcements;
   return `<div class="pg"><h1 class="ed">Welcome back, ${pn()}</h1><p class="sub">Here’s what is happening on campus today.</p>
 <div class="askp"><div><h3>Ask UniBuddy</h3><p>Get an instant verified answer, or send it on to faculty.</p></div><div class="row"><input id="dq" placeholder="Ask UniBuddy anything..."><button class="btn p" data-a="dask">Ask</button></div></div>
-<div class="strip">${[['list','Total queries',t.length+6],['tick','Resolved',res+5],['clock','Pending',t.length-res+1]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
-<div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div><div class="feat1" data-a="view" data-v="ann"><span class="cat">${f.c} · ${f.d}</span><h3>${f.t}</h3><p class="mut" style="margin:0;font-size:13.5px">${f.b}</p></div>${ANN.slice(1,3).map(a=>`<div class="hrow"><span><b style="font-weight:500">${a.t}</b><span class="cat">${a.c}</span></span><span class="dt">${a.d}</span></div>`).join('')}</section>
-<section><div class="sh2">Upcoming deadlines</div><div class="dl">${[['Fee payment','12 Nov','Accounts'],['Assignment 3','15 Nov','Data Structures'],['Exam form','20 Nov','Examinations']].map(d=>`<div class="dli"><b>${d[0]}</b><small>${d[1]} · ${d[2]}</small></div>`).join('')}</div></section></div>
-<section><div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div><div class="qp">${t.slice(0,3).map(x=>`<div class="qr" data-a="open" data-v="${x.id}"><small>${x.id}</small><span>${x.subj}</span>${stl(x)}</div>`).join('')}</div></section></div>`}
+<div class="strip">${[['list','Total questions',d.total_questions??'—'],['tick','Resolved',d.tickets_by_status?.resolved??'—'],['clock','Open tickets',Math.max(0,(d.total_tickets||0)-(d.tickets_by_status?.resolved||0))]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
+<div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div>${ann.slice(0,3).map(a=>`<article class="am blue"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div><h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No announcements available.</p>'}</section>
+<section><div class="sh2">Upcoming deadlines</div><p class="mut">Deadlines are not available from the connected backend yet.</p></section></div>
+<section><div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div><div class="qp">${t.slice(0,3).map(x=>`<div class="qr" data-a="open" data-v="${x.uuid}"><small>${esc(x.id)}</small><span>${esc(x.subj)}</span>${stl(x)}</div>`).join('')||'<p class="mut">No questions yet.</p>'}</div></section></div>`}
 
 function tlh(t){
-  return `<div class="prog"><i style="--p:${Math.max(8,(t.st/3)*100)}%"></i></div><div class="lab">Step ${t.st+1} of 4 · ${STG[t.st]}</div><div class="tl">${STG.map((s,i)=>`<div class="${i<=t.st?'d':''}">${s}<small>${i<=t.st?(t.tl[i]||'Updated'):'Pending'}</small></div>`).join('')}</div>`}
+  const ix=Math.max(0,STG.indexOf(humanStatus(t.status)));
+  return `<div class="prog"><i style="--p:${Math.max(8,(ix/3)*100)}%"></i></div><div class="lab">${humanStatus(t.status)}</div><div class="tl">${(t.events||[]).map(ev=>`<div class="d">${esc(ev.event_type.replace('_',' '))}<small>${new Date(ev.created_at).toLocaleString()}</small>${ev.note?`<small>${esc(ev.note)}</small>`:''}</div>`).join('')||'<p class="mut">No status history yet.</p>'}</div>`}
 
 function detail(t,fac){
-  return `<div class="two fx"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${t.id} · ${t.subj}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${t.pri}">${t.pri}</span> · Submitted ${t.date}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${t.q}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${t.desc}</p>`:''}</div>
-${fac?`<div class="card tint"><div class="lab">Student information</div><div style="font-weight:500">${stu().n} · ${stu().c}</div><div class="mut" style="font-size:12px">Student profile verified by department.</div></div>`:''}
-<div class="card"><h3 style="margin-bottom:10px">${fac?'Reply':'Faculty response'}</h3>${fac?`<textarea id="rp" rows="6" placeholder="Write your response...">${t.reply}</textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:t.reply?`<p style="margin:0;background:var(--ice);border-radius:12px;padding:12px 14px">${t.reply}</p>`:`<p class="mut" style="margin:0">No response yet. You will be notified as soon as ${t.fac=='Unassigned'?'a faculty member':t.fac} replies.</p>`}</div></div>
+  const assignedToMe=t.assigned_faculty_id===S.user?.id;
+  const canReply=fac&&(S.role==='authority'||assignedToMe);
+  const facultyAction=S.role==='faculty'&&!t.assigned_faculty_id?`<button class="btn p" data-a="take-ticket">Take Ticket</button>`:canReply?`<textarea id="rp" rows="6" placeholder="Write your response..."></textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:fac?'<p class="mut">This ticket is assigned to another faculty member.</p>':'';
+  return `<div class="two fx"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${esc(t.id)} · ${esc(t.subj)}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${esc(t.pri)}">${esc(t.pri)}</span> · Submitted ${esc(t.date)}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${esc(t.q)}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${esc(t.desc)}</p>`:''}</div>
+<div class="card"><h3 style="margin-bottom:10px">${fac?'Ticket response':'Faculty response'}</h3>${fac?facultyAction:(t.events||[]).filter(e=>e.event_type==='reply').map(e=>`<p style="margin:0 0 8px;background:var(--ice);border-radius:12px;padding:12px 14px">${esc(e.note)}</p>`).join('')||`<p class="mut" style="margin:0">No faculty response yet.</p>`}</div></div>
 <div class="card"><h3 style="margin-bottom:16px">${fac?'Status timeline':'Status updates'}</h3>${tlh(t)}</div></div>`}
 
 function queries(){
-  const f=S.tickets.filter(t=>(S.fs=='All'||STG[t.st]==S.fs)&&(t.subj+t.id+t.dept).toLowerCase().includes(S.fq.toLowerCase())),t=T(S.sel);
+  const f=S.tickets.filter(t=>(S.fs=='All'||humanStatus(t.status)==S.fs)&&(t.subj+t.id+t.dept).toLowerCase().includes(S.fq.toLowerCase())),t=S.detail?.ticket||null;
   return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${S.fq}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
 <div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td>${x.dept}</td><td>${x.fac}</td><td>${x.date}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
 
 const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',x:'Workspace'};
 
 function annView(){
-  return `<div class="pg wide"><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p><div class="mag">${ANN.map(a=>`<article class="am ${a.tone} ${a.big?'big':''}"><div class="row sp"><span class="cat">${a.c}</span><span class="dt">${a.d}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${a.t}</h3><p>${a.b}</p></article>`).join('')}</div></div>`}
+  return `<div class="pg wide"><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p><div class="mag">${S.announcements.map(a=>`<article class="am ${a.tone||'blue'}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No official announcements available.</p>'}</div></div>`}
 
 // Documents View for Staff, Faculty & Authority
 function docsView(){
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div><button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button></div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Status</th><th>Publication</th><th>Date</th></tr>${S.docs.map(d=>`<tr><td><b>${d.id}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${d.title}</b></div></td><td>${d.scope}</td><td><span class="pill">${d.visibility}</span></td><td><span class="pill s3">${d.status}</span></td><td>${d.publication}</td><td class="mut">${d.date}</td></tr>`).join('')}</table></div></div></div>`}
-
-function onboard(){
-  const st=S.role=='student';
-  return `<div class="center" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px"><div style="display:grid;justify-items:center;gap:20px;width:100%"><div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div><div class="card formbox" style="max-width:440px;width:100%;padding:28px"><h2 class="ed">${st?'Welcome! Tell us about you':'Set up your profile'}</h2><p class="mut" style="margin:6px 0 0">This is how UniBuddy will address you across the portal. You can edit it any time from Profile.</p>
-<label>Full name</label><input id="on" placeholder="Your full name" maxlength="40" autocomplete="off" value="${pn()}"><div class="g2"><div><label>Age</label><input id="oa" type="number" min="16" max="80" placeholder="e.g. 19" value="20"></div>${st?`<div><label>Course</label>${courseSel('oc',COURSES[0])}</div>`:''}</div>
-<div id="oerr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div><button class="btn p w" data-a="onsave">Continue to Workspace</button><button class="lnk" data-a="logout" style="width:100%;margin-top:8px">Sign out</button></div></div></div>`}
+  const canManage=['faculty','authority'].includes(S.role);
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div>${canManage?`<button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button>`:''}</div>
+<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
 
 function profileView(){
-  const p=prof(),st=S.role=='student';
-  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4vw,44px)">Your profile</h1><p class="sub">Changes appear across the whole portal straight away.</p>
-<div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:6px"><span class="avb">${ini()}</span><div><h3>${pn()}</h3><div class="mut" style="font-size:13px">${ROLES[S.role][1]}${st?' · '+(p.course||COURSES[0]):''}</div></div></div>
-<label>Full name</label><input id="pn" value="${pn()}" maxlength="40"><div class="g2"><div><label>Age</label><input id="pa" type="number" min="16" max="80" value="${p.age||'20'}"></div>${st?`<div><label>Course</label>${courseSel('pc',p.course||COURSES[0])}</div>`:`<div><label>Role</label><input value="${ROLES[S.role][1]}" disabled></div>`}</div>
-<label>Email</label><input value="${S.user?.email||''}" disabled><div id="perr" role="alert" style="color:#b4445a;font-size:13px;min-height:22px;margin-top:8px"></div>
-<div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-a="resetprof">Reset profile</button><button class="btn p" data-a="saveprof">Save changes</button></div></div></div>`}
+  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${esc(S.user?.campus_id||'Not assigned')}" disabled><label>Department</label><input value="${esc(S.user?.department_id||'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
 
 function helpView(){
   return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
@@ -440,33 +391,32 @@ function student(){
   return `<div class="app">${side(SN)}<main class="main">${hd(TT[v]||'Student Portal',v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
 
 function faculty(){
-  const v=S.view,t=T(S.sel);
-  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Department ticket volume and response metrics.</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length}</b><span>Assigned Tickets</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length}</b><span>Pending</span></div></div></div><div class="card" style="margin-top:16px"><div class="row sp" style="margin-bottom:12px"><h3>Recent Department Inquiries</h3><button class="lnk" data-a="view" data-v="tix">View all</button></div><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.slice(0,4).map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`:`<div class="pg"><div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div>${t?detail(t,true):''}</div>`}</div></main></div>`}
+  const v=S.view,t=S.detail?.ticket,d=S.dashboard||{};
+  const table=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td><b>${esc(x.id)}</b></td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets are assigned or visible to this account.</p>'}</div></div>`;
+  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Live counts from tickets and documents visible to your account.</p><div class="strip">${[['Open Tickets',d.open_tickets],['Resolved',d.resolved_tickets],['Unassigned Queue',d.unassigned_queue],['Assigned To Me',d.assigned_to_me],['Drafts Visible',d.drafts_visible],['Published Visible',d.published_visible]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${table}</div>`:`<div class="pg">${table}${t?detail(t,true):''}</div>`}</div></main></div>`}
 
 function placeholder(){
   const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
-  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">${isAuth?'Campus-wide oversight, departmental escalations, and grievance tracking.':'University-level query analytics, SLA response times, and departmental resolution rates.'}</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length+14}</b><span>Total Inquiries</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length+12}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length+2}</b><span>Pending Review</span></div></div></div><div class="card" style="margin-top:20px;padding:20px"><div class="row sp" style="margin-bottom:12px"><h3 style="font-size:16px;font-weight:600">${isAuth?'Escalated & High-Priority University Issues':'Department Resolution Summary'}</h3><span class="pill s1">Live Demo Data</span></div><div class="tw"><table><tr><th>Ticket ID</th><th>Department</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.dept}</td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`}</div></main></div>`}
+  const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
+  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
 
 // Modals
 function modal(){
   const m=S.modal,o=m.out?' out':'';
-  if(m.type==='access-request'){
-    return `<div class="ov${o}"><div class="modal"><div style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:12px">${IC('user')}</div><h2 class="ed">Account Setup Required</h2><p class="mut" style="margin:8px 0 16px">${m.msg}</p><button class="btn p w" data-a="submit-access-request">Request Student Access</button><button class="lnk" data-a="mc" style="width:100%;margin-top:10px">Close</button></div></div></div>`;
-  }
   if(m.type==='upload-doc'){
-    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload syllabus or regulation PDF to be parsed and indexed for verified answers.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Data Structures Syllabus 2026"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Public for Students</option><option value="staff_only">Staff Only</option></select></div><div><label>Scope</label><select id="doc-scope"><option value="campus">Campus</option><option value="university_wide">University Wide</option></select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload & Index</button></div></div></div>`;
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload an approved PDF. It is processed by the AI service and stays a draft until published.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Leave of Absence Policy 2026–27"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="doc-scope"><option value="campus">My campus</option>${S.role==='authority'?'<option value="university_wide">University-wide</option>':''}</select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload PDF</button></div></div></div>`;
   }
   if(m.done){
     return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Your query has reached the department faculty queue.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
   }
-  const q=S.chat[m.i-1]?.t||'Question';
-  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${q}</div><div class="g2"><div><label>Department</label><select id="md">${['Computer Science','Accounts','Examinations','Hostel','Library'].map(d=>`<option>${d}</option>`).join('')}</select></div><div><label>Priority</label><select id="mp"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`;
+  const q=S.chat[m.i-1]?.t||'Question',noDepartments=!S.departments.length;
+  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${esc(q)}</div><div class="g2"><div><label>Department</label><select id="md" ${noDepartments?'disabled':''}>${S.departments.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select>${noDepartments?'<small>No departments are set up for your campus yet. Ask the Authority to configure one.</small>':''}</div><div><label>Priority</label><select id="mp"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms" ${noDepartments?'disabled':''}>Submit Ticket</button></div></div></div>`;
 }
 
 // Render Engine
 function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
-  if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else if(S.scr=='onboard')h=onboard();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
+  if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
   a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${S.toast}</div>`:'');
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
@@ -476,6 +426,7 @@ function R(){
 
 function initGoogleAuth(){
   if(S.scr=='login'&&!UB_GOOGLE_CLIENT_ID){const er=$('#err');if(er)er.textContent='Google sign-in is not configured for this site yet.';return}
+  if(S.scr==='login'&&!UB_API_BASE){const er=$('#err');if(er)er.textContent='The backend address is not configured for this site yet.';return}
   if(S.scr=='login'&&window.google?.accounts?.id){
     try{
       window.google.accounts.id.initialize({
@@ -487,10 +438,9 @@ function initGoogleAuth(){
         window.google.accounts.id.renderButton(gbtn,{theme:'outline',size:'large',width:380,text:'continue_with',shape:'rectangular'});
       }
     }catch(e){}
-  }
+  }else if(S.scr==='login'&&UB_GOOGLE_CLIENT_ID&&!window.__ubGoogleRetry){window.__ubGoogleRetry=setTimeout(()=>{window.__ubGoogleRetry=null;if(S.scr==='login')initGoogleAuth()},500)}
 }
 
-const notify=(t,tk)=>{S.notifs.unshift({t,u:1,tk});saveTickets()};
 function sendChat(){const ci=$('#ci');if(!ci)return;const v=ci.value.trim();if(!v)return;ci.value='';ask(v)}
 function sendDash(){const dq=$('#dq');if(!dq)return;const v=dq.value.trim();if(!v)return;dq.value='';ask(v)}
 
@@ -513,74 +463,61 @@ document.addEventListener('click',async e=>{
   else if(a=='forgot'){toast('Password sign-in is not available. Use Google sign-in.')}
   else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
   else if(a=='login')doLogin()
-  else if(a=='submit-access-request'){
-    const res=await apiCall('/auth/google/access-request',{method:'POST',body:JSON.stringify({id_token:S.modal.id_token})});
-    S.modal=null;R();
-    toast(res.ok?'Student access request submitted for campus review!':'Request queued.');
-  }
   else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
   else if(a=='submit-doc-upload'){
-    const title=$('#doc-title')?.value.trim()||'University Policy Document';
-    const vis=$('#doc-vis')?.value||'public_students';
-    const scp=$('#doc-scope')?.value||'campus';
-    const newDoc={id:'DOC-'+(100+S.docs.length+1),title,scope:scp,visibility:vis,status:'ready',publication:'published',date:today()};
-    S.docs.unshift(newDoc);
-    saveTickets();
-    S.modal=null;R();
-    toast('Document "'+title+'" uploaded and queued for indexing.');
+    const title=$('#doc-title')?.value.trim(),file=$('#doc-file')?.files?.[0],vis=$('#doc-vis')?.value||'public_students',scope=$('#doc-scope')?.value||'campus';
+    if(!title||!file){toast('Enter a title and choose a PDF.');return}
+    if(file.type!=='application/pdf'&& !file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
+    const body=new FormData();body.append('title',title);body.append('file',file);body.append('visibility',vis);body.append('scope',scope);
+    const res=await apiCall('/documents',{method:'POST',body});
+    if(!res.ok){toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
+    S.modal=null;await loadViewData('docs');toast('PDF uploaded. It will appear as a draft when processing finishes.');
   }
-  else if(a=='onsave'){
-    const n=$('#on').value,ag=$('#oa').value,c=$('#oc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);
-    if(er){$('#oerr').textContent=er;return}
-    PR[S.user.email]={name:n.trim().replace(/\s+/g,' '),age:Number(ag),course:st?c:''};
-    savePR();go('app');
+  else if(a=='publish-doc'||a=='archive-doc'){
+    const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
+    if(!res.ok){toast(typeof res.error==='string'?res.error:'Document update failed.');return}
+    await loadViewData('docs');toast(action==='publish'?'Document published.':'Document archived.');
   }
-  else if(a=='saveprof'){
-    const n=$('#pn').value,ag=$('#pa').value,c=$('#pc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);
-    if(er){$('#perr').textContent=er;return}
-    PR[S.user.email]={name:n.trim().replace(/\s+/g,' '),age:Number(ag),course:st?c:''};
-    savePR();toast('Profile updated.');
-  }
-  else if(a=='resetprof'){delete PR[S.user.email];savePR();go('onboard')}
   else if(a=='logout'){
     try{localStorage.removeItem('ub-current-user');localStorage.removeItem('ub-token')}catch(x){}
     S.user=null;S.role=null;go('landing');
   }
-  else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R()}
+  else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R();loadViewData(v)}
   else if(a=='navo'){S.nav=true;R()}else if(a=='navx'){S.nav=false;R()}
   else if(a=='new')newChat();
   else if(a=='hist'){const h=S.hist.splice(+v,1)[0];if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=h.msgs;S.view='chat';S.nav=false;S.fx='view';R()}
-  else if(a=='bell'){S.bell=!S.bell;R()}
-  else if(a=='readall'){S.notifs.forEach(n=>n.u=0);saveTickets();R()}
-  else if(a=='nt'){const n=S.notifs[v];n.u=0;saveTickets();S.sel=n.tk;S.view='queries';S.bell=false;S.fx='view';R()}
-  else if(a=='open'){S.sel=v;if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}R()}
+  else if(a=='bell'){S.bell=!S.bell;R();if(S.bell)loadViewData(S.view)}
+  else if(a=='readall'){await Promise.all(S.notifs.filter(n=>n.u).map(n=>apiCall(`/notifications/${n.id}/read`,{method:'PATCH'})));await loadViewData(S.view)}
+  else if(a=='nt'){const n=S.notifs[v];if(n?.id)await apiCall(`/notifications/${n.id}/read`,{method:'PATCH'});S.bell=false;if(S.role==='student')S.view='queries';if(n?.tk){const ticket=await apiCall(`/tickets/${n.tk}`);if(ticket.ok)S.detail={ticket:{...ticketView(ticket.data.ticket),events:ticket.data.events||[]}}}R();loadViewData(S.view)}
+  else if(a=='open'){S.sel=v;const uuid=S.tickets.find(t=>t.uuid===v||t.id===v)?.uuid||v;const res=await apiCall(`/tickets/${uuid}`);if(res.ok)S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}R()}
   else if(a=='dask')sendDash();
   else if(a=='sq')ask(v);
   else if(a=='send')sendChat();
-  else if(a=='attach')toast('Attachments will be attached to ticket escalation.')
-  else if(a=='vs'){const x=S.chat[v];toast(`Verified source: ${x.s}, ${x.p}.`)}
+  else if(a=='attach')toast('File attachments are not supported yet. You can describe the issue in the forwarded ticket.')
   else if(a=='fwd'){S.modal={i:+v,q:S.chat[+v-1]?.t||'Question'};R()}
   else if(a=='mc'){S.modal.out=1;R();setTimeout(()=>{S.modal=null;R()},160)}
   else if(a=='ms'){
-    const m=S.modal,q=m.q||S.chat[m.i-1]?.t||'Question',id='UB-'+(2100+Math.floor(Math.random()*900));
-    S.tickets.unshift({id,subj:q.slice(0,40),dept:$('#md').value,fac:'Unassigned',date:today(),pri:$('#mp').value,st:0,q,desc:$('#mx').value,reply:'',tl:[today().slice(0,6)]});
-    saveTickets();
-    if(S.chat[m.i])S.chat[m.i].fw=id;
-    S.sel=id;
-    notify(`Ticket ${id} was submitted.`,id);
-    S.modal={done:id};R();
+    const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value;
+    if(!departmentId){toast('No department is configured for your campus yet.');return}
+    if(!msg?.mid){toast('The question is missing its server reference. Ask it again, then forward it.');return}
+    const res=await apiCall(`/chat/messages/${msg.mid}/forward`,{method:'POST',body:JSON.stringify({department_id:departmentId,priority:$('#mp').value,description:$('#mx').value||null})});
+    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not forward this question.');return}
+    if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await loadViewData('queries');R();
   }
-  else if(a=='vt'){S.modal=null;S.sel=v;S.view='queries';S.fx='view';R()}
+  else if(a=='vt'){S.modal=null;S.view='queries';S.fx='view';R();loadViewData('queries')}
+  else if(a=='take-ticket'){
+    const t=S.detail?.ticket;if(!t)return;
+    const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify({take_ticket:true})});
+    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
+    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);
+  }
   else if(a=='respond'||a=='resolve'){
-    const t=T(S.sel),r=$('#rp').value.trim();
+    const t=S.detail?.ticket,r=$('#rp')?.value.trim();
+    if(!t){toast('Open a ticket first.');return}
     if(a=='respond'&&!r){toast('Write a response first.');return}
-    if(r)t.reply=r;
-    const d=today().slice(0,6);t.fac=pn();
-    while(t.tl.length<3)t.tl.push(d);
-    if(a=='resolve'){t.st=3;t.tl[3]=d}else if(t.st<2)t.st=2;
-    saveTickets();
-    notify(a=='resolve'?`Ticket ${t.id} was resolved by ${t.fac}.`:`${t.fac} replied to ${t.id}.`,t.id);
-    toast(a=='resolve'?'Ticket resolved.':'Response sent.');
+    const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify(a==='resolve'?{status:'resolved'}:{reply:r})});
+    if(!res.ok){toast(typeof res.error==='string'?res.error:'Ticket update failed.');return}
+    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};await loadViewData(S.view);toast(a=='resolve'?'Ticket resolved.':'Response sent.');
   }
 });
 
@@ -598,9 +535,10 @@ async function restoreSession(){
   const r=await apiCall('/auth/me');
   if(r.ok&&r.data){
     const me=r.data;
-    S.user={email:me.email,name:me.full_name||me.email.split('@')[0],role:me.role};
+    S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
     S.role=me.role;S.scr='app';
     S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
+    R();await loadViewData(S.view);return;
   }else{
     try{localStorage.removeItem('ub-token')}catch(e){}
   }
