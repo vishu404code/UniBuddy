@@ -186,22 +186,31 @@ const toast=m=>{
 };
 
 // Backend API client. No local/demo data is used as a fallback.
+const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
+// Reads are retried while the free backend wakes up (cold start: 502/503/504 or a network error).
+// Writes (POST, PATCH) are never retried here, so one click cannot create a second record.
 async function apiCall(endpoint,options={}){
   if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
+  const method=String(options.method||'GET').toUpperCase();
+  const attempts=method==='GET'?3:1;
   const token=localStorage.getItem('ub-token');
   const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
-  try{
-    const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
-    if(!res.ok){
-      let errData={};
-      try{errData=await res.json()}catch(e){}
-      return {ok:false,status:res.status,error:errData.detail||'Request failed'};
+  for(let i=0;i<attempts;i++){
+    const last=i===attempts-1;
+    try{
+      const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
+      if(res.ok){let data=null;try{data=await res.json()}catch(e){}return {ok:true,status:res.status,data}}
+      if(!last&&[502,503,504].includes(res.status)){await sleepMs(4000*(i+1));continue}
+      let errData={};try{errData=await res.json()}catch(e){}
+      const detail=typeof errData.detail==='string'?errData.detail:'';
+      let error=detail||'Request failed';
+      if(res.status===503)error=/storage/i.test(detail)?'File storage is unavailable right now. Nothing was uploaded; try again later.':'UniBuddy is waking up on free hosting. Please wait a minute and try again.';
+      return {ok:false,status:res.status,error};
+    }catch(err){
+      if(!last&&method==='GET'){await sleepMs(4000*(i+1));continue}
+      return {ok:false,status:0,error:method==='GET'?'UniBuddy is waking up on free hosting. Please wait a minute and try again.':'The request may not have finished. Check the list before trying again.'};
     }
-    let data=null;try{data=await res.json()}catch(e){}
-    return {ok:true,status:res.status,data};
-  }catch(err){
-    return {ok:false,status:0,error:err.message};
   }
 }
 
@@ -530,7 +539,8 @@ document.addEventListener('click',async e=>{
     const button=el;button.disabled=true;button.textContent='Uploading…';
     const res=await apiCall('/documents',{method:'POST',body});
     if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
-    S.modal=null;await loadViewData('docs');toast('PDF uploaded. It will appear as a draft when processing finishes.');watchDocProcessing();
+    if(res.data&&res.data.id){S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)]}
+    S.modal=null;R();await loadViewData('docs');toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
   }
   else if(a=='publish-doc'||a=='archive-doc'){
     el.disabled=true;const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
