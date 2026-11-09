@@ -3,11 +3,8 @@ from typing import Any
 import httpx
 
 
-class SupabaseError(Exception):
-    def __init__(self, status_code: int, detail: str):
-        super().__init__(f"Supabase request failed with HTTP {status_code}")
-        self.status_code = status_code
-        self.detail = detail
+# Same type as the Postgres client raises, so services catch one error.
+from app.services.errors import DataServiceError as SupabaseError  # noqa: E402
 
 
 def _total_from_content_range(value: str | None) -> int:
