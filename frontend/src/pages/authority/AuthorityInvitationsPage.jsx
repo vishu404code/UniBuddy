@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Shell from "../../components/Shell";
 import { authedRequest } from "../../lib/session";
 import { ApiError } from "../../lib/api";
-import { isEmailAddress } from "../../lib/validation";
+import { isUniversityEmail } from "../../lib/validation";
 
 const LINKS = [{ to: "/authority/dashboard", label: "Dashboard" }];
 
@@ -36,7 +36,7 @@ function InviteForm({ role, title, needsDepartment = false }) {
     event.preventDefault();
     setError(null);
     setMessage(null);
-    if (!isEmailAddress(email)) {
+    if (!isUniversityEmail(email)) {
       setError("Use an address on the university domain.");
       return;
     }

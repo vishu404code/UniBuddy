@@ -1,46 +1,56 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
-import GoogleSignIn from "../components/GoogleSignIn";
-import { apiRequest } from "../lib/api";
-import { config } from "../lib/config";
+import { submitRegistration } from "../lib/api";
+import { UNIVERSITY_DOMAIN, isUniversityEmail } from "../lib/validation";
 
-// Students request access with their Google account. The request waits for an authorized
-// person to approve it. Nothing is granted here, and no role is chosen by the person.
 export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [receipt, setReceipt] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  async function handleCredential(idToken) {
-    setBusy(true);
+  async function handleSubmit(event) {
+    event.preventDefault();
     setError(null);
+    if (!isUniversityEmail(email)) {
+      setError(`Use your university email address ending in @${UNIVERSITY_DOMAIN}.`);
+      return;
+    }
+    setBusy(true);
     try {
-      const result = await apiRequest("/auth/google/access-request", {
-        method: "POST",
-        body: { id_token: idToken },
-      });
-      setReceipt(result.message ?? "Thanks. Your request is waiting for review.");
+      const result = await submitRegistration(email.trim(), fullName.trim());
+      setReceipt(result.message);
     } catch (err) {
-      setError(err.message || "The request could not be sent. Try again.");
+      setError(err.message);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <AuthLayout title="Request Student access">
-      <p className="hint">
-        Sign in with the Google account you want to use. Your request is reviewed before you get access.
-        Faculty, Authority and Management accounts are created only by an authorized invitation.
-      </p>
-      {!receipt && <GoogleSignIn clientId={config.googleClientId} onCredential={handleCredential} />}
-      {busy && <p className="status">Sending your request…</p>}
-      {error && <p role="alert" className="error">{error}</p>}
-      {receipt && <p role="status">{receipt}</p>}
-      <p className="links">
-        Already have an account? <Link to="/login">Sign in</Link>
-      </p>
+    <AuthLayout title="Request student access">
+      {receipt ? (
+        <p role="status">{receipt}</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="stack">
+          <p className="hint">
+            Registering does not grant access. You will get an invitation only after review.
+          </p>
+          <label>
+            Full name
+            <input value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} maxLength={120} />
+          </label>
+          <label>
+            University email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          {error && <p role="alert" className="error">{error}</p>}
+          <button type="submit" disabled={busy}>{busy ? "Sending…" : "Submit request"}</button>
+        </form>
+      )}
+      <p className="links"><Link to="/login">Back to sign in</Link></p>
     </AuthLayout>
   );
 }

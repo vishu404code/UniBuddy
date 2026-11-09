@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { dashboardPathForRole } from "../lib/roles";
 
-// The UI check is a convenience. The API and the database rules enforce the same roles on every request.
+// The UI check is a convenience. FastAPI and Supabase RLS enforce the same roles on every request.
 export default function RequireRole({ roles, children }) {
   const { session, profile, profileError, loading } = useAuth();
 

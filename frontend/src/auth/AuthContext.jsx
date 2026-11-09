@@ -1,13 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
 import { fetchMe } from "../lib/api";
-import { clearSessionToken, getSessionToken, setSessionToken } from "../lib/session";
 
 const AuthContext = createContext(null);
 
 const NOT_SET_UP = "Your account is not set up yet. Contact your campus office.";
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => getSessionToken());
+  const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileError, setProfileError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,49 +25,46 @@ export function AuthProvider({ children }) {
       return me;
     } catch (err) {
       setProfile(null);
-      if (err.status === 401) {
-        // The session has expired or was revoked. Ask the person to sign in again.
-        clearSessionToken();
-        setToken(null);
-        setProfileError("Your session has ended. Sign in again.");
-      } else {
-        setProfileError(err.status === 403 ? NOT_SET_UP : "We could not load your profile. Try again.");
-      }
+      setProfileError(err.status === 403 ? NOT_SET_UP : "We could not load your profile. Try again.");
       return null;
     }
   }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return undefined;
+    }
     let active = true;
-    loadProfile(getSessionToken()).finally(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      setSession(data.session);
+      await loadProfile(data.session?.access_token);
       if (active) setLoading(false);
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      loadProfile(nextSession?.access_token);
     });
     return () => {
       active = false;
+      subscription.subscription.unsubscribe();
     };
   }, [loadProfile]);
 
   const value = useMemo(
     () => ({
-      session: token ? { access_token: token } : null,
+      session,
       profile,
       profileError,
       loading,
-      // Stores the token from a successful Google sign-in and loads the profile it belongs to.
-      signInWithToken: async (accessToken) => {
-        setSessionToken(accessToken);
-        setToken(accessToken);
-        return loadProfile(accessToken);
-      },
-      refreshProfile: async () => loadProfile(getSessionToken()),
+      refreshProfile: async () => loadProfile((await supabase?.auth.getSession())?.data.session?.access_token),
       signOut: async () => {
-        clearSessionToken();
-        setToken(null);
+        await supabase?.auth.signOut();
         setProfile(null);
-        setProfileError(null);
       },
     }),
-    [token, profile, profileError, loading, loadProfile],
+    [session, profile, profileError, loading, loadProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

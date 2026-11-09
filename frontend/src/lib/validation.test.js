@@ -1,17 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { isEmailAddress } from "./validation";
+import { isUniversityEmail, passwordProblem } from "./validation";
 
-describe("isEmailAddress", () => {
-  it("accepts any well-formed address, from any domain", () => {
-    expect(isEmailAddress("Student.One@NST.rishihood.edu.in")).toBe(true);
-    expect(isEmailAddress("someone@gmail.com")).toBe(true);
-    expect(isEmailAddress("  x@example.org ")).toBe(true);
+describe("isUniversityEmail", () => {
+  it("accepts the exact university domain in any case", () => {
+    expect(isUniversityEmail("Student.One@NST.rishihood.edu.in")).toBe(true);
+    expect(isUniversityEmail("  x@nst.rishihood.edu.in ")).toBe(true);
   });
 
-  it("rejects malformed addresses", () => {
-    expect(isEmailAddress("")).toBe(false);
-    expect(isEmailAddress("no-at-sign.example.com")).toBe(false);
-    expect(isEmailAddress("two@@example.com")).toBe(false);
-    expect(isEmailAddress("space in@example.com")).toBe(false);
+  it("refuses other domains, subdomains and look-alikes", () => {
+    expect(isUniversityEmail("x@gmail.com")).toBe(false);
+    expect(isUniversityEmail("x@mail.nst.rishihood.edu.in")).toBe(false);
+    expect(isUniversityEmail("x@nst.rishihood.edu.in.evil.test")).toBe(false);
+    expect(isUniversityEmail("nst.rishihood.edu.in")).toBe(false);
+    expect(isUniversityEmail("")).toBe(false);
+  });
+});
+
+describe("passwordProblem", () => {
+  it("requires twelve characters and a matching confirmation", () => {
+    expect(passwordProblem("short", "short")).toMatch(/at least 12/);
+    expect(passwordProblem("long enough pass", "different one")).toMatch(/do not match/);
+    expect(passwordProblem("long enough pass", "long enough pass")).toBeNull();
   });
 });

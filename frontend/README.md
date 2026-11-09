@@ -18,7 +18,8 @@ Other scripts: `npm test` (unit tests), `npm run build` (production bundle in `d
 
 | Name | Value | Notes |
 |---|---|---|
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID | Public. The client secret is never used in the frontend. |
+| `VITE_SUPABASE_URL` | Project URL | Public. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_…`) | Public by design. Never use the secret key here. |
 | `VITE_API_BASE_URL` | `http://localhost:8000/api/v1` in development | FastAPI base URL. |
 
 `.env.local` is git-ignored. Before sharing a build, check its output for key-shaped values.
@@ -27,7 +28,7 @@ Other scripts: `npm test` (unit tests), `npm run build` (production bundle in `d
 
 | Path | Who | What it does |
 |---|---|---|
-| `/login` | everyone | Sign in with Google. The API matches the Google identity to an existing account, and `GET /auth/me` decides the dashboard. |
+| `/login` | everyone | Email and password through Supabase Auth. Then `GET /auth/me` decides the dashboard. |
 | `/register` | students | Public registration request. Grants nothing. Restricted to the university domain. |
 | `/accept-invitation` | invitees, reset requests | Verifies the single-use email token (`token_hash`), then goes to `/set-password`. |
 | `/set-password` | invitees, reset requests | The user chooses their own password (at least 12 characters). |
@@ -45,19 +46,17 @@ Other scripts: `npm test` (unit tests), `npm run build` (production bundle in `d
 
 ## How the connection works
 
-1. Google Identity Services shows the sign-in button and returns a Google ID token. The browser sends it
-   once to `POST /auth/google`, which returns UniBuddy's session token. Later requests send that token as
-   `Authorization: Bearer …`.
-2. FastAPI verifies UniBuddy's session token and loads the role and
+1. Sign-in and password changes go directly to Supabase Auth with the publishable key.
+   The session token is then sent to FastAPI as `Authorization: Bearer …`.
+2. FastAPI verifies that token against Supabase's public signing keys and loads the role and
    campus from the `profiles` table. The browser never supplies its role or campus.
 3. Each dashboard calls one protected endpoint. The UI route check is only a convenience.
-   FastAPI and the database rules enforce the same roles on every request.
+   FastAPI and Supabase RLS enforce the same roles on every request.
 
 ## Security notes
 
 - No secret key, OpenAI key or service-role value appears anywhere in this app.
-- UniBuddy's session token is kept in this browser's local storage. It is a convenience for
-  returning users, and it can be read by script in this page. A strict Content Security Policy and an
-  httpOnly cookie are later hardening steps.
+- Tokens are held by the Supabase client in the browser's session storage. This is the
+  standard Supabase pattern. A strict Content Security Policy is a later hardening step.
 - The domain and password checks in the UI are for convenience only. The server enforces
   them again.

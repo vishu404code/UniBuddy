@@ -1,17 +1,15 @@
 import { config } from "./config";
 
 export class ApiError extends Error {
-  constructor(status, message, code = null) {
+  constructor(status, message) {
     super(message);
     this.name = "ApiError";
     this.status = status;
-    this.code = code;
   }
 }
 
 function messageFrom(data, status) {
   if (typeof data?.detail === "string") return data.detail;
-  if (typeof data?.detail?.message === "string") return data.detail.message;
   if (status === 422) return "Check the form and try again.";
   return `Request failed (${status}).`;
 }
@@ -34,9 +32,7 @@ export async function apiRequest(path, { method = "GET", body, token } = {}) {
   }
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new ApiError(response.status, messageFrom(data, response.status), data?.detail?.code ?? null);
-  }
+  if (!response.ok) throw new ApiError(response.status, messageFrom(data, response.status));
   return data;
 }
 
