@@ -38,7 +38,6 @@ async def provision_student(
     created = await provision_user(
         sb=sb, auth_admin=auth_admin, actor=session.user,
         email=body.email, full_name=body.full_name, role="student", department_id=body.department_id,
-        allowed_domains=settings.provisioning_allowed_domains_set,
     )
     return ProvisionedUserOut(**created)
 
@@ -54,7 +53,6 @@ async def provision_faculty(
     created = await provision_user(
         sb=sb, auth_admin=auth_admin, actor=session.user,
         email=body.email, full_name=body.full_name, role="faculty", department_id=body.department_id,
-        allowed_domains=settings.provisioning_allowed_domains_set,
     )
     return ProvisionedUserOut(**created)
 
@@ -69,7 +67,7 @@ async def provision_authority(
     """Super Admin only. Invites an authority user to the campus Super Admin chooses. Sends a real email."""
     created = await provision_by_super_admin(
         sb=sb, auth_admin=auth_admin, actor=session.user, email=body.email, full_name=body.full_name,
-        role="authority", campus_id=body.campus_id, allowed_domains=settings.provisioning_allowed_domains_set,
+        role="authority", campus_id=body.campus_id,
     )
     return ProvisionedUserOut(**created)
 
@@ -84,7 +82,7 @@ async def provision_management(
     """Super Admin only. Invites a management user. Management stays aggregate-only. Sends a real email."""
     created = await provision_by_super_admin(
         sb=sb, auth_admin=auth_admin, actor=session.user, email=body.email, full_name=body.full_name,
-        role="management", campus_id=body.campus_id, allowed_domains=settings.provisioning_allowed_domains_set,
+        role="management", campus_id=body.campus_id,
     )
     return ProvisionedUserOut(**created)
 
@@ -129,7 +127,6 @@ async def approve(
     """Approves a pending student request. The student joins the approver's campus. Sends a real email."""
     created = await approve_registration(
         sb=sb, auth_admin=auth_admin, actor=session.user, request_id=request_id,
-        allowed_domains=settings.provisioning_allowed_domains_set,
     )
     return ProvisionedUserOut(**created)
 

@@ -31,7 +31,6 @@ async def approve_registration(
     auth_admin: AuthAdminClient,
     actor: CurrentUser,
     request_id: UUID,
-    allowed_domains: frozenset[str],
 ) -> dict:
     """Approves a pending student request. The student joins the approving authority's campus.
 
@@ -41,7 +40,7 @@ async def approve_registration(
     request = await _pending_request(sb, request_id)
     created = await provision_user(
         sb=sb, auth_admin=auth_admin, actor=actor, email=request["email"], full_name=request["full_name"],
-        role="student", department_id=None, allowed_domains=allowed_domains,
+        role="student", department_id=None,
     )
     await sb.update_service(
         "registration_requests",

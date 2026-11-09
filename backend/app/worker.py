@@ -11,11 +11,12 @@ import logging
 from app.ai.gemini_client import GeminiClient
 from app.config import settings
 from app.services.document_worker import run_forever
-from app.services.supabase_client import SupabaseClient
 
 
-def build_clients() -> tuple[SupabaseClient, GeminiClient | None]:
-    sb = SupabaseClient(settings.supabase_url, settings.supabase_secret_key, settings.supabase_publishable_key)
+def build_clients():
+    from app.services.providers import build_data_client
+
+    sb = build_data_client()
     ai = None
     if settings.gemini_api_key:
         ai = GeminiClient(
@@ -27,7 +28,10 @@ def build_clients() -> tuple[SupabaseClient, GeminiClient | None]:
 
 
 async def main() -> None:
-    if not settings.supabase_url or not settings.supabase_secret_key:
+    if settings.data_backend == "postgres":
+        if not settings.database_url or not settings.session_secret:
+            raise SystemExit("DATABASE_URL and SESSION_SECRET must be set")
+    elif not settings.supabase_url or not settings.supabase_secret_key:
         raise SystemExit("SUPABASE_URL and SUPABASE_SECRET_KEY must be set")
     sb, ai = build_clients()
     if ai is None:

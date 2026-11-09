@@ -46,3 +46,23 @@ class ProfileRepository:
         if not rows:
             return None
         return CurrentUser(**rows[0])
+
+
+class ClientProfileRepository:
+    """Profile lookup through any data client with select_service (Postgres or Supabase).
+    Server-side only: the caller must pass a user ID from a verified session token."""
+
+    def __init__(self, client):
+        self._client = client
+
+    async def get_by_id(self, user_id: UUID) -> CurrentUser | None:
+        try:
+            rows = await self._client.select_service(
+                "profiles", {"select": PROFILE_COLUMNS, "id": f"eq.{user_id}"}
+            )
+        except Exception as exc:
+            raise ProfileLookupError("Profile lookup request failed") from exc
+        if not rows:
+            return None
+        return CurrentUser(**rows[0])
+

@@ -32,11 +32,22 @@ def _build_token_verifier() -> SupabaseTokenVerifier:
     return SupabaseTokenVerifier.for_project(settings.supabase_url)
 
 
-def get_token_verifier() -> SupabaseTokenVerifier:
+def get_token_verifier():
+    if settings.auth_backend == "google":
+        from app.services.token_verifier import SessionTokenVerifier
+
+        if not settings.session_secret:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
+        return SessionTokenVerifier(settings.session_secret)
     return _build_token_verifier()
 
 
-def get_profile_repository() -> ProfileRepository:
+def get_profile_repository():
+    if settings.auth_backend == "google":
+        from app.repositories.profiles import ClientProfileRepository
+        from app.services.providers import get_supabase_client
+
+        return ClientProfileRepository(get_supabase_client())
     if not settings.supabase_url or not settings.supabase_secret_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Authentication is not configured")
     return ProfileRepository(settings.supabase_url, settings.supabase_secret_key)

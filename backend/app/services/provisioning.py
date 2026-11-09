@@ -21,10 +21,6 @@ AUTHORITY_RPCS = ("provisioning_precheck", "provisioning_complete")
 SUPER_ADMIN_RPCS = ("super_admin_provision_precheck", "super_admin_provision_complete")
 
 
-def email_domain(email: str) -> str:
-    return email.rsplit("@", 1)[-1]
-
-
 class ProvisioningError(DocumentError):
     def __init__(self, status_code: int, message: str):
         super().__init__(message)
@@ -56,22 +52,15 @@ async def _run_provisioning(
     full_name: str,
     role: str,
     department_id: UUID | None,
-    allowed_domains: frozenset[str],
     rpcs: tuple[str, str],
     scope_args: dict,
 ) -> dict:
-    """Shared flow: domain allowlist, database precheck, Supabase invite, database completion.
+    """Shared flow: database precheck, account invitation, database completion.
 
     The invite happens only after every check has passed. If completion fails after the invite,
     the new login is deleted again and the compensation is audited.
     """
-    if not allowed_domains:
-        raise ProvisioningError(503, "User provisioning is not configured")
-
     email = email.strip().lower()
-    if email_domain(email) not in allowed_domains:
-        await _record(sb, actor, email, role, department_id, "failed", "email_domain_not_allowed")
-        raise ProvisioningError(422, "Invitations can only be sent to approved university email domains")
 
     precheck_rpc, complete_rpc = rpcs
     precheck = await sb.rpc_service(
@@ -123,7 +112,6 @@ async def provision_user(
     full_name: str,
     role: str,
     department_id: UUID | None,
-    allowed_domains: frozenset[str],
 ) -> dict:
     """A campus authority invites a student or faculty member into its own campus.
 
@@ -132,7 +120,7 @@ async def provision_user(
     department = str(department_id) if department_id else None
     return await _run_provisioning(
         sb=sb, auth_admin=auth_admin, actor=actor, email=email, full_name=full_name, role=role,
-        department_id=department_id, allowed_domains=allowed_domains, rpcs=AUTHORITY_RPCS,
+        department_id=department_id, rpcs=AUTHORITY_RPCS,
         scope_args={"precheck": {"p_department": department}, "complete": {"p_department": department}},
     )
 
@@ -146,7 +134,6 @@ async def provision_by_super_admin(
     full_name: str,
     role: str,
     campus_id: UUID | None,
-    allowed_domains: frozenset[str],
 ) -> dict:
     """Super Admin invites an authority (campus required) or management account (campus optional).
 
@@ -156,6 +143,6 @@ async def provision_by_super_admin(
     campus = str(campus_id) if campus_id else None
     return await _run_provisioning(
         sb=sb, auth_admin=auth_admin, actor=actor, email=email, full_name=full_name, role=role,
-        department_id=None, allowed_domains=allowed_domains, rpcs=SUPER_ADMIN_RPCS,
+        department_id=None, rpcs=SUPER_ADMIN_RPCS,
         scope_args={"precheck": {"p_campus": campus}, "complete": {"p_campus": campus}},
     )

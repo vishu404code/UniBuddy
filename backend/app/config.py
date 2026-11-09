@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     supabase_publishable_key: str | None = None
     supabase_storage_bucket: str = "documents"
 
+    # Backend selection. "supabase" keeps the current setup as the rollback. "postgres" and
+    # "google" and "r2" are the replacement. Switch only after the migration is verified.
+    data_backend: str = "supabase"  # supabase | postgres
+    auth_backend: str = "supabase"  # supabase | google
+    storage_backend: str = "supabase"  # supabase | r2
+    # Direct Postgres (Neon) connection. Server-side only. Used when data_backend is postgres.
+    database_url: str | None = None
+    # Signs UniBuddy's own session tokens. Server-side only. At least 32 characters.
+    session_secret: str | None = None
+    # Google OAuth client ID (public). Used to check that a Google ID token was issued for this app.
+    google_client_id: str | None = None
+
     # Cloudflare R2 (S3-compatible) for PDFs. Server-side only. Not used until the migration.
     r2_account_id: str | None = None
     r2_access_key_id: str | None = None
@@ -34,10 +46,6 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     # gemini-2.5-flash returns 404 for this key's generateContent calls, so it is not used.
     gemini_chat_model: str = "gemini-3.5-flash-lite"
-
-    # Provisioning: invitations are only sent to these email domains (exact match, comma-separated).
-    # Empty means provisioning is disabled and every request fails closed.
-    provisioning_allowed_email_domains: str = ""
 
     # Ingestion and retrieval limits. Retrieval values are starting points and
     # must be tuned against real campus documents.
@@ -59,14 +67,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
-    @property
-    def provisioning_allowed_domains_set(self) -> frozenset[str]:
-        return frozenset(
-            domain.strip().lstrip("@").lower()
-            for domain in self.provisioning_allowed_email_domains.split(",")
-            if domain.strip()
-        )
 
     @property
     def allowed_origins_list(self) -> list[str]:

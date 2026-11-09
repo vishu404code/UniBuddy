@@ -1,5 +1,4 @@
 from app.schemas.registration import RegistrationRequestIn
-from app.services.provisioning import ProvisioningError, email_domain
 from app.services.supabase_client import SupabaseClient, SupabaseError
 
 RECEIPT_MESSAGE = (
@@ -9,17 +8,13 @@ RECEIPT_MESSAGE = (
 
 
 async def submit_registration(
-    *, sb: SupabaseClient, body: RegistrationRequestIn, allowed_domains: frozenset[str]
+    *, sb: SupabaseClient, body: RegistrationRequestIn
 ) -> dict:
     """Stores a pending request. It grants no role and creates no account.
 
     The response is the same whether or not the address already has a request or an account,
     so the endpoint does not reveal who has registered.
     """
-    if not allowed_domains:
-        raise ProvisioningError(503, "Registration is not available right now")
-    if email_domain(body.email) not in allowed_domains:
-        raise ProvisioningError(422, "Registration is limited to approved university email domains")
 
     try:
         await sb.insert_service(

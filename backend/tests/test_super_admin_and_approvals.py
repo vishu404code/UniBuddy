@@ -14,7 +14,6 @@ from tests.conftest import FakeProfileRepository, make_profile
 from tests.fakes import FakeAuthAdmin, FakeSupabase
 
 API = settings.api_v1_prefix
-ALLOWED = frozenset({"nst.rishihood.edu.in"})
 CAMPUS_A = str(uuid4())
 CAMPUS_B = str(uuid4())
 DEPT_A = str(uuid4())
@@ -47,7 +46,7 @@ async def test_super_admin_invites_an_authority_to_the_campus_it_chooses():
 
     created = await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
                                              email="new.auth@nst.rishihood.edu.in", full_name="New Authority",
-                                             role="authority", campus_id=CAMPUS_B, allowed_domains=ALLOWED)
+                                             role="authority", campus_id=CAMPUS_B)
 
     assert created["role"] == "authority"
     assert created["campus_id"] == CAMPUS_B
@@ -61,7 +60,7 @@ async def test_authority_account_without_a_campus_is_refused_before_any_invitati
     with pytest.raises(ProvisioningError) as info:
         await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
                                        email="x@nst.rishihood.edu.in", full_name="X Y", role="authority",
-                                       campus_id=None, allowed_domains=ALLOWED)
+                                       campus_id=None)
     assert info.value.status_code == 422
     assert auth.invites == []
 
@@ -72,7 +71,7 @@ async def test_management_may_be_invited_without_a_campus():
 
     created = await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
                                              email="mgr@nst.rishihood.edu.in", full_name="Manager",
-                                             role="management", campus_id=None, allowed_domains=ALLOWED)
+                                             role="management", campus_id=None)
 
     assert created["campus_id"] is None
     assert created["role"] == "management"
@@ -85,7 +84,7 @@ async def test_unknown_campus_is_refused_by_the_database_rules():
     with pytest.raises(ProvisioningError) as info:
         await provision_by_super_admin(sb=sb, auth_admin=auth, actor=_actor(SUPER, "super_admin"),
                                        email="x@nst.rishihood.edu.in", full_name="X Y", role="authority",
-                                       campus_id=str(uuid4()), allowed_domains=ALLOWED)
+                                       campus_id=str(uuid4()))
     assert info.value.status_code == 422
     assert auth.invites == []
 
@@ -99,7 +98,7 @@ async def test_registration_approval_joins_the_approvers_campus_and_marks_the_re
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
 
     created = await approve_registration(sb=sb, auth_admin=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
-                                         request_id=request_id, allowed_domains=ALLOWED)
+                                         request_id=request_id)
 
     assert created["role"] == "student"
     assert created["campus_id"] == CAMPUS_A
@@ -116,10 +115,10 @@ async def test_a_request_can_only_be_decided_once():
                                                "full_name": "Once", "status": "pending",
                                                "requested_at": "2026-11-01T10:00:00+00:00"})
     actor = _actor(AUTH_A, "authority", CAMPUS_A)
-    await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id, allowed_domains=ALLOWED)
+    await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id)
 
     with pytest.raises(DocumentConflict):
-        await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id, allowed_domains=ALLOWED)
+        await approve_registration(sb=sb, auth_admin=auth, actor=actor, request_id=request_id)
     assert len(auth.invites) == 1
 
 
@@ -136,7 +135,7 @@ async def test_approval_for_an_email_that_already_has_a_profile_leaves_the_reque
 
     with pytest.raises(ProvisioningError) as info:
         await approve_registration(sb=sb, auth_admin=auth, actor=_actor(AUTH_A, "authority", CAMPUS_A),
-                                   request_id=request_id, allowed_domains=ALLOWED)
+                                   request_id=request_id)
     assert info.value.status_code == 409
     assert sb.tables["registration_requests"][0]["status"] == "pending"
 
@@ -187,7 +186,6 @@ def _client(sb, auth):
 
 @pytest.fixture(autouse=True)
 def _overrides(monkeypatch):
-    monkeypatch.setattr(settings, "provisioning_allowed_email_domains", "nst.rishihood.edu.in")
     yield
     app.dependency_overrides.clear()
 

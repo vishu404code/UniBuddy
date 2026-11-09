@@ -58,7 +58,7 @@ def test_no_request_body_accepts_role_campus_or_owner_fields():
     assert violations == []
 
 
-def test_identity_writes_under_auth_are_limited_to_the_public_registration_intake():
+def test_identity_writes_under_auth_are_limited_to_the_intake_and_google_sign_in():
     openapi = app.openapi()
     writes = sorted(
         f"{method.upper()} {path}"
@@ -66,7 +66,17 @@ def test_identity_writes_under_auth_are_limited_to_the_public_registration_intak
         for method in operations
         if "/auth/" in path and method != "get"
     )
-    assert writes == ["POST /api/v1/auth/registrations"]
+    # The Google routes accept only a Google ID token. Google verifies the person; the
+    # client cannot send a role, campus or account ID.
+    assert writes == [
+        "POST /api/v1/auth/google",
+        "POST /api/v1/auth/google/access-request",
+        "POST /api/v1/auth/registrations",
+    ]
+    components = openapi.get("components", {}).get("schemas", {})
+    for path in ("/api/v1/auth/google", "/api/v1/auth/google/access-request"):
+        body = openapi["paths"][path]["post"]["requestBody"]
+        assert set(_body_fields(body, components)) == {"id_token"}
 
 
 def test_campus_is_accepted_in_request_bodies_only_for_super_admin_invitations():

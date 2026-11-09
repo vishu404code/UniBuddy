@@ -61,3 +61,20 @@ class SupabaseTokenVerifier:
             return UUID(claims["sub"])
         except (TypeError, ValueError) as exc:
             raise InvalidAccessToken("Token subject is not a valid user id") from exc
+
+
+class SessionTokenVerifier:
+    """Verifies UniBuddy's own session token (see app/auth/session.py). Same interface as the
+    Supabase verifier: verify(token) returns the user ID or raises InvalidAccessToken."""
+
+    def __init__(self, secret: str):
+        self._secret = secret
+
+    def verify(self, token: str) -> UUID:
+        from app.auth.session import SessionError, read_session_token
+
+        try:
+            return read_session_token(token, self._secret)
+        except SessionError as exc:
+            raise InvalidAccessToken("invalid session") from exc
+
