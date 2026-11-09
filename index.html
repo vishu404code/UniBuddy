@@ -435,7 +435,8 @@ function queries(){
 const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',x:'Workspace'};
 
 function annView(){
-  return `<div class="pg wide"><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p><div class="mag">${S.announcements.map(a=>`<article class="am ${a.tone||'blue'}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No official announcements available.</p>'}</div></div>`}
+  const canPost=['authority','faculty'].includes(S.role);
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p></div>${canPost?`<button class="btn p" data-a="ann-modal">${I('plus')} New announcement</button>`:''}</div><div class="mag">${S.announcements.map(a=>`<article class="am ${a.tone||'blue'}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No official announcements available.</p>'}</div></div>`}
 
 // Documents View for Staff, Faculty & Authority
 function docsView(){
@@ -467,6 +468,10 @@ function placeholder(){
 // Modals
 function modal(){
   const m=S.modal,o=m.out?' out':'';
+  if(m.type==='new-ann'){
+    const uni=S.role==='authority';
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">New announcement</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Published announcements appear to students immediately. Uploading a PDF does not create one.</p><label>Title</label><input id="an-title" maxlength="200" placeholder="e.g. Exam timetable published"><label>Message</label><textarea id="an-body" rows="5" maxlength="4000" placeholder="Write the announcement text"></textarea><div class="g2"><div><label>Audience</label><select id="an-aud"><option value="all_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="an-scope"><option value="campus">My campus</option>${uni?'<option value="university_wide">University-wide</option>':''}</select></div></div><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="an-imp" type="checkbox" style="width:auto"> Mark as important</label><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-ann">Publish</button></div></div></div>`;
+  }
   if(m.type==='upload-doc'){
     return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload an approved PDF. It is processed by the AI service and stays a draft until published.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Leave of Absence Policy 2026–27"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="doc-scope"><option value="campus">My campus</option>${S.role==='authority'?'<option value="university_wide">University-wide</option>':''}</select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload PDF</button></div></div></div>`;
   }
@@ -555,6 +560,7 @@ document.addEventListener('click',async e=>{
   else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
   else if(a=='login')doLogin()
   else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
+  else if(a=='ann-modal'){S.modal={type:'new-ann'};R()}
   else if(a=='submit-doc-upload'){
     const title=$('#doc-title')?.value.trim(),file=$('#doc-file')?.files?.[0],vis=$('#doc-vis')?.value||'public_students',scope=$('#doc-scope')?.value||'campus';
     if(!title||!file){toast('Enter a title and choose a PDF.');return}
@@ -589,6 +595,18 @@ document.addEventListener('click',async e=>{
   else if(a=='attach')toast('File attachments are not supported yet. You can describe the issue in the forwarded ticket.')
   else if(a=='fwd'){S.modal={i:+v,q:S.chat[+v-1]?.t||'Question'};R()}
   else if(a=='mc'){S.modal.out=1;R();setTimeout(()=>{S.modal=null;R()},160)}
+  else if(a=='submit-ann'){
+    if(S.actionBusy)return;
+    const title=$('#an-title')?.value.trim(),body=$('#an-body')?.value.trim();
+    if(!title||!body){toast('Enter a title and a message.');return}
+    const payload={title,body,audience:$('#an-aud')?.value||'all_students',scope:$('#an-scope')?.value||'campus',category:'Notice',is_important:!!$('#an-imp')?.checked};
+    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Publishing…';
+    const res=await apiCall('/announcements',{method:'POST',body:JSON.stringify(payload)});
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast((typeof res.error==='string'?res.error:'The announcement was not published.')+' Your text is still in the form.');return}
+    S.modal=null;S.announcements=[{...res.data,c:res.data.category||'Notice',t:res.data.title,b:res.data.body,d:new Date(res.data.created_at).toLocaleDateString(),tone:'blue',big:res.data.is_important,imp:res.data.is_important},...(S.announcements||[])];
+    R();toast('Announcement published.');
+  }
   else if(a=='ms'){
     const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value;
     if(!departmentId){toast('No department is configured for your campus yet.');return}
