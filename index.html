@@ -477,7 +477,7 @@ function R(){
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
-  if(S.scrollDetail){S.scrollDetail=false;const d=$('#tdetail');if(d)d.scrollIntoView({behavior:'smooth',block:'start'})}
+  if(S.scrollDetail){S.scrollDetail=false;const d=$('#tdetail');if(d)d.scrollIntoView({block:'start'})}
   else{const pg=$('.page');if(pg)pg.scrollTop=prevScroll}
   initGoogleAuth();
 }
