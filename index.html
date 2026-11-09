@@ -225,7 +225,7 @@ async function pollDocProcessing(){
   if(r.ok){
     const next=pageItems(r).map(docView);
     const sig=l=>JSON.stringify(l.map(d=>[d.uuid,d.status,d.publication]));
-    if(sig(next)!==sig(S.docs||[])){S.docs=next;R()}
+    if(sig(next)!==sig(S.docs||[])){S.docs=next;if(!S.modal)R()}
   }
   watchDocProcessing();
 }
@@ -414,7 +414,7 @@ function detail(t,fac){
   const assignedToMe=t.assigned_faculty_id===S.user?.id;
   const canReply=fac&&(S.role==='authority'||assignedToMe);
   const facultyAction=S.role==='faculty'&&!t.assigned_faculty_id?`<button class="btn p" data-a="take-ticket">Take Ticket</button>`:canReply?`<textarea id="rp" rows="6" placeholder="Write your response..."></textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:fac?'<p class="mut">This ticket is assigned to another faculty member.</p>':'';
-  return `<div class="two fx"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${esc(t.id)} · ${esc(t.subj)}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${esc(t.pri)}">${esc(t.pri)}</span> · Submitted ${esc(t.date)}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${esc(t.q)}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${esc(t.desc)}</p>`:''}</div>
+  return `<div class="two fx" id="tdetail"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${esc(t.id)} · ${esc(t.subj)}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${esc(t.pri)}">${esc(t.pri)}</span> · Submitted ${esc(t.date)}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${esc(t.q)}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${esc(t.desc)}</p>`:''}</div>
 <div class="card"><h3 style="margin-bottom:10px">${fac?'Ticket response':'Faculty response'}</h3>${fac?facultyAction:(t.events||[]).filter(e=>e.event_type==='reply').map(e=>`<p style="margin:0 0 8px;background:var(--ice);border-radius:12px;padding:12px 14px">${esc(e.note)}</p>`).join('')||`<p class="mut" style="margin:0">No faculty response yet.</p>`}</div></div>
 <div class="card"><h3 style="margin-bottom:16px">${fac?'Status timeline':'Status updates'}</h3>${tlh(t)}</div></div>`}
 
@@ -476,6 +476,7 @@ function R(){
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
+  if(S.scrollDetail){S.scrollDetail=false;const d=$('#tdetail');if(d)d.scrollIntoView({behavior:'smooth',block:'start'})}
   initGoogleAuth();
 }
 
@@ -545,7 +546,7 @@ document.addEventListener('click',async e=>{
   else if(a=='bell'){S.bell=!S.bell;R();if(S.bell)loadViewData(S.view)}
   else if(a=='readall'){await Promise.all(S.notifs.filter(n=>n.u).map(n=>apiCall(`/notifications/${n.id}/read`,{method:'PATCH'})));await loadViewData(S.view)}
   else if(a=='nt'){const n=S.notifs[v];if(n?.id)await apiCall(`/notifications/${n.id}/read`,{method:'PATCH'});S.bell=false;if(S.role==='student')S.view='queries';if(n?.tk){const ticket=await apiCall(`/tickets/${n.tk}`);if(ticket.ok)S.detail={ticket:{...ticketView(ticket.data.ticket),events:ticket.data.events||[]}}}R();loadViewData(S.view)}
-  else if(a=='open'){S.sel=v;const uuid=S.tickets.find(t=>t.uuid===v||t.id===v)?.uuid||v;const res=await apiCall(`/tickets/${uuid}`);if(res.ok)S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}R()}
+  else if(a=='open'){const item=S.tickets.find(t=>t.uuid===v||t.id===v);S.sel=item?.id||v;const uuid=item?.uuid||v;if(item)S.detail={ticket:item,events:item.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}S.scrollDetail=true;R();const res=await apiCall(`/tickets/${uuid}`);if(res.ok){S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};R()}else if(!item){toast('This ticket could not be opened. Try again.')}}
   else if(a=='dask')sendDash();
   else if(a=='sq')ask(v);
   else if(a=='send')sendChat();
