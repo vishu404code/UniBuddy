@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../lib/api";
-import { supabase } from "../../lib/supabase";
+import { getSessionToken } from "../../lib/session";
 
 // Loads one protected endpoint with the current session token. Shows the server's numbers only.
 export function useApi(path) {
@@ -9,7 +9,7 @@ export function useApi(path) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+      const token = getSessionToken();
       try {
         const data = await apiRequest(path, { token });
         if (active) setState({ data, error: null, loading: false });

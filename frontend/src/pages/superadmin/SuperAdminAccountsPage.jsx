@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Shell from "../../components/Shell";
 import { authedRequest } from "../../lib/session";
 import { ApiError } from "../../lib/api";
-import { isUniversityEmail } from "../../lib/validation";
+import { isEmailAddress } from "../../lib/validation";
 
 export default function SuperAdminAccountsPage() {
   return (
@@ -36,7 +36,7 @@ function InviteAccountForm() {
     event.preventDefault();
     setError(null);
     setMessage(null);
-    if (!isUniversityEmail(email)) {
+    if (!isEmailAddress(email)) {
       setError("Use an address on the university domain.");
       return;
     }

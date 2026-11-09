@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
+const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -18,6 +19,29 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  // Proxy /api/* to the FastAPI backend
+  if (req.url.startsWith('/api/')) {
+    const targetUrl = new URL(req.url, BACKEND_URL);
+    const headers = { ...req.headers, host: targetUrl.host };
+    const proxyReq = http.request(
+      targetUrl,
+      {
+        method: req.method,
+        headers,
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res, { end: true });
+      }
+    );
+    proxyReq.on('error', (err) => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: { code: 'backend_unavailable', message: 'Backend service offline: ' + err.message } }));
+    });
+    req.pipe(proxyReq, { end: true });
+    return;
+  }
+
   let reqPath = req.url.split('?')[0];
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/index.html';
