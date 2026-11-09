@@ -422,7 +422,8 @@ function tlh(t){
 function detail(t,fac){
   const assignedToMe=t.assigned_faculty_id===S.user?.id;
   const canReply=fac&&(S.role==='authority'||assignedToMe);
-  const facultyAction=S.role==='faculty'&&!t.assigned_faculty_id?`<button class="btn p" data-a="take-ticket">Take Ticket</button>`:canReply?`<textarea id="rp" rows="6" placeholder="Write your response..."></textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:fac?'<p class="mut">This ticket is assigned to another faculty member.</p>':'';
+  const closed=t.status==='resolved';
+  const facultyAction=closed?`<p class="mut" style="margin:0">This ticket is resolved, so replies are closed. ${S.role==='student'?'Ask a new question if you need more help.':'The student can see the final status below.'}</p>`:S.role==='faculty'&&!t.assigned_faculty_id?`<button class="btn p" data-a="take-ticket">Take Ticket</button>`:canReply?`<textarea id="rp" rows="6" placeholder="Write your response..."></textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-a="resolve">Resolve Ticket</button><button class="btn p" data-a="respond">Send Response</button></div>`:fac?'<p class="mut">This ticket is assigned to another faculty member.</p>':'';
   return `<div class="two fx" id="tdetail"><div><div class="card"><div class="row sp" style="flex-wrap:wrap"><h3>${esc(t.id)} · ${esc(t.subj)}</h3>${stl(t)}</div><div class="mut" style="font-size:13px;margin:4px 0 14px">Priority: <span class="pri ${esc(t.pri)}">${esc(t.pri)}</span> · Submitted ${esc(t.date)}</div><div class="lab">${fac?'Student question':'Original question'}</div><p style="margin:2px 0 0">${esc(t.q)}</p>${t.desc?`<p class="mut" style="margin:8px 0 0;font-size:13.5px">${esc(t.desc)}</p>`:''}</div>
 <div class="card"><h3 style="margin-bottom:10px">${fac?'Ticket response':'Faculty response'}</h3>${fac?facultyAction:(t.events||[]).filter(e=>e.event_type==='reply').map(e=>`<p style="margin:0 0 8px;background:var(--ice);border-radius:12px;padding:12px 14px">${esc(e.note)}</p>`).join('')||`<p class="mut" style="margin:0">No faculty response yet.</p>`}</div></div>
 <div class="card"><h3 style="margin-bottom:16px">${fac?'Status timeline':'Status updates'}</h3>${tlh(t)}</div></div>`}
@@ -487,7 +488,9 @@ function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   const prevScroll=$('.page')?.scrollTop||0;
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
-  a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
+  const html=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
+  // Only rewrite the page when its markup actually changed: a refresh with the same data causes no blink.
+  if(html!==window.__lastRenderHtml){window.__lastRenderHtml=html;a.innerHTML=html}
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
