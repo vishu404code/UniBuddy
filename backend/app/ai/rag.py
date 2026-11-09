@@ -63,23 +63,38 @@ def select_evidence(rows: list[dict[str, Any]], min_similarity: float, limit: in
     return evidence[:limit]
 
 
-def build_user_prompt(question: str, evidence: list[Evidence]) -> str:
+def build_user_prompt(
+    question: str,
+    evidence: list[Evidence],
+    history: list[dict[str, str]] | None = None,
+) -> str:
     sources = "\n\n".join(
-        f"[{number}] {item.title}, page {item.page_number}\n{item.content}"
+        f"[{number}] {item.title}, page {item.page_number or 1}\n{item.content}"
         for number, item in enumerate(evidence, start=1)
     )
-    return f"SOURCES:\n{sources}\n\nQUESTION: {question}"
+    history_block = ""
+    if history:
+        turns = [f"{m.get('role', 'user').capitalize()}: {m.get('content', '')}" for m in history[-6:] if m.get('content')]
+        if turns:
+            history_block = "CONVERSATION HISTORY:\n" + "\n".join(turns) + "\n\n"
+    return f"SOURCES:\n{sources}\n\n{history_block}QUESTION: {question}"
 
 
 def abstain() -> Answer:
     return Answer(text=ABSTAIN_MESSAGE, citations=[], abstained=True)
 
 
-async def answer_question(question: str, evidence: list[Evidence], generator: TextGenerator) -> Answer:
+async def answer_question(
+    question: str,
+    evidence: list[Evidence],
+    generator: TextGenerator,
+    history: list[dict[str, str]] | None = None,
+) -> Answer:
     if not evidence:
         return abstain()
 
-    raw = (await generator.complete(SYSTEM_PROMPT, build_user_prompt(question, evidence))).strip()
+    prompt = build_user_prompt(question, evidence, history)
+    raw = (await generator.complete(SYSTEM_PROMPT, prompt)).strip()
     if not raw or INSUFFICIENT_MARKER in raw:
         return abstain()
 

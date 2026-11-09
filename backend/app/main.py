@@ -81,8 +81,109 @@ async def ai_error_handler(_request: Request, exc: AIServiceError):
 
 
 @app.get(f"{settings.api_v1_prefix}/health")
+@app.get("/health")
 def health_check():
-    return {"status": "ok", "app": settings.app_name, "env": settings.app_env}
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+        "env": settings.app_env,
+        "database_configured": bool(settings.database_url),
+        "ai_configured": bool(settings.gemini_api_key),
+        "r2_configured": bool(
+            settings.r2_account_id
+            and settings.r2_access_key_id
+            and settings.r2_secret_access_key
+        ),
+        "google_auth_configured": bool(settings.google_client_id),
+    }
+
+
+@app.get(f"{settings.api_v1_prefix}/health/services")
+async def health_services():
+    """Separately tests connectivity to Database, AI, Storage and Auth."""
+    results = {
+        "database": {"status": "unconfigured", "details": None},
+        "gemini_ai": {"status": "unconfigured", "details": None},
+        "object_storage": {"status": "unconfigured", "details": None},
+        "google_auth": {"status": "unconfigured", "details": None},
+    }
+    all_ok = True
+
+    # 1. Database
+    if settings.database_url:
+        try:
+            client = get_data_client()
+            await client.select_service("campuses", {"limit": "1"})
+            results["database"] = {"status": "connected", "details": "Neon PostgreSQL OK"}
+        except Exception as exc:
+            all_ok = False
+            results["database"] = {"status": "error", "details": str(exc)}
+    else:
+        results["database"] = {
+            "status": "unconfigured",
+            "details": "DATABASE_URL not set in backend/.env",
+        }
+
+    # 2. Gemini AI
+    if settings.gemini_api_key:
+        results["gemini_ai"] = {
+            "status": "configured",
+            "chat_model": settings.gemini_chat_model,
+            "embedding_model": settings.gemini_embedding_model,
+        }
+    else:
+        results["gemini_ai"] = {
+            "status": "unconfigured",
+            "details": "GEMINI_API_KEY not set in backend/.env",
+        }
+
+    # 3. Object Storage
+    if (
+        settings.r2_account_id
+        and settings.r2_access_key_id
+        and settings.r2_secret_access_key
+    ):
+        results["object_storage"] = {
+            "status": "configured",
+            "bucket": settings.r2_bucket,
+        }
+    else:
+        results["object_storage"] = {
+            "status": "unconfigured",
+            "details": "R2_ACCOUNT_ID or R2 credentials not set in backend/.env",
+        }
+
+    # 4. Google Auth
+    if settings.google_client_id:
+        results["google_auth"] = {
+            "status": "configured",
+            "client_id": settings.google_client_id[:16] + "...",
+        }
+    else:
+        results["google_auth"] = {
+            "status": "unconfigured",
+            "details": "GOOGLE_CLIENT_ID not set in backend/.env",
+        }
+
+    status_code = 200 if (settings.database_url and all_ok) else 200
+    return JSONResponse(status_code=status_code, content={"ready": all_ok, "services": results})
+
+
+@app.post(f"{settings.api_v1_prefix}/health/diagnose-gemini")
+async def diagnose_gemini_endpoint():
+    """Diagnostic endpoint to test live Gemini API connection without exposing secrets."""
+    if not settings.gemini_api_key:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unconfigured",
+                "message": "GEMINI_API_KEY is not configured in backend/.env",
+            },
+        )
+    ai = get_ai_client()
+    diag = await ai.test_connection()
+    status_code = 200 if diag.get("status") == "connected" else 502
+    return JSONResponse(status_code=status_code, content=diag)
 
 
 for router in (

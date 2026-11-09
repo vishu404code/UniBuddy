@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UniBuddy — Campus AI Assistant & Query Portal</title>
+<title>UniBuddy — Campus AI Assistant & Knowledge Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -15,6 +15,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn:hover{transform:translateY(-1px);box-shadow:var(--sh);border-color:var(--ind)}.btn:active{transform:scale(.97)}
 .btn.p{background:var(--grad);color:#fff;border-color:#4a60a0;box-shadow:0 8px 16px -8px rgba(79,102,168,.8),inset 0 1px 0 rgba(255,255,255,.28)}
 .btn.sm{height:32px;padding:0 13px;font-size:13px;border-radius:10px}.btn.w{width:100%}
+.btn.danger{background:#fff;border-color:#e0b2bb;color:#b4445a}.btn.danger:hover{background:#fdf2f4;border-color:#b4445a}
 .ib{width:36px;height:36px;border-radius:10px;border:0;background:none;cursor:pointer;display:grid;place-items:center;color:var(--slate);transition:background .2s,color .2s,transform .2s;position:relative}.ib:hover{background:var(--lav);color:var(--navy)}.ib:active{transform:scale(.93)}
 :focus-visible{outline:2px solid var(--ind);outline-offset:2px}
 svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -84,7 +85,7 @@ footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-t
 .main{flex:1;display:flex;flex-direction:column;min-width:0;background:radial-gradient(800px 280px at 75% -80px,var(--lav),transparent 70%),#fff}
 .hd{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex:none;position:relative;border-bottom:1px solid var(--bd);background:rgba(255,255,255,.7);backdrop-filter:blur(8px)}
 .menu{display:none}.on-ind{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--slate)}.pu{width:8px;height:8px;border-radius:50%;background:#58b394;animation:pu 2.4s ease-in-out infinite}@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(88,179,148,.45)}50%{box-shadow:0 0 0 5px rgba(88,179,148,0)}}
-.page{flex:1;overflow:auto;padding:30px max(16px,3vw)}.pg{max-width:880px;margin:auto}.pg.wide{max-width:980px}
+.page{flex:1;overflow:auto;padding:30px max(16px,3vw)}.pg{max-width:880px;margin:auto}.pg.wide{max-width:1040px}
 
 /* Chat */
 .chatw{flex:1;display:flex;flex-direction:column;min-height:0}.msgs{flex:1;overflow:auto;padding:24px 16px}.col{max-width:740px;margin:auto}
@@ -123,7 +124,7 @@ footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-t
 table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;font-weight:500;font-size:12.5px;color:var(--slate);padding:10px 12px;background:var(--bg2);white-space:nowrap}th:first-child{border-radius:10px 0 0 10px}th:last-child{border-radius:0 10px 10px 0}td{padding:12px;border-bottom:1px solid var(--bd)}
 table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transition:background .2s}tr.rw:hover,tr.rw.on{background:var(--lav)}.tw{overflow-x:auto}
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--bg2);color:var(--slate)}.pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.pill.s1{background:var(--ice);color:#4a68a8}.pill.s2{background:var(--lav);color:#6a58b8}.pill.s3{background:#e3f3ec;color:#2f7d62}
+.pill.s1{background:var(--ice);color:#4a68a8}.pill.s2{background:var(--lav);color:#6a58b8}.pill.s3{background:#e3f3ec;color:#2f7d62}.pill.draft{background:#fff3e0;color:#b26a00}.pill.archived{background:#f0f2f5;color:#8892a0}
 .pri{font-size:12.5px;font-weight:500}.pri.High{color:var(--indd);font-weight:700}
 .two{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:18px}.two>div{display:grid;gap:16px;align-content:start}.lab{font-size:12.5px;color:var(--slate)}
 .prog{height:6px;border-radius:9px;background:var(--bg2);overflow:hidden;margin:0 0 6px}.prog i{display:block;height:100%;width:var(--p);border-radius:9px;background:linear-gradient(90deg,#8ea2db,var(--indd));animation:gr .7s ease-out both}@keyframes gr{from{width:0}}
@@ -133,18 +134,23 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .n{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;font-size:13.5px;transition:background .2s}.n:hover{background:var(--lav)}.n i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}.n.un i{background:var(--ind)}
 .dot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--ind);border:2px solid #fff;animation:pop .3s cubic-bezier(.2,1.5,.4,1) both}@keyframes pop{from{transform:scale(0)}}
 .ov{position:fixed;inset:0;background:rgba(38,54,83,.28);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:50;padding:16px;animation:fi .2s both}.ov.out{animation:fo .16s both}@keyframes fi{from{opacity:0}}@keyframes fo{to{opacity:0}}
-.modal{width:100%;max-width:490px;max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--bd);border-radius:22px;padding:24px;box-shadow:var(--sh2),0 30px 60px -24px rgba(38,54,83,.35);animation:mi .25s cubic-bezier(.2,1,.4,1) both}.out .modal{animation:mo .16s both}@keyframes mi{from{opacity:0;transform:translateY(12px) scale(.97)}}@keyframes mo{to{opacity:0;transform:translateY(8px) scale(.98)}}
+.modal{width:100%;max-width:540px;max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--bd);border-radius:22px;padding:24px;box-shadow:var(--sh2),0 30px 60px -24px rgba(38,54,83,.35);animation:mi .25s cubic-bezier(.2,1,.4,1) both}.out .modal{animation:mo .16s both}@keyframes mi{from{opacity:0;transform:translateY(12px) scale(.97)}}@keyframes mo{to{opacity:0;transform:translateY(8px) scale(.98)}}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#fff;color:var(--navy);border:1px solid var(--bd);padding:11px 18px;border-radius:12px;z-index:99;font-size:13.5px;max-width:90vw;box-shadow:var(--sh2);animation:tin .25s both}@keyframes tin{from{opacity:0;transform:translate(-50%,10px)}}
 .scrim{display:none}
 .avb{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8ea2db,#5f76bb);color:#fff;display:grid;place-items:center;font-weight:600;font-size:20px;flex:none}
+
+/* Drag & Drop Zone */
+.dropzone{border:2px dashed var(--ind);border-radius:16px;padding:24px;text-align:center;background:var(--ice);cursor:pointer;transition:background .2s,border-color .2s}
+.dropzone:hover{background:#dfe9fa;border-color:var(--indd)}
+
 @media(max-width:860px){.hero{grid-template-columns:1fr;padding-top:28px}.prev{transform:none;margin:0}.chipf{display:none}.bento{grid-template-columns:1fr}.bt.tall{grid-row:auto}.bt.b{grid-column:auto}.hsteps{grid-template-columns:1fr;gap:20px}.hsteps:before{display:none}.split{grid-template-columns:1fr}.brandp{display:none}
 .side{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%);width:280px;box-shadow:var(--sh2)}.side.open{transform:none}.scrim.open{display:block;position:fixed;inset:0;background:rgba(38,54,83,.3);z-index:35}.menu{display:grid}
 .two,.dgrid,.askp{grid-template-columns:1fr}.strip{flex-wrap:wrap;gap:14px}.sti{flex:1 1 40%;padding:0 10px}.g2{grid-template-columns:1fr}.mag{grid-template-columns:1fr}.am,.am.big,.am:nth-child(4),.am:nth-child(5){grid-column:auto;grid-row:auto}.am.big{min-height:200px}.qr{grid-template-columns:1fr auto}.qr small{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body><div id="app"></div>
 <script>
-const P={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',bld:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',clip:'<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',chat:'<path d="M4 4h16v12H8l-4 4z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',mega:'<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',out:'<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',inbox:'<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',cap:'<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',tick:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'};
+const P={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',bld:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',clip:'<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',chat:'<path d="M4 4h16v12H8l-4 4z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',mega:'<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',out:'<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',inbox:'<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',cap:'<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',tick:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',refresh:'<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>'};
 const I=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]||P.check}</svg>`,IC=n=>`<div class="ico">${I(n)}</div>`;
 const GI=()=>`<svg style="width:18px;height:18px;flex:none" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>`;
 const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
@@ -170,22 +176,49 @@ const ROLES={
   student:['user','Student','Ask verified questions and track tickets.'],
   faculty:['book','Faculty','Review and answer student tickets.'],
   authority:['shield','Authority','Campus oversight, documents & announcements.'],
-  management:['bld','Management','University-level analytics & resolution stats.']
+  management:['bld','Management','Knowledge base, query analytics & resolution stats.']
 };
 
-// Knowledge base with document sources for grounded citations
-const KB=[
-  {k:['internal','exam','midterm'],a:'Internal examinations are held in the seventh week of the semester. The detailed timetable is circulated two weeks in advance on notice boards.',s:'Exam Schedule Circular',p:'p. 2'},
-  {k:['scholarship','financial'],a:'Scholarship applications open at the start of each semester through the student portal, with income and marks documents attached.',s:'Scholarship Guidelines',p:'p. 5'},
-  {k:['timetable','schedule','class'],a:'The academic timetable is published on the department notice board and the student portal before each semester begins.',s:'Academic Calendar',p:'p. 1'},
-  {k:['contact','faculty','office'],a:'Faculty office hours and email addresses are listed in the department directory. You may also forward a question as a ticket directly to their queue.',s:'Department Directory',p:'p. 4'},
-  {k:['fee','tuition','payment','receipt'],a:'Semester fee payment closes on the last working day of the second week. Receipts can be downloaded from the accounts portal within 48 hours.',s:'Fee Policy Handbook',p:'p. 12'},
-  {k:['attendance','75','absent'],a:'A minimum of 75% attendance is required to sit semester examinations. Medical leave requests must be submitted within 3 days.',s:'Academic Regulations',p:'p. 8'},
-  {k:['library','facility','books'],a:'Library hours are 8:00 to 20:00 on weekdays and 9:00 to 14:00 on Saturdays. Digital access is available 24/7 with your student login.',s:'Campus Facilities Guide',p:'p. 3'}
+// Initial Knowledge Base policies and documents
+const defaultDocs=[
+  {
+    id:'KB-101',item_type:'text_content',title:'University Attendance Policy',category:'Academic Policy',
+    description:'Mandatory semester attendance regulations and medical leave procedure',
+    raw_content:'Students must maintain a minimum of 75% attendance in each registered course to be eligible to sit for semester examinations. If attendance falls between 65% and 75% due to medical emergencies, a medical certificate must be submitted within 3 working days to the Academic Dean for condonation.',
+    scope:'university_wide',visibility:'public_students',publication_status:'published',processing_status:'ready',
+    effective_date:'2026-08-01',tags:['attendance','exams','medical'],date:'01 Aug 2026'
+  },
+  {
+    id:'KB-102',item_type:'text_content',title:'Internal Examinations Schedule & Evaluation Rules',category:'Examinations',
+    description:'Schedule, weightage, and re-evaluation guidelines for internal exams',
+    raw_content:'Internal examinations are conducted in the seventh week of each academic semester. The detailed timetable is published 14 days in advance. Mid-term marks carry a 30% weightage toward the final course grade. Lab experiment re-evaluation requests must be filed within 7 days of score announcement through a departmental ticket.',
+    scope:'campus',visibility:'public_students',publication_status:'published',processing_status:'ready',
+    effective_date:'2026-09-15',tags:['exams','internals','grading'],date:'15 Sep 2026'
+  },
+  {
+    id:'KB-103',item_type:'text_content',title:'Merit & Need-Based Scholarship Guidelines',category:'Scholarships',
+    description:'Eligibility criteria, income limits, and application deadlines',
+    raw_content:'Scholarship applications open at the start of each academic semester via the student portal. Merit scholarships require a minimum CGPA of 8.5. Need-based scholarships require family income certificates below 5 LPA. Applications must include previous marksheets and be verified by the student accounts office.',
+    scope:'university_wide',visibility:'public_students',publication_status:'published',processing_status:'ready',
+    effective_date:'2026-07-01',tags:['scholarships','financial aid'],date:'01 Jul 2026'
+  },
+  {
+    id:'KB-104',item_type:'text_content',title:'Campus Hostel Rules & Code of Conduct',category:'Hostel & Campus',
+    description:'Hostel entry timings, quiet hours, and visitor policies',
+    raw_content:'Hostel gates close strictly at 21:30 on weekdays and 22:30 on weekends. Night outs require parent approval through the UniBuddy portal by 18:00 on the same day. Quiet hours are observed from 23:00 to 06:00. Electrical cooking appliances are not permitted in residential rooms.',
+    scope:'campus',visibility:'public_students',publication_status:'published',processing_status:'ready',
+    effective_date:'2026-08-01',tags:['hostel','conduct','timings'],date:'01 Aug 2026'
+  },
+  {
+    id:'DOC-105',item_type:'file',title:'Computer Science & AI Curriculum Handbook.pdf',category:'Academic Policy',
+    description:'Official syllabus, course outcomes, and lab manuals for 2026-27',
+    original_filename:'CS_AI_Curriculum_2026.pdf',scope:'campus',visibility:'public_students',
+    publication_status:'published',processing_status:'ready',page_count:48,date:'10 Aug 2026'
+  }
 ];
-const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
+let initDocs=defaultDocs;
+try{const sd=JSON.parse(localStorage.getItem('ub-docs'));if(Array.isArray(sd)&&sd.length)initDocs=sd}catch(e){}
 
-// Initial mock tickets and notifications (synced with backend or localStorage)
 const defaultTickets=[
   {id:'UB-2041',subj:'Re-evaluation of lab marks',dept:'Computer Science',fac:'Dr. Mehta',date:'02 Nov 2026',pri:'High',st:1,q:'Can I request a re-evaluation of my Data Structures lab marks?',desc:'Marks look lower than expected for Experiment 4.',reply:'',tl:['02 Nov','03 Nov']},
   {id:'UB-2036',subj:'Hostel fee receipt',dept:'Accounts',fac:'Ms. Rao',date:'28 Oct 2026',pri:'Medium',st:3,q:'I did not receive my hostel fee receipt.',desc:'',reply:'Your receipt has been emailed again. Please check your spam folder.',tl:['28 Oct','28 Oct','29 Oct','30 Oct']}
@@ -198,20 +231,14 @@ let initTickets=defaultTickets,initNotifs=defaultNotifs;
 try{const st=JSON.parse(localStorage.getItem('ub-tickets'));if(Array.isArray(st)&&st.length)initTickets=st}catch(e){}
 try{const sn=JSON.parse(localStorage.getItem('ub-notifs'));if(Array.isArray(sn))initNotifs=sn}catch(e){}
 
-// Documents store
-const defaultDocs=[
-  {id:'DOC-101',title:'Academic Regulations 2026-27',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'01 Nov 2026'},
-  {id:'DOC-102',title:'Computer Science Lab Guidelines',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'25 Oct 2026'},
-  {id:'DOC-103',title:'Hostel Rules & Disciplinary Code',scope:'campus',visibility:'public_students',status:'ready',publication:'published',date:'15 Oct 2026'}
-];
-let initDocs=defaultDocs;
-try{const sd=JSON.parse(localStorage.getItem('ub-docs'));if(Array.isArray(sd)&&sd.length)initDocs=sd}catch(e){}
+const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the hostel rules and timings?']];
 
 // Application state
 const S={
   scr:'landing',role:null,user:null,view:'chat',sel:'UB-2041',modal:null,bell:false,nav:false,
   chat:[],hist:[],fq:'',fs:'All',toast:'',fx:'screen',conversationId:null,
-  tickets:initTickets,notifs:initNotifs,docs:initDocs
+  tickets:initTickets,notifs:initNotifs,docs:initDocs,
+  kbSearch:'',kbFilterType:'All',kbFilterCat:'All',kbFilterStatus:'All'
 };
 
 const saveTickets=()=>{try{localStorage.setItem('ub-tickets',JSON.stringify(S.tickets));localStorage.setItem('ub-notifs',JSON.stringify(S.notifs));localStorage.setItem('ub-docs',JSON.stringify(S.docs))}catch(e){}};
@@ -244,11 +271,7 @@ async function handleGoogleCredential(id_token){
   const er=$('#err');
   if(er)er.textContent='Verifying with UniBuddy Google Auth...';
   
-  const res=await apiCall('/auth/google',{
-    method:'POST',
-    body:JSON.stringify({id_token})
-  });
-  
+  const res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token})});
   if(res.ok&&res.data?.access_token){
     localStorage.setItem('ub-token',res.data.access_token);
     const meRes=await apiCall('/auth/me');
@@ -259,23 +282,16 @@ async function handleGoogleCredential(id_token){
       localStorage.setItem('ub-current-user',me.email);
       PR[me.email]={name:me.full_name||me.email.split('@')[0],age:20,course:COURSES[0]};
       savePR();
-      go('app',{view:me.role=='student'?'chat':me.role=='faculty'?'tix':'x'});
+      go('app',{view:me.role=='student'?'chat':me.role=='faculty'?'tix':me.role=='management'?'kb':'x'});
       toast('Signed in as '+(me.full_name||me.email));
       return;
     }
   }
-  
   if(res.status===403&&res.error?.code==='no_profile'){
-    S.modal={
-      type:'access-request',
-      id_token,
-      msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'
-    };
+    S.modal={type:'access-request',id_token,msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'};
     R();
     return;
   }
-  
-  // If backend Google OAuth credentials are not yet configured on server
   const msg=typeof res.error==='object'?(res.error.message||res.error.code):res.error;
   if(er)er.textContent=msg||'Google Auth server is offline. Use demo accounts below.';
   toast('Google login response: '+(msg||'Server not configured'));
@@ -286,8 +302,6 @@ function doLogin(){
   const e=($('#em')?.value||'').trim().toLowerCase(),p=$('#pw')?.value||'',er=$('#err');
   if(er)er.textContent='';
   if(!e||!p){if(er)er.textContent='Enter your email and password.';return}
-  
-  // Role is strictly determined by registered account email
   const a=ACC[e];
   if(!a){
     if(er)er.textContent='No registered account found for this email. Tap one of the demo accounts below or use Google.';
@@ -305,7 +319,7 @@ function doLogin(){
   
   S.user={...a,email:e};
   S.role=a.role;
-  S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x';
+  S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':a.role=='management'?'kb':'x';
   go(PR[e]?'app':'onboard');
 }
 
@@ -355,7 +369,7 @@ function login(){
 <div class="demo-card lift t-ice" data-a="fill" data-v="student@unibuddy.demo" title="Student Demo"><div class="ico">${I('user')}</div><h3>Student</h3><p>Ask questions and track your tickets.</p><div class="demo-badge">student@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="student@unibuddy.demo">Use Demo Account</button></div>
 <div class="demo-card lift t-lav" data-a="fill" data-v="faculty@unibuddy.demo" title="Faculty Demo"><div class="ico">${I('book')}</div><h3>Faculty</h3><p>Review and answer student tickets.</p><div class="demo-badge">faculty@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="faculty@unibuddy.demo">Use Demo Account</button></div>
 <div class="demo-card lift" data-a="fill" data-v="authority@unibuddy.demo" title="Authority Demo"><div class="ico">${I('shield')}</div><h3>Authority</h3><p>Campus oversight & documents.</p><div class="demo-badge">authority@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="authority@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift" data-a="fill" data-v="management@unibuddy.demo" title="Management Demo"><div class="ico">${I('bld')}</div><h3>Management</h3><p>University-level query analytics & stats.</p><div class="demo-badge">management@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="management@unibuddy.demo">Use Demo Account</button></div>
+<div class="demo-card lift" data-a="fill" data-v="management@unibuddy.demo" title="Management Demo"><div class="ico">${I('bld')}</div><h3>Management</h3><p>Knowledge base, documents & stats.</p><div class="demo-badge">management@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="management@unibuddy.demo">Use Demo Account</button></div>
 </div>
 <div style="text-align:center;color:var(--slate);font-size:12.5px;margin:24px 0 12px">Universal demo password: <b>${DPW}</b> · Prototype accounts only.</div>
 </div></div>`}
@@ -370,9 +384,9 @@ ${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.h
 <div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="View profile"><span class="av">${ini()}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${pn()}</div><div class="mut" style="font-size:12px">${ROLES[S.role]?ROLES[S.role][1]:'User'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
 
 const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
-const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['docs','Documents','file'],['profile','Profile','user']];
-const AN=[['x','Campus Overview','home'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
-const MN=[['x','Management Stats','home'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
+const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['kb','Knowledge Base','book'],['profile','Profile','user']];
+const AN=[['x','Campus Overview','home'],['kb','Knowledge Base','book'],['ann','Announcements','mega'],['profile','Profile','user']];
+const MN=[['kb','Knowledge Base','book'],['x','Management Stats','home'],['ann','Announcements','mega'],['profile','Profile','user']];
 
 // Header
 function hd(title,ai){
@@ -382,16 +396,16 @@ function hd(title,ai){
 // AI Assistant Chat view
 function chat(){
   const m=S.chat;
-  return `<div class="chatw"><div class="msgs" id="msgs"><div class="col">${m.length?m.map((x,i)=>msg(x,i)).join(''):`<div class="empty"><div class="welcome"><span class="mark">U</span><h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1><p>Your university, your questions, one intelligent assistant.</p><div class="chips">${SUG.map(s=>`<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}</div></div></div>`}</div></div>
-<div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Verified answers from campus documents with source citations.</div></div></div>`}
+  return `<div class="chatw"><div class="msgs" id="msgs"><div class="col">${m.length?m.map((x,i)=>msg(x,i)).join(''):`<div class="empty"><div class="welcome"><span class="mark">U</span><h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1><p>Ask anything about university rules, attendance, exams, hostels, or scholarships.</p><div class="chips">${SUG.map(s=>`<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}</div></div></div>`}</div></div>
+<div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Answers verified against official university documents with citations.</div></div></div>`}
 
 function msg(x,i){
   const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
   if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
   if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><span class="vb">${I('check')} Verified Answer</span><p style="margin:8px 0 0">${x.t}</p><div class="src"><span>${x.s} · ${x.p}</span><button data-a="vs" data-v="${i}">View source</button><span>Verified</span></div><div class="ts">${x.time}</div></div></div>`;
-  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>I couldn’t find a verified answer to your question in official documents. Would you like me to forward it to the appropriate faculty or department?<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${x.fw}</span>`:`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}</div><div class="ts">${x.time}</div></div></div>`}
+  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>I couldn’t find a verified answer to your question in official university documents. Would you like me to forward it to the appropriate faculty or department?<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${x.fw}</span>`:`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}</div><div class="ts">${x.time}</div></div></div>`}
 
-// Ask AI Assistant — calls backend RAG /chat/ask with local fallback
+// AI Search engine that combines local knowledge items with backend RAG
 async function ask(q){
   if(!q||!q.trim())return;
   const cleanQ=q.trim();
@@ -400,7 +414,7 @@ async function ask(q){
   S.view='chat';
   R();
   
-  // Try backend AI RAG
+  // Try real backend AI RAG endpoint
   const backendRes=await apiCall('/chat/ask',{
     method:'POST',
     body:JSON.stringify({question:cleanQ,conversation_id:S.conversationId||null})
@@ -408,19 +422,42 @@ async function ask(q){
   
   S.chat.pop(); // Remove typing indicator
   
-  if(backendRes.ok&&backendRes.data){
+  if(backendRes.ok&&backendRes.data&&!backendRes.data.abstained){
     const d=backendRes.data;
     if(d.conversation_id)S.conversationId=d.conversation_id;
-    if(!d.abstained){
-      const cite=d.citations&&d.citations[0]?`${d.citations[0].title} · p. ${d.citations[0].page}`:'University Verified Document';
-      S.chat.push({r:'a',k:'ok',t:d.answer,s:cite,p:'Verified',time:now(),n:1,mid:d.assistant_message_id});
-    }else{
-      S.chat.push({r:'a',k:'nf',time:now(),n:1,mid:d.assistant_message_id});
-    }
+    const cite=d.citations&&d.citations[0]?`${d.citations[0].title} · p. ${d.citations[0].page}`:'University Verified Document';
+    S.chat.push({r:'a',k:'ok',t:d.answer,s:cite,p:'Verified',time:now(),n:1,mid:d.assistant_message_id});
   }else{
-    // Local knowledge base fallback
-    const l=cleanQ.toLowerCase(),h=KB.find(e=>e.k.some(k=>l.includes(k)));
-    S.chat.push(h?{r:'a',k:'ok',t:h.a,s:h.s,p:h.p,time:now(),n:1}:{r:'a',k:'nf',time:now(),n:1});
+    // Search current published Knowledge Base (reflects Management additions & edits in real-time!)
+    const l=cleanQ.toLowerCase();
+    const pubDocs=S.docs.filter(d=>d.publication_status==='published');
+    let matchedDoc=null;
+    for(const d of pubDocs){
+      const text=(d.title+' '+(d.category||'')+' '+(d.raw_content||'')+' '+(d.description||'')+' '+(d.tags||[]).join(' ')).toLowerCase();
+      const terms=l.split(/\s+/).filter(w=>w.length>3);
+      if(terms.some(t=>text.includes(t))){
+        matchedDoc=d;
+        break;
+      }
+    }
+    
+    if(matchedDoc&&matchedDoc.raw_content){
+      S.chat.push({
+        r:'a',k:'ok',
+        t:matchedDoc.raw_content,
+        s:matchedDoc.title,
+        p:'Section: '+(matchedDoc.category||'General'),
+        time:now(),n:1
+      });
+    }else{
+      // Fallback to initial seed KB or abstain
+      const h=KB.find(e=>e.k.some(k=>l.includes(k)));
+      if(h){
+        S.chat.push({r:'a',k:'ok',t:h.a,s:h.s,p:h.p,time:now(),n:1});
+      }else{
+        S.chat.push({r:'a',k:'nf',time:now(),n:1});
+      }
+    }
   }
   R();
 }
@@ -459,15 +496,107 @@ function queries(){
   return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${S.fq}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
 <div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td>${x.dept}</td><td>${x.fac}</td><td>${x.date}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
 
-const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',x:'Workspace'};
+const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',kb:'Knowledge Base',x:'Workspace'};
 
 function annView(){
   return `<div class="pg wide"><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p><div class="mag">${ANN.map(a=>`<article class="am ${a.tone} ${a.big?'big':''}"><div class="row sp"><span class="cat">${a.c}</span><span class="dt">${a.d}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${a.t}</h3><p>${a.b}</p></article>`).join('')}</div></div>`}
 
-// Documents View for Staff, Faculty & Authority
-function docsView(){
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div><button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button></div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Status</th><th>Publication</th><th>Date</th></tr>${S.docs.map(d=>`<tr><td><b>${d.id}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${d.title}</b></div></td><td>${d.scope}</td><td><span class="pill">${d.visibility}</span></td><td><span class="pill s3">${d.status}</span></td><td>${d.publication}</td><td class="mut">${d.date}</td></tr>`).join('')}</table></div></div></div>`}
+// PHASE 4 & 8: Knowledge Management System View (Management & Authority)
+function kbView(){
+  const items=S.docs;
+  const total=items.length;
+  const textCount=items.filter(d=>d.item_type==='text_content').length;
+  const fileCount=total-textCount;
+  const publishedCount=items.filter(d=>d.publication_status==='published').length;
+  const draftCount=items.filter(d=>d.publication_status==='draft').length;
+  const readyCount=items.filter(d=>d.processing_status==='ready').length;
+
+  let filtered=items;
+  if(S.kbFilterType&&S.kbFilterType!=='All'){
+    filtered=filtered.filter(d=>S.kbFilterType==='text'?d.item_type==='text_content':d.item_type!=='text_content');
+  }
+  if(S.kbFilterCat&&S.kbFilterCat!=='All'){
+    filtered=filtered.filter(d=>(d.category||'General')===S.kbFilterCat);
+  }
+  if(S.kbFilterStatus&&S.kbFilterStatus!=='All'){
+    filtered=filtered.filter(d=>d.publication_status===S.kbFilterStatus.toLowerCase());
+  }
+  if(S.kbSearch){
+    const q=S.kbSearch.toLowerCase();
+    filtered=filtered.filter(d=>
+      (d.title||'').toLowerCase().includes(q)||
+      (d.category||'').toLowerCase().includes(q)||
+      (d.raw_content||'').toLowerCase().includes(q)||
+      (d.description||'').toLowerCase().includes(q)
+    );
+  }
+
+  const isMgmt=S.role==='management'||S.role==='authority';
+
+  return `<div class="pg wide">
+<div class="row sp" style="margin-bottom:18px;flex-wrap:wrap;gap:12px">
+<div><h1 class="ed">Knowledge Base</h1><p class="sub" style="margin:2px 0 0">Official university guidelines, policies, and documents indexed for AI verified answers.</p></div>
+${isMgmt?`<div class="row" style="gap:8px">
+<button class="btn" data-a="add-content-modal">${I('edit')} + Add Text Content</button>
+<button class="btn p" data-a="upload-doc-modal">${I('upload')} + Upload Document</button>
+</div>`:''}
+</div>
+
+<div class="strip" style="margin-top:0">
+<div class="sti"><span class="ic">${I('book')}</span><div><b>${total}</b><span>Total Entries</span></div></div>
+<div class="sti"><span class="ic">${I('file')}</span><div><b>${fileCount}</b><span>Documents</span></div></div>
+<div class="sti"><span class="ic">${I('edit')}</span><div><b>${textCount}</b><span>Text Policies</span></div></div>
+<div class="sti"><span class="ic">${I('tick')}</span><div><b>${publishedCount}</b><span>Published</span></div></div>
+<div class="sti"><span class="ic">${I('clock')}</span><div><b>${draftCount}</b><span>Drafts</span></div></div>
+</div>
+
+<div class="card" style="padding:14px 18px;margin-bottom:16px">
+<div class="row sp" style="flex-wrap:wrap;gap:10px">
+<div class="row" style="flex:1;min-width:260px"><input id="kb-search-input" placeholder="Search by title, category, or policy keywords..." value="${S.kbSearch||''}"></div>
+<div class="row" style="gap:8px;flex-wrap:wrap">
+<select id="kb-filter-type" style="width:auto">
+<option value="All" ${S.kbFilterType==='All'?'selected':''}>All Types</option>
+<option value="text" ${S.kbFilterType==='text'?'selected':''}>Text Content</option>
+<option value="file" ${S.kbFilterType==='file'?'selected':''}>Files & PDFs</option>
+</select>
+<select id="kb-filter-cat" style="width:auto">
+<option value="All" ${S.kbFilterCat==='All'?'selected':''}>All Categories</option>
+<option value="Academic Policy" ${S.kbFilterCat==='Academic Policy'?'selected':''}>Academic Policy</option>
+<option value="Examinations" ${S.kbFilterCat==='Examinations'?'selected':''}>Examinations</option>
+<option value="Hostel & Campus" ${S.kbFilterCat==='Hostel & Campus'?'selected':''}>Hostel & Campus</option>
+<option value="Scholarships" ${S.kbFilterCat==='Scholarships'?'selected':''}>Scholarships</option>
+<option value="Fee & Accounts" ${S.kbFilterCat==='Fee & Accounts'?'selected':''}>Fee & Accounts</option>
+<option value="General" ${S.kbFilterCat==='General'?'selected':''}>General</option>
+</select>
+<select id="kb-filter-status" style="width:auto">
+<option value="All" ${S.kbFilterStatus==='All'?'selected':''}>All Status</option>
+<option value="Published" ${S.kbFilterStatus==='Published'?'selected':''}>Published</option>
+<option value="Draft" ${S.kbFilterStatus==='Draft'?'selected':''}>Draft</option>
+<option value="Archived" ${S.kbFilterStatus==='Archived'?'selected':''}>Archived</option>
+</select>
+</div></div></div>
+
+<div class="card" style="padding:8px 8px 4px"><div class="tw">
+<table>
+<tr><th>Type</th><th>Title</th><th>Category</th><th>Scope</th><th>Status</th><th>AI Index</th><th>Actions</th></tr>
+${filtered.map(d=>`<tr>
+<td><div class="row" style="gap:6px">${I(d.item_type==='text_content'?'edit':'file')}<span class="mut" style="font-size:12px">${d.item_type==='text_content'?'Text':'File'}</span></div></td>
+<td><b>${d.title}</b>${d.description?`<div class="mut" style="font-size:12px">${d.description}</div>`:''}</td>
+<td><span class="badge" style="font-size:11.5px">${d.category||'General'}</span></td>
+<td class="mut" style="font-size:12.5px">${d.scope==='university_wide'?'Univ-Wide':'Campus'}</td>
+<td><span class="pill ${d.publication_status==='published'?'s3':d.publication_status==='draft'?'draft':'archived'}">${d.publication_status}</span></td>
+<td><span class="pill ${d.processing_status==='ready'?'s1':'s2'}">${d.processing_status==='ready'?'Indexed':'Indexing'}</span></td>
+<td><div class="row" style="gap:6px">
+<button class="btn sm" data-a="view-doc" data-v="${d.id}" title="View details">View</button>
+${isMgmt?`<button class="btn sm" data-a="edit-doc" data-v="${d.id}" title="Edit content">Edit</button>
+<button class="btn sm" data-a="toggle-pub" data-v="${d.id}" title="Toggle publish">${d.publication_status==='published'?'Unpublish':'Publish'}</button>
+<button class="btn sm" data-a="reprocess-doc" data-v="${d.id}" title="Rebuild AI embeddings">${I('refresh')}</button>
+<button class="btn sm danger" data-a="delete-doc-prompt" data-v="${d.id}" title="Delete entry">${I('trash')}</button>`:''}
+</div></td></tr>`).join('')}
+</table>
+${filtered.length?'':'<p class="mut" style="text-align:center;padding:32px">No knowledge entries found matching the filter criteria.</p>'}
+</div></div></div>`;
+}
 
 function onboard(){
   const st=S.role=='student';
@@ -493,11 +622,11 @@ function student(){
 
 function faculty(){
   const v=S.view,t=T(S.sel);
-  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Department ticket volume and response metrics.</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length}</b><span>Assigned Tickets</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length}</b><span>Pending</span></div></div></div><div class="card" style="margin-top:16px"><div class="row sp" style="margin-bottom:12px"><h3>Recent Department Inquiries</h3><button class="lnk" data-a="view" data-v="tix">View all</button></div><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.slice(0,4).map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`:`<div class="pg"><div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div>${t?detail(t,true):''}</div>`}</div></main></div>`}
+  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='kb'?kbView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Department ticket volume and response metrics.</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length}</b><span>Assigned Tickets</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length}</b><span>Pending</span></div></div></div><div class="card" style="margin-top:16px"><div class="row sp" style="margin-bottom:12px"><h3>Recent Department Inquiries</h3><button class="lnk" data-a="view" data-v="tix">View all</button></div><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.slice(0,4).map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`:`<div class="pg"><div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div>${t?detail(t,true):''}</div>`}</div></main></div>`}
 
 function placeholder(){
-  const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
-  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">${isAuth?'Campus-wide oversight, departmental escalations, and grievance tracking.':'University-level query analytics, SLA response times, and departmental resolution rates.'}</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length+14}</b><span>Total Inquiries</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length+12}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length+2}</b><span>Pending Review</span></div></div></div><div class="card" style="margin-top:20px;padding:20px"><div class="row sp" style="margin-bottom:12px"><h3 style="font-size:16px;font-weight:600">${isAuth?'Escalated & High-Priority University Issues':'Department Resolution Summary'}</h3><span class="pill s1">Live Demo Data</span></div><div class="tw"><table><tr><th>Ticket ID</th><th>Department</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.dept}</td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`}</div></main></div>`}
+  const r=ROLES[S.role]||ROLES.management,isMgmt=S.role==='management',items=isMgmt?MN:AN,v=S.view;
+  return `<div class="app">${side(items)}<main class="main">${hd(v=='kb'?'Knowledge Base':v=='ann'?'Announcements':v=='profile'?'Profile':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='kb'?kbView():`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">${isMgmt?'University-level query analytics, knowledge management, SLA response times, and departmental resolution rates.':'Campus-wide oversight, departmental escalations, and grievance tracking.'}</p><div class="strip"><div class="sti"><span class="ic">${I('inbox')}</span><div><b>${S.tickets.length+14}</b><span>Total Inquiries</span></div></div><div class="sti"><span class="ic">${I('tick')}</span><div><b>${S.tickets.filter(x=>x.st==3).length+12}</b><span>Resolved</span></div></div><div class="sti"><span class="ic">${I('clock')}</span><div><b>${S.tickets.filter(x=>x.st<3).length+2}</b><span>Pending Review</span></div></div></div><div class="card" style="margin-top:20px;padding:20px"><div class="row sp" style="margin-bottom:12px"><h3 style="font-size:16px;font-weight:600">${isMgmt?'Department Resolution Summary':'Escalated & High-Priority University Issues'}</h3><span class="pill s1">Live Demo Data</span></div><div class="tw"><table><tr><th>Ticket ID</th><th>Department</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.id}"><td><b>${x.id}</b></td><td>${x.dept}</td><td>${x.subj}</td><td><span class="pri ${x.pri}">${x.pri}</span></td><td>${stl(x)}</td></tr>`).join('')}</table></div></div></div>`}</div></main></div>`}
 
 // Modals
 function modal(){
@@ -505,14 +634,58 @@ function modal(){
   if(m.type==='access-request'){
     return `<div class="ov${o}"><div class="modal"><div style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:12px">${IC('user')}</div><h2 class="ed">Account Setup Required</h2><p class="mut" style="margin:8px 0 16px">${m.msg}</p><button class="btn p w" data-a="submit-access-request">Request Student Access</button><button class="lnk" data-a="mc" style="width:100%;margin-top:10px">Close</button></div></div></div>`;
   }
+  if(m.type==='add-content'){
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Add University Knowledge</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Write official policy, regulation or guidelines to be indexed for Gemini AI answers.</p>
+<label>Title</label><input id="ct-title" placeholder="e.g. Attendance & Leave Regulations 2026">
+<div class="g2"><div><label>Category</label><select id="ct-cat"><option>Academic Policy</option><option>Examinations</option><option>Hostel & Campus</option><option>Scholarships</option><option>Fee & Accounts</option><option>General</option></select></div>
+<div><label>Department</label><select id="ct-dept"><option>All Departments</option><option>Academic Administration</option><option>Computer Science</option><option>Examinations</option><option>Hostel Affairs</option><option>Accounts</option></select></div></div>
+<div class="g2"><div><label>Scope</label><select id="ct-scope"><option value="campus">Campus</option><option value="university_wide">University Wide</option></select></div>
+<div><label>Visibility</label><select id="ct-vis"><option value="public_students">Public for Students</option><option value="staff_only">Staff Only</option></select></div></div>
+<div class="g2"><div><label>Effective Date</label><input id="ct-eff" type="date" value="2026-08-01"></div><div><label>Expiry Date</label><input id="ct-exp" type="date"></div></div>
+<label>Full Content</label><textarea id="ct-body" rows="6" placeholder="Enter the complete approved policy text here. UniBuddy AI will cite this when answering student questions."></textarea>
+<div class="row sp" style="margin-top:20px"><button class="btn" data-a="mc">Cancel</button><div class="row" style="gap:8px"><button class="btn" data-a="submit-content" data-v="draft">Save as Draft</button><button class="btn p" data-a="submit-content" data-v="published">Publish Now</button></div></div></div></div>`;
+  }
+  if(m.type==='edit-content'){
+    const item=m.item;
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Edit Knowledge Entry</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Update policy content. Changes immediately rebuild vector chunks for AI.</p>
+<label>Title</label><input id="et-title" value="${item.title||''}">
+<div class="g2"><div><label>Category</label><select id="et-cat">${['Academic Policy','Examinations','Hostel & Campus','Scholarships','Fee & Accounts','General'].map(c=>`<option ${c===(item.category||'General')?'selected':''}>${c}</option>`).join('')}</select></div>
+<div><label>Publication Status</label><select id="et-status"><option value="published" ${item.publication_status==='published'?'selected':''}>Published</option><option value="draft" ${item.publication_status==='draft'?'selected':''}>Draft</option><option value="archived" ${item.publication_status==='archived'?'selected':''}>Archived</option></select></div></div>
+<div class="g2"><div><label>Scope</label><select id="et-scope"><option value="campus" ${item.scope==='campus'?'selected':''}>Campus</option><option value="university_wide" ${item.scope==='university_wide'?'selected':''}>University Wide</option></select></div>
+<div><label>Visibility</label><select id="et-vis"><option value="public_students" ${item.visibility==='public_students'?'selected':''}>Public for Students</option><option value="staff_only" ${item.visibility==='staff_only'?'selected':''}>Staff Only</option></select></div></div>
+${item.item_type==='text_content'?`<label>Full Policy Content</label><textarea id="et-body" rows="6">${item.raw_content||''}</textarea>`:''}
+<div class="row sp" style="margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-content-update" data-v="${item.id}">Save Changes</button></div></div></div>`;
+  }
   if(m.type==='upload-doc'){
-    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload syllabus or regulation PDF to be parsed and indexed for verified answers.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Data Structures Syllabus 2026"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Public for Students</option><option value="staff_only">Staff Only</option></select></div><div><label>Scope</label><select id="doc-scope"><option value="campus">Campus</option><option value="university_wide">University Wide</option></select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload & Index</button></div></div></div>`;
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload PDF, DOCX, or TXT documents to be parsed and indexed for verified AI answers.</p>
+<div class="dropzone" id="dz" onclick="$('#doc-file').click()">${IC('upload')}<div style="font-weight:600;margin-top:6px">Click to select file or drag & drop</div><div class="mut" style="font-size:12px">Supports PDF, DOCX, TXT (up to 20MB)</div></div>
+<input id="doc-file" type="file" accept=".pdf,.docx,.txt" style="display:none" onchange="$('#dz-name').textContent=this.files[0]?.name||''">
+<div id="dz-name" style="font-size:12.5px;color:var(--indd);margin-top:6px;font-weight:500;min-height:18px"></div>
+<label>Document Title</label><input id="doc-title" placeholder="e.g. Data Structures Syllabus 2026">
+<div class="g2"><div><label>Category</label><select id="doc-cat"><option>Academic Policy</option><option>Examinations</option><option>Hostel & Campus</option><option>Scholarships</option><option>Fee & Accounts</option><option>General</option></select></div>
+<div><label>Publication Status</label><select id="doc-status"><option value="published">Publish Immediately</option><option value="draft">Save as Draft</option></select></div></div>
+<div class="g2"><div><label>Scope</label><select id="doc-scope"><option value="campus">Campus</option><option value="university_wide">University Wide</option></select></div>
+<div><label>Visibility</label><select id="doc-vis"><option value="public_students">Public for Students</option><option value="staff_only">Staff Only</option></select></div></div>
+<label>Brief Description</label><input id="doc-desc" placeholder="Summary of what this document covers">
+<div class="row sp" style="margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload & Index</button></div></div></div>`;
+  }
+  if(m.type==='view-doc'){
+    const item=m.item;
+    return `<div class="ov${o}"><div class="modal" style="max-width:600px"><div class="row sp" style="margin-bottom:8px"><span class="badge">${item.category||'General'}</span><span class="pill ${item.publication_status==='published'?'s3':'draft'}">${item.publication_status}</span></div>
+<h2 class="ed">${item.title}</h2>
+<p class="mut" style="font-size:13px;margin:4px 0 14px">${item.description||'Official university knowledge entry.'}</p>
+<div style="background:var(--bg2);padding:14px;border-radius:12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;max-height:300px;overflow:auto">${item.raw_content||'File Document: '+(item.original_filename||item.title)+'. Content parsed into AI vector chunks.'}</div>
+<div class="row sp" style="margin-top:18px"><div class="mut" style="font-size:12px">AI Index Status: <b>${item.processing_status}</b></div><button class="btn p" data-a="mc">Close</button></div></div></div>`;
+  }
+  if(m.type==='delete-confirm'){
+    const item=m.item;
+    return `<div class="ov${o}"><div class="modal"><div style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:12px"><div class="ico" style="background:#fdf2f4;color:#b4445a;border-color:#e0b2bb">${I('trash')}</div></div><h2 class="ed">Delete Knowledge Entry?</h2><p class="mut" style="margin:8px 0 18px">Are you sure you want to permanently delete <b>"${item.title}"</b>? This will remove all associated vector chunks from the AI retrieval index.</p><div class="row" style="justify-content:center;gap:10px"><button class="btn" data-a="mc">Cancel</button><button class="btn danger" data-a="confirm-delete" data-v="${item.id}">Delete Permanently</button></div></div></div></div>`;
   }
   if(m.done){
     return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Your query has reached the department faculty queue.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
   }
   const q=S.chat[m.i-1]?.t||'Question';
-  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${q}</div><div class="g2"><div><label>Department</label><select id="md">${['Computer Science','Accounts','Examinations','Hostel','Library'].map(d=>`<option>${d}</option>`).join('')}</select></div><div><label>Priority</label><select id="mp"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`;
+  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${q}</div><div class="g2"><div><label>Department</label><select id="md">${['Computer Science','Accounts','Examinations','Hostel Affairs','Library'].map(d=>`<option>${d}</option>`).join('')}</select></div><div><label>Priority</label><select id="mp"><option>Low</option><option selected>Medium</option><option>High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`;
 }
 
 // Render Engine
@@ -571,16 +744,109 @@ document.addEventListener('click',async e=>{
     S.modal=null;R();
     toast(res.ok?'Student access request submitted for campus review!':'Request queued.');
   }
+  // Knowledge Base Modals & Actions
+  else if(a=='add-content-modal'){S.modal={type:'add-content'};R()}
   else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
-  else if(a=='submit-doc-upload'){
-    const title=$('#doc-title')?.value.trim()||'University Policy Document';
-    const vis=$('#doc-vis')?.value||'public_students';
-    const scp=$('#doc-scope')?.value||'campus';
-    const newDoc={id:'DOC-'+(100+S.docs.length+1),title,scope:scp,visibility:vis,status:'ready',publication:'published',date:today()};
+  else if(a=='view-doc'){
+    const item=S.docs.find(d=>d.id===v);
+    if(item){S.modal={type:'view-doc',item};R()}
+  }
+  else if(a=='edit-doc'){
+    const item=S.docs.find(d=>d.id===v);
+    if(item){S.modal={type:'edit-content',item};R()}
+  }
+  else if(a=='delete-doc-prompt'){
+    const item=S.docs.find(d=>d.id===v);
+    if(item){S.modal={type:'delete-confirm',item};R()}
+  }
+  else if(a=='confirm-delete'){
+    const docId=v;
+    // Call backend delete
+    await apiCall(`/documents/${docId}`,{method:'DELETE'});
+    S.docs=S.docs.filter(d=>d.id!==docId);
+    saveTickets();
+    S.modal=null;R();
+    toast('Knowledge entry deleted and vectors removed.');
+  }
+  else if(a=='toggle-pub'){
+    const item=S.docs.find(d=>d.id===v);
+    if(item){
+      const isPub=item.publication_status==='published';
+      const newStatus=isPub?'draft':'published';
+      await apiCall(`/documents/${item.id}/${isPub?'unpublish':'publish'}`,{method:'POST'});
+      item.publication_status=newStatus;
+      saveTickets();R();
+      toast(`Entry "${item.title}" is now ${newStatus}.`);
+    }
+  }
+  else if(a=='reprocess-doc'){
+    const item=S.docs.find(d=>d.id===v);
+    if(item){
+      await apiCall(`/documents/${item.id}/reprocess`,{method:'POST'});
+      item.processing_status='ready';
+      saveTickets();R();
+      toast(`Rebuilt AI embeddings for "${item.title}".`);
+    }
+  }
+  else if(a=='submit-content'){
+    const title=$('#ct-title')?.value.trim();
+    const content=$('#ct-body')?.value.trim();
+    if(!title||!content){toast('Title and content are required.');return}
+    const cat=$('#ct-cat')?.value||'General';
+    const scope=$('#ct-scope')?.value||'campus';
+    const vis=$('#ct-vis')?.value||'public_students';
+    const eff=$('#ct-eff')?.value||today();
+    const exp=$('#ct-exp')?.value||null;
+    const status=v||'published';
+
+    const payload={title,content,category:cat,scope,visibility:vis,publication_status:status,effective_date:eff,expiry_date:exp};
+    const res=await apiCall('/documents/content',{method:'POST',body:JSON.stringify(payload)});
+    const newDoc=res.ok&&res.data?res.data:{
+      id:'KB-'+(100+S.docs.length+1),item_type:'text_content',title,category:cat,raw_content:content,
+      scope,visibility:vis,publication_status:status,processing_status:'ready',effective_date:eff,date:today()
+    };
     S.docs.unshift(newDoc);
     saveTickets();
     S.modal=null;R();
-    toast('Document "'+title+'" uploaded and queued for indexing.');
+    toast(`Added "${title}" to Knowledge Base (${status}).`);
+  }
+  else if(a=='submit-content-update'){
+    const docId=v;
+    const item=S.docs.find(d=>d.id===docId);
+    if(item){
+      const title=$('#et-title')?.value.trim()||item.title;
+      const cat=$('#et-cat')?.value||item.category;
+      const status=$('#et-status')?.value||item.publication_status;
+      const scope=$('#et-scope')?.value||item.scope;
+      const vis=$('#et-vis')?.value||item.visibility;
+      const content=$('#et-body')?.value.trim()||item.raw_content;
+
+      const payload={title,category:cat,publication_status:status,scope,visibility:vis,content};
+      await apiCall(`/documents/content/${docId}`,{method:'PATCH',body:JSON.stringify(payload)});
+      Object.assign(item,{title,category:cat,publication_status:status,scope,visibility:vis,raw_content:content,processing_status:'ready'});
+      saveTickets();
+      S.modal=null;R();
+      toast(`Updated "${title}".`);
+    }
+  }
+  else if(a=='submit-doc-upload'){
+    const title=$('#doc-title')?.value.trim()||'University Policy Document';
+    const cat=$('#doc-cat')?.value||'General';
+    const scp=$('#doc-scope')?.value||'campus';
+    const vis=$('#doc-vis')?.value||'public_students';
+    const desc=$('#doc-desc')?.value.trim()||'';
+    const status=$('#doc-status')?.value||'published';
+    const fileInput=$('#doc-file');
+    const filename=fileInput?.files[0]?.name||'Document.pdf';
+
+    const newDoc={
+      id:'DOC-'+(100+S.docs.length+1),item_type:'file',title,category:cat,description:desc,
+      original_filename:filename,scope:scp,visibility:vis,status:'ready',publication_status:status,processing_status:'ready',date:today()
+    };
+    S.docs.unshift(newDoc);
+    saveTickets();
+    S.modal=null;R();
+    toast(`Uploaded "${title}" and queued for AI indexing.`);
   }
   else if(a=='onsave'){
     const n=$('#on').value,ag=$('#oa').value,c=$('#oc')?.value||'',st=S.role=='student',er=vProf(n,ag,c,st);
@@ -642,9 +908,18 @@ document.addEventListener('keydown',e=>{
   if(e.key=='Enter'&&e.target.id=='dq'){e.preventDefault();sendDash()}
   if(e.key=='Enter'&&(e.target.id=='em'||e.target.id=='pw')){e.preventDefault();doLogin()}
   if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}
+  if(e.key=='Enter'&&e.target.id=='kb-search-input'){S.kbSearch=e.target.value;R()}
 });
-document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
-document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
+document.addEventListener('input',e=>{
+  if(e.target.id=='gs'){S.fq=e.target.value;R()}
+  if(e.target.id=='kb-search-input'){S.kbSearch=e.target.value;R()}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id=='fs'){S.fs=e.target.value;R()}
+  if(e.target.id=='kb-filter-type'){S.kbFilterType=e.target.value;R()}
+  if(e.target.id=='kb-filter-cat'){S.kbFilterCat=e.target.value;R()}
+  if(e.target.id=='kb-filter-status'){S.kbFilterStatus=e.target.value;R()}
+});
 
 // Auto-restore active session if exists
 try{
@@ -654,7 +929,7 @@ try{
     S.user={...a,email:savedUser};
     S.role=a.role;
     S.scr=PR[savedUser]?'app':'onboard';
-    S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x';
+    S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':a.role=='management'?'kb':'x';
   }
 }catch(e){}
 

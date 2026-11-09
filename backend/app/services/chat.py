@@ -56,6 +56,7 @@ async def ask_question(
     if not question:
         raise DocumentError("Question must not be empty")
 
+    history: list[dict[str, str]] = []
     if conversation_id is None:
         conversation_id = uuid4()
         await sb.insert_service(
@@ -64,6 +65,14 @@ async def ask_question(
         )
     else:
         await _conversation_for_user(sb, user, conversation_id)
+        try:
+            prior_msgs = await sb.select_service(
+                "messages",
+                {"select": "role,content", "conversation_id": f"eq.{conversation_id}", "order": "created_at.asc", "limit": "10"},
+            )
+            history = [{"role": m["role"], "content": m["content"]} for m in prior_msgs if m.get("content")]
+        except Exception:
+            history = []
 
     user_message_id = uuid4()
     await sb.insert_service(
@@ -83,7 +92,7 @@ async def ask_question(
             },
         )
         evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
-        answer = await answer_question(question, evidence, ai)
+        answer = await answer_question(question, evidence, ai, history=history)
     except AIServiceError as exc:
         logger.warning("Question %s could not be answered: %s", user_message_id, exc)
         answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)

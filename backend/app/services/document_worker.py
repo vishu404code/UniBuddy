@@ -6,7 +6,7 @@ import httpx
 
 from app.ai.chunking import chunk_pages
 from app.ai.gemini_client import AIServiceError, GeminiClient
-from app.ai.pdf_extractor import PdfProcessingError, extract_pages
+from app.ai.pdf_extractor import PdfProcessingError, extract_pages, extract_raw_text
 from app.config import settings
 from app.services.postgres_client import PostgresClient
 from app.services.errors import DataServiceError
@@ -55,8 +55,17 @@ async def process_document(
     """
     document_id = document["id"]
     try:
-        data = await sb.download_object(bucket, document["storage_path"])
-        extracted = extract_pages(data)
+        if document.get("item_type") == "text_content" or (
+            document.get("raw_content") and not document.get("storage_path")
+        ):
+            extracted = extract_raw_text(document["raw_content"])
+        else:
+            data = await sb.download_object(bucket, document["storage_path"])
+            extracted = extract_pages(
+                data,
+                filename=document.get("original_filename"),
+                content_type=document.get("mime_type"),
+            )
         chunks = chunk_pages(extracted.pages, chunk_max_chars, chunk_overlap_chars)
         vectors = await ai.embed_documents([chunk.content for chunk in chunks])
 
