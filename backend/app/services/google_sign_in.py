@@ -2,8 +2,8 @@
 
 Google verifies the person and the email. The database decides access:
 - A known Google account signs in to its existing profile, whatever its role.
-- A verified Google person with no profile becomes a Student (open signup). Students get no campus
-  and no department here. Campus-scoped access needs a later assignment by an authorized person.
+- A verified Google person with no profile becomes a Student (open signup). A new Student gets the only existing campus when the database has exactly one;
+  no department is assigned here.
 - Faculty, Authority and Management are never created here. They come only from authorized provisioning.
 """
 
@@ -56,6 +56,21 @@ async def _create_student_profile(sb, account_id: UUID, identity: GoogleIdentity
         )
     except DataServiceError as exc:
         raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.") from exc
+    await _assign_existing_campus(sb, account_id)
+
+
+async def _assign_existing_campus(sb, account_id: UUID) -> None:
+    """A new Student gets the campus only when exactly one campus exists in the database, so no
+    campus is invented or guessed. With several campuses the Student stays unassigned for an
+    authorized person to place."""
+    campuses = await sb.select_service("campuses", {"select": "id"})
+    if len(campuses) != 1:
+        return
+    await sb.update_service(
+        "profiles",
+        {"id": f"eq.{account_id}", "role": "eq.student", "campus_id": "is.null"},
+        {"campus_id": str(campuses[0]["id"])},
+    )
 
 
 async def _profile_exists(sb, account_id: UUID) -> bool:

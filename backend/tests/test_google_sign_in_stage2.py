@@ -295,3 +295,30 @@ def test_route_creates_a_student_for_a_new_google_person(google_mode):
     assert me.json()["role"] == "student"
     assert me.json()["campus_id"] is None
 
+
+
+@pytest.mark.asyncio
+async def test_new_student_gets_the_only_existing_campus():
+    sb = FakeDataClient()
+    campus_id = str(uuid4())
+    sb.tables["campuses"] = [{"id": campus_id, "name": "Only Campus", "code": "only"}]
+
+    await _sign_in(sb)
+
+    profile = sb.tables["profiles"][0]
+    assert profile["role"] == "student"
+    assert str(profile["campus_id"]) == campus_id
+    assert profile["department_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_new_student_stays_unassigned_when_several_campuses_exist():
+    sb = FakeDataClient()
+    sb.tables["campuses"] = [
+        {"id": str(uuid4()), "name": "Campus A", "code": "a"},
+        {"id": str(uuid4()), "name": "Campus B", "code": "b"},
+    ]
+
+    await _sign_in(sb)
+
+    assert sb.tables["profiles"][0]["campus_id"] is None
