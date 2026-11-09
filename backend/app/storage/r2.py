@@ -6,6 +6,7 @@ safe message with no endpoint, key or credential in it.
 
 import asyncio
 import logging
+import re
 from typing import Any
 
 import boto3
@@ -24,7 +25,9 @@ def describe_storage_error(exc: BaseException) -> str:
         err = exc.response.get("Error", {})
         status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
         return f"{type(exc).__name__} code={err.get('Code')} status={status}"
-    return type(exc).__name__
+    text = str(exc)
+    text = re.sub(r"(?i)(authorization|signature|x-amz-[a-z-]*|secret|key)[^,;\s]*", "<redacted>", text)
+    return f"{type(exc).__name__}: {text[:160]}"
 
 
 def build_r2_client(account_id: str, access_key_id: str, secret_access_key: str) -> Any:
