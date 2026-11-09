@@ -11,6 +11,7 @@ from app.services.postgres_client import PostgresClient
 from app.storage.objects import ObjectStore
 
 R2_SETTINGS_MISSING = "R2 storage is not configured"
+S3_SETTINGS_MISSING = "S3 storage is not configured"
 DATABASE_SETTINGS_MISSING = "Database access is not configured"
 
 
@@ -18,12 +19,21 @@ def _r2_configured() -> bool:
     return bool(settings.r2_account_id and settings.r2_access_key_id and settings.r2_secret_access_key)
 
 
-LOCAL_STORAGE_IN_PRODUCTION = "Local file storage is for laptop demos only; production must use R2"
+LOCAL_STORAGE_IN_PRODUCTION = "Local file storage is for laptop demos only; production must use a private bucket (R2 or S3)"
+
+
+def _s3_configured() -> bool:
+    return bool(
+        settings.s3_endpoint_url and settings.s3_region and settings.s3_access_key_id
+        and settings.s3_secret_access_key and settings.s3_bucket
+    )
 
 
 def _storage_configured() -> bool:
     if settings.storage_backend == "local":
         return bool(settings.local_storage_dir) and settings.app_env != "production"
+    if settings.storage_backend == "s3":
+        return _s3_configured()
     return settings.storage_backend == "r2" and _r2_configured()
 
 
@@ -36,6 +46,15 @@ def build_object_store() -> ObjectStore:
         from app.storage.local import LocalObjectStore
 
         return LocalObjectStore(settings.local_storage_dir)
+    if settings.storage_backend == "s3":
+        if not _s3_configured():
+            raise RuntimeError(S3_SETTINGS_MISSING)
+        from app.storage.r2 import R2ObjectStore, build_s3_client
+
+        client = build_s3_client(
+            settings.s3_endpoint_url, settings.s3_region, settings.s3_access_key_id, settings.s3_secret_access_key
+        )
+        return R2ObjectStore(client, settings.s3_bucket)
     if settings.storage_backend != "r2":
         raise RuntimeError("unsupported storage backend")
     if not _r2_configured():
