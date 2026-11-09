@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     supabase_publishable_key: str | None = None
     supabase_storage_bucket: str = "documents"
 
+    # Cloudflare R2 (S3-compatible) for PDFs. Server-side only. Not used until the migration.
+    r2_account_id: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket: str = "unibuddy-documents"
+
     # Google Gemini (GenAI SDK). Server-side only. Documents and questions share one
     # embedding model, and its output is fixed at 1536 dimensions to match the database.
     gemini_api_key: str | None = None

@@ -12,3 +12,4 @@ pytest-asyncio==1.4.1.post1
 google-genai==2.33.0
 google-auth==2.62.0
 psycopg[binary]==3.3.6
+boto3==1.43.118
