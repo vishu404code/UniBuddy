@@ -508,6 +508,30 @@ function initGoogleAuth(){
   }else if(S.scr==='login'&&UB_GOOGLE_CLIENT_ID&&!window.__ubGoogleRetry){window.__ubGoogleRetry=setTimeout(()=>{window.__ubGoogleRetry=null;if(S.scr==='login')initGoogleAuth()},500)}
 }
 
+// An open ticket re-checks its status and replies every 15 s. It never redraws while a field has focus,
+// a write is in flight or a modal is open, so typed text is not lost.
+let detailPollTimer=null;
+function watchOpenTicket(){
+  clearTimeout(detailPollTimer);detailPollTimer=null;
+  if(!S.user||!S.detail?.ticket||!['tix','queries'].includes(S.view))return;
+  detailPollTimer=setTimeout(refreshOpenTicket,15000);
+}
+async function refreshOpenTicket(){
+  detailPollTimer=null;
+  const t=S.detail?.ticket;
+  if(!t||!S.user||!['tix','queries'].includes(S.view))return;
+  const a=document.activeElement;
+  const typing=a&&['TEXTAREA','INPUT','SELECT'].includes(a.tagName);
+  if(typing||S.actionBusy||S.modal){watchOpenTicket();return}
+  const res=await apiCall(`/tickets/${t.uuid}`);
+  if(res.ok){
+    const next={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
+    const sig=x=>JSON.stringify([x.ticket.status,(x.events||[]).length]);
+    if(sig(next)!==sig(S.detail)){S.detail=next;R()}
+  }
+  watchOpenTicket();
+}
+
 function sendChat(){const ci=$('#ci');if(!ci)return;const v=ci.value.trim();if(!v)return;ci.value='';ask(v)}
 function sendDash(){const dq=$('#dq');if(!dq)return;const v=dq.value.trim();if(!v)return;dq.value='';ask(v)}
 
@@ -558,7 +582,7 @@ document.addEventListener('click',async e=>{
   else if(a=='bell'){S.bell=!S.bell;R();if(S.bell)loadViewData(S.view)}
   else if(a=='readall'){await Promise.all(S.notifs.filter(n=>n.u).map(n=>apiCall(`/notifications/${n.id}/read`,{method:'PATCH'})));await loadViewData(S.view)}
   else if(a=='nt'){const n=S.notifs[v];if(n?.id)await apiCall(`/notifications/${n.id}/read`,{method:'PATCH'});S.bell=false;if(S.role==='student')S.view='queries';if(n?.tk){const ticket=await apiCall(`/tickets/${n.tk}`);if(ticket.ok)S.detail={ticket:{...ticketView(ticket.data.ticket),events:ticket.data.events||[]}}}R();loadViewData(S.view)}
-  else if(a=='open'){const item=S.tickets.find(t=>t.uuid===v||t.id===v);S.sel=item?.id||v;const uuid=item?.uuid||v;if(item)S.detail={ticket:item,events:item.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}S.scrollDetail=true;R();const res=await apiCall(`/tickets/${uuid}`);if(res.ok){S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};S.scrollDetail=true;R()}else if(!item){toast('This ticket could not be opened. Try again.')}}
+  else if(a=='open'){const item=S.tickets.find(t=>t.uuid===v||t.id===v);S.sel=item?.id||v;const uuid=item?.uuid||v;if(item)S.detail={ticket:item,events:item.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}S.scrollDetail=true;R();const res=await apiCall(`/tickets/${uuid}`);if(res.ok){S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};S.scrollDetail=true;R()}else if(!item){toast('This ticket could not be opened. Try again.')}watchOpenTicket()}
   else if(a=='dask')sendDash();
   else if(a=='sq')ask(v);
   else if(a=='send')sendChat();
@@ -578,15 +602,23 @@ document.addEventListener('click',async e=>{
     const t=S.detail?.ticket;if(!t)return;
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify({take_ticket:true})});
     if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);
+    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);watchOpenTicket();
   }
   else if(a=='respond'||a=='resolve'){
+    if(S.actionBusy)return;
     const t=S.detail?.ticket,r=$('#rp')?.value.trim();
     if(!t){toast('Open a ticket first.');return}
     if(a=='respond'&&!r){toast('Write a response first.');return}
+    const label=el.textContent;
+    S.actionBusy=true;el.disabled=true;el.textContent=a==='resolve'?'Resolving…':'Sending…';
+    toast(a==='resolve'?'Resolving ticket…':'Sending response…');
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify(a==='resolve'?{status:'resolved'}:{reply:r})});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Ticket update failed.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};await loadViewData(S.view);toast(a=='resolve'?'Ticket resolved.':'Response sent.');
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast((typeof res.error==='string'?res.error:'The update failed.')+' Your text is still in the box.');return}
+    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
+    await loadViewData(S.view);
+    toast(a=='resolve'?'Ticket resolved. The student can now see the status.':'Response sent. The student can now see it.');
+    watchOpenTicket();
   }
 });
 
