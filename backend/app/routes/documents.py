@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 
 from app.config import settings
 from app.middleware.auth import CurrentSession, session_with_roles
@@ -51,6 +51,26 @@ async def upload(
     _check_form(visibility, scope)
     require_university_wide_permission(session.user, scope)
     data = await file.read(settings.max_upload_bytes + 1)
+    # Same file name and size already in the library: refuse instead of storing a second copy.
+    # Use Replace on the existing document (or archive it) for a new version.
+    if file.filename and data:
+        existing = await sb.select_as_user(
+            session.access_token,
+            "documents",
+            {
+                "select": "id,title,publication_status",
+                "original_filename": f"eq.{file.filename}",
+                "file_size_bytes": f"eq.{len(data)}",
+                "publication_status": "neq.archived",
+                "limit": "1",
+            },
+        )
+        if existing:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"This PDF is already in the library as \"{existing[0]['title']}\" "
+                f"({existing[0]['publication_status']}). Use Replace on that document instead.",
+            )
     row = await upload_document(
         sb=sb,
         uploader=session.user,

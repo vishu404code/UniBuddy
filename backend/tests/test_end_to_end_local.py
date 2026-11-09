@@ -171,7 +171,7 @@ def test_google_sign_in_links_an_existing_profile_and_returns_a_session(client):
     assert linked[0] == subject
 
 
-def test_unknown_google_person_gets_no_session_and_no_role(client):
+def test_unknown_google_person_becomes_a_student_without_privileges(client):
     stranger = uuid4().hex
     app.dependency_overrides[get_google_verifier] = lambda: (
         lambda token, client_id: {
@@ -182,5 +182,8 @@ def test_unknown_google_person_gets_no_session_and_no_role(client):
 
     response = client.post(f"{API}/auth/google", json={"id_token": "x" * 30})
 
-    assert response.status_code == 403
-    assert "access_token" not in response.json()
+    assert response.status_code == 200
+    me = client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {response.json()['access_token']}"})
+    assert me.json()["role"] == "student"
+    assert me.json()["campus_id"] is None
+

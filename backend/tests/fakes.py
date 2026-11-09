@@ -116,6 +116,15 @@ class FakeDataClient:
         return rows[offset : offset + limit], len(rows)
 
     async def rpc_service(self, function, payload):
+        if function == "open_student_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "student",
+                "campus_id": None, "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "student"}
         if function == "claim_document_jobs":
             return self._claim(payload)
         if function == "publish_document_version":

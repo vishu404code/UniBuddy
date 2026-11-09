@@ -46,11 +46,16 @@ class Answer:
     abstained: bool
 
 
+def _as_uuid(value: Any) -> UUID:
+    # The database driver already returns UUID objects; accept text ids from other callers too.
+    return value if isinstance(value, UUID) else UUID(str(value))
+
+
 def select_evidence(rows: list[dict[str, Any]], min_similarity: float, limit: int) -> list[Evidence]:
     evidence = [
         Evidence(
-            chunk_id=UUID(row["chunk_id"]),
-            document_id=UUID(row["document_id"]),
+            chunk_id=_as_uuid(row["chunk_id"]),
+            document_id=_as_uuid(row["document_id"]),
             title=row["title"],
             page_number=row.get("page_number"),
             content=row["content"],

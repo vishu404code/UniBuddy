@@ -17,6 +17,7 @@ from uuid import UUID
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
+from psycopg_pool import ConnectionPool, PoolTimeout
 
 from app.services.errors import DataServiceError
 from app.storage.objects import ObjectNotFound, ObjectStore, ObjectStoreError
@@ -108,13 +109,33 @@ class PostgresClient:
         session_secret: str,
         object_store: ObjectStore | None = None,
         connect: Callable[[str], psycopg.Connection] | None = None,
+        pool_size: int = 5,
     ):
         if not dsn:
             raise DataServiceError(503, "database is not configured")
         self._dsn = dsn
         self._session_secret = session_secret
         self._objects = object_store
+        # Production: a small pool, so each request reuses an open connection instead of paying for
+        # a new TLS handshake to Neon. Tests that inject `connect` keep their own connection behaviour.
+        self._pool: ConnectionPool | None = None
+        if connect is None:
+            self._pool = ConnectionPool(
+                conninfo=dsn,
+                min_size=1,
+                max_size=pool_size,
+                kwargs={"row_factory": dict_row, "connect_timeout": 10},
+                check=ConnectionPool.check_connection,
+                timeout=15,
+                open=True,
+            )
         self._connect = connect or (lambda url: psycopg.connect(url, row_factory=dict_row))
+
+    def _checkout(self):
+        """Context manager that yields one connection; the pool commits or rolls back on exit."""
+        if self._pool is not None:
+            return self._pool.connection()
+        return self._connect(self._dsn)
 
     # --- helpers --------------------------------------------------------------------
 
@@ -128,7 +149,7 @@ class PostgresClient:
 
     def _run_sync(self, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
         try:
-            with self._connect(self._dsn) as conn:
+            with self._checkout() as conn:
                 if as_user is None:
                     conn.execute("set local role service_role")
                 else:

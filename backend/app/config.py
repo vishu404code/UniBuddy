@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     # Comma-separated origins allowed to call this API (the frontend dev server and any hosted frontend).
-    allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    allowed_origins: str = "http://localhost:3000,http://localhost:5173,https://vishu404code.github.io"
 
     # Neon PostgreSQL (with pgvector). Server-side only. Connect as a non-superuser role that is
     # granted authenticated and service_role (see docs/SETUP.md).
@@ -25,10 +25,20 @@ class Settings(BaseSettings):
     google_client_id: str | None = None
 
     # Cloudflare R2 (S3-compatible) for private PDFs. Server-side only.
+    storage_backend: str = "r2"
+    local_storage_dir: str = ".local-data/objects"
     r2_account_id: str | None = None
     r2_access_key_id: str | None = None
     r2_secret_access_key: str | None = None
     r2_bucket: str = "unibuddy-documents"
+
+    # Any S3-compatible private bucket, such as Neon Object Storage (STORAGE_BACKEND=s3).
+    # Path-style addressing and SigV4 are used. Server-side only.
+    s3_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_bucket: str = "unibuddy-documents"
 
     # Google Gemini (GenAI SDK). Server-side only. Documents and questions share one
     # embedding model, and its output is fixed at 1536 dimensions to match the database.

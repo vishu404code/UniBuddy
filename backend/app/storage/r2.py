@@ -8,6 +8,7 @@ import asyncio
 from typing import Any
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.storage.objects import PDF_CONTENT_TYPE, ObjectNotFound, ObjectStoreError, sha256_hex, validate_key
@@ -22,6 +23,18 @@ def build_r2_client(account_id: str, access_key_id: str, secret_access_key: str)
         aws_access_key_id=access_key_id,
         aws_secret_access_key=secret_access_key,
         region_name="auto",
+    )
+
+
+def build_s3_client(endpoint_url: str, region: str, access_key_id: str, secret_access_key: str) -> Any:
+    """Any S3-compatible service (for example Neon Object Storage). Path-style URLs and SigV4 only."""
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
+        region_name=region,
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
 

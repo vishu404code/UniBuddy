@@ -2,7 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -30,9 +30,14 @@ logger = logging.getLogger("unibuddy")
 async def lifespan(_app: FastAPI):
     worker_task = None
     if settings.document_worker_enabled and settings.database_url and settings.session_secret:
-        ai = get_ai_client() if settings.gemini_api_key else None
-        worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
-        logger.info("Document worker started in this process")
+        try:
+            ai = get_ai_client() if settings.gemini_api_key else None
+            worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
+            logger.info("Document worker started in this process")
+        except HTTPException as exc:
+            # Keep the API up (health checks, sign-in, read routes) when storage is not configured yet.
+            # Uploads still fail with a clear 503 until the missing settings are added.
+            logger.warning("Document worker not started: %s", exc.detail)
     try:
         yield
     finally:
