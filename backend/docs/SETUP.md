@@ -25,6 +25,10 @@ for the hosted service. Free plans only. Check each provider's current free limi
 4. Copy the account ID, access key ID and secret access key into `backend/.env` as `R2_ACCOUNT_ID`,
    `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`.
 
+For a laptop-only demo before R2 is configured, set `STORAGE_BACKEND=local` and
+`LOCAL_STORAGE_DIR=.local-data/objects` in `backend/.env`. This stores uploaded PDFs on that Mac only;
+do not use local storage on Render or for a shared/production app.
+
 ## 3. Google Cloud (sign-in). Your friend builds the UI; you create the client.
 
 1. Open https://console.cloud.google.com, create a project, and go to **APIs & Services → OAuth consent
@@ -86,12 +90,20 @@ Everyone signs in with the Google account whose verified email matches their Uni
 
 ## 8. Render (hosted API), when you are ready
 
-1. Create a **free** Web Service from this repo, branch `backend-yash`, root directory `backend`.
+1. Create a **free** Web Service from this repo, branch that you choose for the backend (the code
+   must be on it first), root directory `backend`. Pick the region closest to Neon (AWS us-east-2 / Ohio).
 2. Build command: `pip install -r requirements.txt`. Start command:
    `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-3. Add the same private variables as `backend/.env` (never commit them). Do not add any `SUPABASE_*` variable.
+3. Environment variables (private, set in the Render dashboard only):
+   - `APP_ENV=production` (this also refuses local file storage, so PDFs cannot sit on Render's temporary disk)
+   - `STORAGE_BACKEND=r2`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (the bucket name)
+   - `DATABASE_URL` (Neon app role, **hostname form only**: do not add `hostaddr`)
+   - `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GEMINI_API_KEY`
+   - `ALLOWED_ORIGINS=https://vishu404code.github.io`
+   - Do not add any `SUPABASE_*` variable, and do not set `OWNER_DATABASE_URL` on Render.
 4. Before pushing a new commit, check **Auto-Deploy** for this service. If it is on, a push redeploys
    the service, so push only when the new code has been tested.
+5. Free Render services sleep when idle, so the first request after a pause can take a minute.
 
 ## 9. Retiring the old Supabase project
 

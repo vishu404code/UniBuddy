@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     google_client_id: str | None = None
 
     # Cloudflare R2 (S3-compatible) for private PDFs. Server-side only.
+    storage_backend: str = "r2"
+    local_storage_dir: str = ".local-data/objects"
     r2_account_id: str | None = None
     r2_access_key_id: str | None = None
     r2_secret_access_key: str | None = None

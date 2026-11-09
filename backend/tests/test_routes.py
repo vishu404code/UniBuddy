@@ -277,3 +277,34 @@ def test_announcements_list_for_students(harness):
     assert response.status_code == 200
     assert response.json()["items"][0]["title"] == "Library hours"
     assert response.json()["total"] == 1
+
+
+def test_same_file_name_and_size_is_refused_as_a_duplicate(harness):
+    client, sb, _ = harness
+    pdf = _pdf_bytes()
+    first = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
+                        data={"title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
+                        files={"file": ("fee.pdf", pdf, "application/pdf")})
+    second = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
+                         data={"title": "Fee Policy again", "visibility": "public_students", "scope": "campus"},
+                         files={"file": ("fee.pdf", pdf, "application/pdf")})
+
+    assert first.status_code == 202
+    assert second.status_code == 409
+    assert "already in the library" in second.json()["detail"]
+    assert len(sb.tables["documents"]) == 1
+
+
+def test_different_file_with_the_same_name_is_still_accepted(harness):
+    client, sb, _ = harness
+    first = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
+                        data={"title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
+                        files={"file": ("fee.pdf", _pdf_bytes(), "application/pdf")})
+    longer = _pdf_bytes() + b"\n% revised\n"
+    second = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
+                         data={"title": "Fee Policy v2", "visibility": "public_students", "scope": "campus"},
+                         files={"file": ("fee.pdf", longer, "application/pdf")})
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert len(sb.tables["documents"]) == 2

@@ -151,7 +151,8 @@ const GI=()=>`<svg style="width:18px;height:18px;flex:none" viewBox="0 0 24 24">
 const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
 // Public settings only. The deploy-specific URL and OAuth client ID live in runtime-config.js.
-const UB_API_BASE=String(window.UB_CONFIG?.apiBase||'').replace(/\/$/,'');
+const _isLocalPreview=['localhost','127.0.0.1'].includes(window.location.hostname);
+const UB_API_BASE=String(window.UB_CONFIG?.apiBase||(_isLocalPreview?'http://127.0.0.1:8010/api/v1':'')).replace(/\/$/,'');
 const UB_GOOGLE_CLIENT_ID=String(window.UB_CONFIG?.googleClientId||'');
 
 const pn=()=>S.user?.full_name||S.user?.name||S.user?.email||'Campus User',ini=()=>pn()[0].toUpperCase();
@@ -174,7 +175,15 @@ const S={
 
 const T=id=>S.tickets.find(t=>t.id==id),stl=t=>{const h=humanStatus(t.status);return `<span class="pill s${Math.max(0,STG.indexOf(h))}">${esc(h)}</span>`};
 const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
-const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2800)};
+let toastTimer;
+const toast=m=>{
+  S.toast=m;
+  let node=$('#app .toast');
+  if(!node){node=document.createElement('div');node.className='toast';$('#app')?.append(node)}
+  if(node)node.textContent=m;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{S.toast='';$('#app .toast')?.remove()},2800);
+};
 
 // Backend API client. No local/demo data is used as a fallback.
 async function apiCall(endpoint,options={}){
@@ -197,13 +206,39 @@ async function apiCall(endpoint,options={}){
 }
 
 const pageItems=r=>Array.isArray(r?.data?.items)?r.data.items:[];
+
+// While an uploaded PDF is pending or processing, re-check only the document list (every 4 s, about 6 minutes).
+// The page redraws only when a document's status or publication actually changes.
+let docPollTimer=null,docPollCount=0;
+function docView(d){return {...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}}
+function watchDocProcessing(){
+  clearTimeout(docPollTimer);docPollTimer=null;
+  const busy=(S.docs||[]).some(d=>d.status==='pending'||d.status==='processing');
+  if(!busy){docPollCount=0;return}
+  if(++docPollCount>90){docPollCount=0;return}
+  docPollTimer=setTimeout(pollDocProcessing,4000);
+}
+async function pollDocProcessing(){
+  docPollTimer=null;
+  if(!S.user||S.view!=='docs'){docPollCount=0;return}
+  const r=await apiCall('/documents?limit=50');
+  if(r.ok){
+    const next=pageItems(r).map(docView);
+    const sig=l=>JSON.stringify(l.map(d=>[d.uuid,d.status,d.publication]));
+    if(sig(next)!==sig(S.docs||[])){S.docs=next;R()}
+  }
+  watchDocProcessing();
+}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const humanStatus=s=>({submitted:'Submitted',assigned:'Assigned',in_progress:'In Progress',resolved:'Resolved'}[s]||s||'Submitted');
 function ticketView(t){return {...t,id:t.ticket_number||t.id,uuid:t.id,subj:t.subject,q:t.question,desc:t.description||'',pri:t.priority||'medium',status:t.status||'submitted',date:new Date(t.created_at).toLocaleDateString(),dept:t.department_name||'Department',fac:t.assigned_faculty_id?'Assigned':'Unassigned',reply:'',events:[]}}
 async function loadViewData(view=S.view){
   if(!S.user)return;
-  S.loading=true;R();
+  S.loading=true;
   const tasks=[];
+  // Chat state belongs to one signed-in person; clear it when a different account loads the page.
+  if(S.user.id!==S.chatOwner){S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=S.user.id}
+  if(S.role==='student')tasks.push(loadConversations());
   if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
   if(view==='docs'||view==='x')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
   if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
@@ -211,7 +246,9 @@ async function loadViewData(view=S.view){
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||view==='x')tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
-  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});S.loading=false;R();
+  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});
+  if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
+  S.loading=false;R();
 }
 
 // Google Sign-In Credential Handler
@@ -336,11 +373,29 @@ async function ask(q){
   }else{
     S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
   }
+  await loadConversations();
   R();
 }
 
 const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
-function newChat(){if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=[];S.conversationId=null;S.view='chat';S.nav=false;S.fx='view';R()}
+// Chat history is stored on the server for each signed-in Student. The database rules return only that person's conversations.
+const fmtTime=iso=>{try{return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
+const messageView=m=>m.role==='user'
+  ?{r:'u',t:m.content,time:fmtTime(m.created_at),n:0,mid:m.id}
+  :{r:'a',k:(m.citations||[]).length?'ok':'nf',t:m.content,citations:m.citations||[],time:fmtTime(m.created_at),n:0,mid:m.id};
+async function loadConversations(){
+  const r=await apiCall('/chat/conversations?limit=30');
+  if(r.ok)S.hist=pageItems(r).map(c=>({id:c.id,title:c.title||'Conversation'}));
+}
+async function openConversation(id,render=true){
+  const r=await apiCall(`/chat/conversations/${id}/messages?limit=100`);
+  if(!r.ok){toast('Could not open this conversation. Please try again.');return false}
+  S.chat=pageItems(r).map(messageView);
+  S.conversationId=id;
+  if(render){S.view='chat';S.nav=false;S.fx='view';R()}
+  return true;
+}
+function newChat(){S.chat=[];S.conversationId=null;S.view='chat';S.nav=false;S.fx='view';R()}
 
 function dash(){
   const t=S.tickets,d=S.dashboard||{},ann=S.announcements;
@@ -417,7 +472,7 @@ function modal(){
 function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
-  a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${S.toast}</div>`:'');
+  a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
@@ -469,23 +524,24 @@ document.addEventListener('click',async e=>{
     if(!title||!file){toast('Enter a title and choose a PDF.');return}
     if(file.type!=='application/pdf'&& !file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
     const body=new FormData();body.append('title',title);body.append('file',file);body.append('visibility',vis);body.append('scope',scope);
+    const button=el;button.disabled=true;button.textContent='Uploading…';
     const res=await apiCall('/documents',{method:'POST',body});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
-    S.modal=null;await loadViewData('docs');toast('PDF uploaded. It will appear as a draft when processing finishes.');
+    if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
+    S.modal=null;await loadViewData('docs');toast('PDF uploaded. It will appear as a draft when processing finishes.');watchDocProcessing();
   }
   else if(a=='publish-doc'||a=='archive-doc'){
-    const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Document update failed.');return}
+    el.disabled=true;const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
+    if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
     await loadViewData('docs');toast(action==='publish'?'Document published.':'Document archived.');
   }
   else if(a=='logout'){
     try{localStorage.removeItem('ub-current-user');localStorage.removeItem('ub-token')}catch(x){}
-    S.user=null;S.role=null;go('landing');
+    S.user=null;S.role=null;S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=null;go('landing');
   }
   else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R();loadViewData(v)}
   else if(a=='navo'){S.nav=true;R()}else if(a=='navx'){S.nav=false;R()}
   else if(a=='new')newChat();
-  else if(a=='hist'){const h=S.hist.splice(+v,1)[0];if(S.chat.length)S.hist.unshift({title:ttl(),msgs:S.chat});S.chat=h.msgs;S.view='chat';S.nav=false;S.fx='view';R()}
+  else if(a=='hist'){const h=S.hist[+v];if(h)openConversation(h.id)}
   else if(a=='bell'){S.bell=!S.bell;R();if(S.bell)loadViewData(S.view)}
   else if(a=='readall'){await Promise.all(S.notifs.filter(n=>n.u).map(n=>apiCall(`/notifications/${n.id}/read`,{method:'PATCH'})));await loadViewData(S.view)}
   else if(a=='nt'){const n=S.notifs[v];if(n?.id)await apiCall(`/notifications/${n.id}/read`,{method:'PATCH'});S.bell=false;if(S.role==='student')S.view='queries';if(n?.tk){const ticket=await apiCall(`/tickets/${n.tk}`);if(ticket.ok)S.detail={ticket:{...ticketView(ticket.data.ticket),events:ticket.data.events||[]}}}R();loadViewData(S.view)}
