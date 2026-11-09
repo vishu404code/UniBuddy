@@ -21,7 +21,7 @@ from app.routes.tickets import router as tickets_router
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
 from app.services.errors import DataServiceError
-from app.services.providers import get_ai_client, get_data_client
+from app.services.providers import get_ai_client, get_data_client, storage_configured
 
 logger = logging.getLogger("unibuddy")
 
@@ -29,7 +29,7 @@ logger = logging.getLogger("unibuddy")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     worker_task = None
-    if settings.document_worker_enabled and settings.database_url and settings.session_secret:
+    if settings.document_worker_enabled and settings.database_url and settings.session_secret and storage_configured():
         try:
             ai = get_ai_client() if settings.gemini_api_key else None
             worker_task = asyncio.create_task(run_forever(get_data_client(), ai))

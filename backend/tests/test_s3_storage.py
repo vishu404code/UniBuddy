@@ -81,3 +81,20 @@ def test_s3_backend_is_allowed_in_production(monkeypatch):
     monkeypatch.setattr(settings, "s3_access_key_id", "k")
     monkeypatch.setattr(settings, "s3_secret_access_key", "s")
     assert providers._storage_configured() is True
+
+
+def test_database_client_builds_without_file_storage(monkeypatch):
+    """Sign-in, chat and tickets need the database only; file storage can be absent."""
+    from app.services.postgres_client import PostgresClient
+
+    monkeypatch.setattr(settings, "storage_backend", "r2")
+    monkeypatch.setattr(settings, "r2_account_id", None)
+    monkeypatch.setattr(settings, "database_url", "postgresql://u:p@localhost:5999/db")
+    monkeypatch.setattr(settings, "session_secret", "x" * 40)
+    providers.get_data_client.cache_clear()
+    try:
+        client = providers.get_data_client()
+        assert isinstance(client, PostgresClient)
+        assert client._objects is None
+    finally:
+        providers.get_data_client.cache_clear()
