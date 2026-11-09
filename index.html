@@ -150,14 +150,10 @@ const GI=()=>`<svg style="width:18px;height:18px;flex:none" viewBox="0 0 24 24">
 const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
 // Demo accounts registry — strictly assigned roles for email-based authentication
-const DPW='UniBuddy@123';
-const VALID_PWS=['UniBuddy@123','demo123'];
-const ACC={
-  'student@unibuddy.demo':{role:'student',name:'Aarav Sharma'},
-  'faculty@unibuddy.demo':{role:'faculty',name:'Dr. Mehta'},
-  'authority@unibuddy.demo':{role:'authority',name:'Campus Authority'},
-  'management@unibuddy.demo':{role:'management',name:'Management Office'}
-};
+// Public settings for this page. Never put a secret here.
+const UB_API_BASE='http://localhost:8010/api/v1'; // set to your backend's https URL before publishing
+const UB_GOOGLE_CLIENT_ID=''; // set to your public Google OAuth Web client ID
+
 const COURSES=['B.Tech CS & AI','B.Tech CS & DS','B.Tech Electrical','MBA Tech'];
 let PR={};try{PR=JSON.parse(localStorage.getItem('ub-profiles')||'{}')}catch(e){}
 const savePR=()=>{try{localStorage.setItem('ub-profiles',JSON.stringify(PR))}catch(e){}};
@@ -225,7 +221,7 @@ async function apiCall(endpoint,options={}){
   const headers={'Content-Type':'application/json',...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
   try{
-    const res=await fetch('/api/v1'+endpoint,{...options,headers});
+    const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
     if(!res.ok){
       let errData={};
       try{errData=await res.json()}catch(e){}
@@ -282,32 +278,7 @@ async function handleGoogleCredential(id_token){
 }
 
 // Email-Based Role Authentication
-function doLogin(){
-  const e=($('#em')?.value||'').trim().toLowerCase(),p=$('#pw')?.value||'',er=$('#err');
-  if(er)er.textContent='';
-  if(!e||!p){if(er)er.textContent='Enter your email and password.';return}
-  
-  // Role is strictly determined by registered account email
-  const a=ACC[e];
-  if(!a){
-    if(er)er.textContent='No registered account found for this email. Tap one of the demo accounts below or use Google.';
-    return;
-  }
-  if(!VALID_PWS.includes(p)){
-    if(er)er.textContent='Incorrect password. Universal demo password is '+DPW+'.';
-    return;
-  }
-  try{
-    if($('#rm')?.checked)localStorage.setItem('ub-email',e);
-    else localStorage.removeItem('ub-email');
-    localStorage.setItem('ub-current-user',e);
-  }catch(x){}
-  
-  S.user={...a,email:e};
-  S.role=a.role;
-  S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x';
-  go(PR[e]?'app':'onboard');
-}
+function doLogin(){const er=$('#err');if(er)er.textContent='Use the Google sign-in button to continue.'}
 
 const logo=`<div class="logo" data-a="home"><span class="mark">U</span>UniBuddy</div>`;
 
@@ -325,42 +296,20 @@ function landing(){
 
 // Redesigned Centered Login Page — matching user's visual identity & screenshot
 function login(){
-  let em='';try{em=localStorage.getItem('ub-email')||''}catch(e){}
-  return `<div class="login-wrap fx">
+return `<div class="login-wrap fx">
 <div class="login-header">
-<div class="logo" style="justify-content:center;margin-bottom:16px;cursor:pointer" data-a="home"><span class="mark" style="width:34px;height:34px;border-radius:10px;font-size:16px">U</span><span style="font-size:19px;font-weight:700;color:var(--navy)">UniBuddy</span></div>
 <h1 class="ed" style="font-size:clamp(30px,4.5vw,42px);color:var(--navy);margin-bottom:8px">Welcome to UniBuddy</h1>
-<p class="mut" style="font-size:15px;margin:0">Sign in to access your personalised university workspace.</p>
+<p class="mut" style="font-size:15px;margin:0">Sign in with your Google account to access your university workspace.</p>
 </div>
 <div class="login-card">
 <h2 style="font-size:19px;color:var(--navy);font-weight:600;margin-bottom:2px">Sign in</h2>
-<div class="mut" style="font-size:13px;margin-bottom:20px">Your role is detected automatically from your email.</div>
-<label style="margin-top:0">Email address</label>
-<input id="em" type="email" placeholder="student@unibuddy.demo" autocomplete="off" value="${em}">
-<div class="row sp" style="margin-top:14px"><label style="margin:0">Password</label><button class="lnk" data-a="forgot" style="padding:0;font-size:12.5px;color:var(--indd)">Forgot password?</button></div>
-<div style="position:relative;margin-top:6px"><input id="pw" type="password" placeholder="Password"><button class="ib" data-a="pw" style="position:absolute;right:3px;top:3px" aria-label="Show or hide password">${I('eye')}</button></div>
-<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:16px 0 12px;cursor:pointer"><input id="rm" type="checkbox" style="width:auto;height:auto" ${em?'checked':''}><span>Remember me</span></label>
+<div class="mut" style="font-size:13px;margin-bottom:20px">UniBuddy sets your role from your account records, not from your email address.</div>
 <div id="err" role="alert" style="color:#b4445a;font-size:13px;min-height:20px;margin-bottom:6px"></div>
-<button class="btn p w" data-a="login" style="height:44px;font-size:15px;font-weight:600">Sign In</button>
-<div class="divider">or continue with</div>
-<button class="g-btn" data-a="google-login">${GI()}Continue with Google</button>
 <div id="google-signin-btn" style="margin-top:8px;display:flex;justify-content:center"></div>
-<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--slate)">Universal demo password: <b>${DPW}</b></div>
 </div>
 <div style="text-align:center;margin-top:14px"><button class="lnk" data-a="home" style="font-size:13.5px">← Back to home</button></div>
+</div>`}
 
-<div class="demo-section">
-<div style="text-align:center;margin-bottom:18px"><h2 style="font-size:18px;font-weight:600;color:var(--navy)">Explore Demo Accounts</h2><p class="mut" style="font-size:13.5px;margin:3px 0 0">Click any demo account to autofill credentials and explore that role.</p></div>
-<div class="demo-grid">
-<div class="demo-card lift t-ice" data-a="fill" data-v="student@unibuddy.demo" title="Student Demo"><div class="ico">${I('user')}</div><h3>Student</h3><p>Ask questions and track your tickets.</p><div class="demo-badge">student@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="student@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift t-lav" data-a="fill" data-v="faculty@unibuddy.demo" title="Faculty Demo"><div class="ico">${I('book')}</div><h3>Faculty</h3><p>Review and answer student tickets.</p><div class="demo-badge">faculty@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="faculty@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift" data-a="fill" data-v="authority@unibuddy.demo" title="Authority Demo"><div class="ico">${I('shield')}</div><h3>Authority</h3><p>Campus oversight & documents.</p><div class="demo-badge">authority@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="authority@unibuddy.demo">Use Demo Account</button></div>
-<div class="demo-card lift" data-a="fill" data-v="management@unibuddy.demo" title="Management Demo"><div class="ico">${I('bld')}</div><h3>Management</h3><p>University-level query analytics & stats.</p><div class="demo-badge">management@unibuddy.demo</div><button class="btn sm w" data-a="login-demo" data-v="management@unibuddy.demo">Use Demo Account</button></div>
-</div>
-<div style="text-align:center;color:var(--slate);font-size:12.5px;margin:24px 0 12px">Universal demo password: <b>${DPW}</b> · Prototype accounts only.</div>
-</div></div>`}
-
-// Sidebar Navigation
 function side(items){
   const isStu=S.role=='student';
   return `<aside class="side ${S.nav?'open':''}">${logo}
@@ -387,6 +336,7 @@ function chat(){
 
 function msg(x,i){
   const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${x.t}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
+  if(x.k=='err')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><p style="margin:8px 0 0">${x.t}</p></div></div>`;
   if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
   if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><span class="vb">${I('check')} Verified Answer</span><p style="margin:8px 0 0">${x.t}</p><div class="src"><span>${x.s} · ${x.p}</span><button data-a="vs" data-v="${i}">View source</button><span>Verified</span></div><div class="ts">${x.time}</div></div></div>`;
   return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>I couldn’t find a verified answer to your question in official documents. Would you like me to forward it to the appropriate faculty or department?<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${x.fw}</span>`:`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`}</div><div class="ts">${x.time}</div></div></div>`}
@@ -418,9 +368,7 @@ async function ask(q){
       S.chat.push({r:'a',k:'nf',time:now(),n:1,mid:d.assistant_message_id});
     }
   }else{
-    // Local knowledge base fallback
-    const l=cleanQ.toLowerCase(),h=KB.find(e=>e.k.some(k=>l.includes(k)));
-    S.chat.push(h?{r:'a',k:'ok',t:h.a,s:h.s,p:h.p,time:now(),n:1}:{r:'a',k:'nf',time:now(),n:1});
+    S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
   }
   R();
 }
@@ -527,10 +475,11 @@ function R(){
 }
 
 function initGoogleAuth(){
+  if(S.scr=='login'&&!UB_GOOGLE_CLIENT_ID){const er=$('#err');if(er)er.textContent='Google sign-in is not configured for this site yet.';return}
   if(S.scr=='login'&&window.google?.accounts?.id){
     try{
       window.google.accounts.id.initialize({
-        client_id:'replace-with-your-client-id.apps.googleusercontent.com',
+        client_id:UB_GOOGLE_CLIENT_ID,
         callback:(resp)=>{if(resp?.credential)handleGoogleCredential(resp.credential)}
       });
       const gbtn=$('#google-signin-btn');
@@ -554,8 +503,6 @@ document.addEventListener('click',async e=>{
   if(a=='home')go(S.user?'app':'landing');
   else if(a=='login-screen')go('login');
   else if(a=='scroll')$('#'+v)?.scrollIntoView({behavior:'smooth'});
-  else if(a=='fill'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';$('#em').focus()}
-  else if(a=='login-demo'){$('#em').value=v;$('#pw').value=DPW;$('#err').textContent='';$('#pw').type='password';doLogin()}
   else if(a=='google-login'){
     if(window.google?.accounts?.id){
       try{window.google.accounts.id.prompt()}catch(x){toast('Google Identity prompt initiated')}
@@ -563,7 +510,7 @@ document.addEventListener('click',async e=>{
       toast('Google Identity Services loaded. Connect Google client credentials to authenticate.');
     }
   }
-  else if(a=='forgot'){toast('Universal demo password: '+DPW)}
+  else if(a=='forgot'){toast('Password sign-in is not available. Use Google sign-in.')}
   else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
   else if(a=='login')doLogin()
   else if(a=='submit-access-request'){
@@ -646,17 +593,20 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
 document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
 
-// Auto-restore active session if exists
-try{
-  const savedUser=localStorage.getItem('ub-current-user');
-  if(savedUser&&ACC[savedUser]){
-    const a=ACC[savedUser];
-    S.user={...a,email:savedUser};
-    S.role=a.role;
-    S.scr=PR[savedUser]?'app':'onboard';
-    S.view=a.role=='student'?'chat':a.role=='faculty'?'tix':'x';
+// Restore the signed-in session from the backend (the server checks the token)
+async function restoreSession(){
+  const r=await apiCall('/auth/me');
+  if(r.ok&&r.data){
+    const me=r.data;
+    S.user={email:me.email,name:me.full_name||me.email.split('@')[0],role:me.role};
+    S.role=me.role;S.scr='app';
+    S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
+  }else{
+    try{localStorage.removeItem('ub-token')}catch(e){}
   }
-}catch(e){}
+  R();
+}
+if(localStorage.getItem('ub-token'))restoreSession();
 
 R();
 </script></body></html>

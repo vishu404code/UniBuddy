@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     # Comma-separated origins allowed to call this API (the frontend dev server and any hosted frontend).
-    allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    allowed_origins: str = "http://localhost:3000,http://localhost:5173,https://vishu404code.github.io"
 
     # Neon PostgreSQL (with pgvector). Server-side only. Connect as a non-superuser role that is
     # granted authenticated and service_role (see docs/SETUP.md).
