@@ -143,16 +143,14 @@ async def _load_visible_document(sb: PostgresClient, access_token: str, document
     return rows[0]
 
 
-UNIVERSITY_WIDE_ROLES = frozenset({"authority", "super_admin"})
+UNIVERSITY_WIDE_ROLES = frozenset({"authority", "faculty", "super_admin"})
 
 
 def require_university_wide_permission(user: CurrentUser, scope: str) -> None:
-    """Only authority (and Super Admin) may create, publish or archive university-wide content.
-
-    The database enforces the same rule with a trigger on documents, so this is not the only check.
-    """
+    """Faculty, Authority and Super Admin may create, publish or archive university-wide documents.
+    Students and anyone without a staff profile may not. The database trigger enforces the same rule."""
     if scope == "university_wide" and user.role not in UNIVERSITY_WIDE_ROLES:
-        raise DocumentForbidden("Only authority can handle university-wide documents")
+        raise DocumentForbidden("Only faculty or authority can handle university-wide documents")
 
 
 def _can_manage(user: CurrentUser, document: dict[str, Any]) -> bool:
@@ -323,7 +321,9 @@ async def set_document_scope(
     document_id: UUID,
     scope: str,
 ) -> dict[str, Any]:
-    """Changes who an unpublished draft is for. Only authority may make a document university-wide."""
+    """Changes who an unpublished draft is for. Authority only: an existing draft's scope is an Authority decision."""
+    if user.role != "authority":
+        raise DocumentForbidden("Only authority can change the scope of an existing document")
     document = await _load_visible_document(sb, access_token, document_id)
     if not _can_manage(user, document):
         raise DocumentForbidden("Only the uploader or same-campus authority can change this document")
