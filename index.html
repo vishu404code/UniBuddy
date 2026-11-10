@@ -253,7 +253,9 @@ async function loadViewData(view=S.view){
   if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
   if(['student','faculty','authority'].includes(S.role))tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
-  if(view==='fdash'||view==='x')tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
+  if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
+  // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
+  if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
   if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
   await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
@@ -465,7 +467,30 @@ function faculty(){
 function placeholder(){
   const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
   const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
+  if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd(r[1]+' Portal')}<div class="page">${mgmtView()}</div></main></div>`;
   return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
+
+// Management Stats: aggregate counts only. No student names, emails, question text or chat contents.
+// Gemini usage is shown only where it was recorded; nothing is estimated.
+function mgmtView(){
+  const a=S.analytics;
+  if(!a)return '<div class="pg"><h1 class="ed">Management Stats</h1><p class="mut">Loading aggregate analytics…</p></div>';
+  const t=a.ticket_totals||{},g=a.gemini||{};
+  const pct=x=>x==null?'—':`${Math.round(x*100)}%`;
+  const hrs=x=>x==null?'—':`${x} h`;
+  const bars=rows=>{const max=Math.max(1,...rows.map(r=>r.count));return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px">${rows.map(r=>`<div title="${esc(r.day)}: ${r.count}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="background:var(--navy);opacity:.8;border-radius:3px 3px 0 0;height:${Math.round(r.count/max*100)}%;min-height:${r.count?2:0}px"></div></div>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667)"><span>${esc(rows[0]?.day||'')}</span><span>${esc(rows[rows.length-1]?.day||'')}</span></div>`};
+  const campuses=(t.campuses||[]).map(c=>`<tr><td>${esc(c.name)}</td><td>${c.total_tickets}</td><td>${c.resolved_tickets}</td><td>${pct(c.resolution_rate)}</td><td>${hrs(c.avg_first_response_hours)}</td></tr>`).join('');
+  const usage=g.rows_recorded
+    ?`<div class="strip">${[['Answer calls recorded',g.requests],['Input tokens',g.input_tokens??'—'],['Output tokens',g.output_tokens??'—']].map(([l,v])=>`<div class="sti"><div><b>${v}</b><span>${l}</span></div></div>`).join('')}</div>
+<p class="mut" style="font-size:13px">Token totals cover only the calls where Gemini returned counts: input for ${g.rows_with_input_tokens} of ${g.rows_recorded} calls, output for ${g.rows_with_output_tokens} of ${g.rows_recorded}.</p>
+<p class="mut" style="font-size:13px">Models: ${(g.models||[]).map(esc).join(', ')||'—'}. Recording since ${esc(new Date(g.first_recorded_at).toLocaleString())}.</p>`
+    :'<p class="mut">No Gemini usage has been recorded yet.</p>';
+  return `<div class="pg wide"><h1 class="ed">Management Stats</h1><p class="sub">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>
+<div class="strip">${[['Questions asked',a.questions_total],['Tickets',t.total_tickets],['Resolved',t.resolved_tickets],['Resolution rate',pct(t.resolution_rate)],['Avg first response',hrs(t.avg_first_response_hours)]].map(([l,v])=>`<div class="sti"><div><b>${v??'—'}</b><span>${l}</span></div></div>`).join('')}</div>
+<div class="dgrid"><section class="card"><h3>Questions per day (last 30 days, UTC)</h3>${bars(a.questions_by_day||[])}</section><section class="card"><h3>Tickets per day (last 30 days, UTC)</h3>${bars(a.tickets_by_day||[])}</section></div>
+<section class="card" style="margin-top:16px"><h3>By campus</h3><div class="tw"><table><tr><th>Campus</th><th>Tickets</th><th>Resolved</th><th>Resolution rate</th><th>Avg first response</th></tr>${campuses||'<tr><td colspan="5" class="mut">No campus data.</td></tr>'}</table></div></section>
+<section class="card" style="margin-top:16px"><h3>Gemini answer usage</h3>${usage}<p class="mut" style="font-size:13px">Usage before this feature was deployed was never recorded, so historical usage is unavailable. Embedding calls for documents and questions are not recorded in this version.</p></section></div>`;
+}
 
 // Modals
 function modal(){
