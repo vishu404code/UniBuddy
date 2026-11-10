@@ -31,6 +31,38 @@ def _vector_literal(vector: list[float]) -> str:
     return "[" + ",".join(repr(value) for value in vector) + "]"
 
 
+class _UsageRecordingGenerator:
+    """Passes the answer call through and records its usage metadata only: model, time and token
+    counts. No question, answer, user or email is stored. A failure to record never fails the answer."""
+
+    def __init__(self, generator, sb: PostgresClient):
+        self._generator = generator
+        self._sb = sb
+
+    async def complete(self, system: str, user: str) -> str:
+        complete_with_usage = getattr(self._generator, "complete_with_usage", None)
+        if complete_with_usage is None:
+            return await self._generator.complete(system, user)
+        text, usage = await complete_with_usage(system, user)
+        try:
+            await self._sb.insert_service(
+                "ai_usage_events",
+                [
+                    {
+                        "id": str(uuid4()),
+                        "operation": "answer",
+                        "model": usage.model,
+                        "request_count": 1,
+                        "input_tokens": usage.input_tokens,
+                        "output_tokens": usage.output_tokens,
+                    }
+                ],
+            )
+        except Exception:
+            logger.warning("Gemini usage metadata could not be recorded")
+        return text
+
+
 async def _conversation_for_user(sb: PostgresClient, user: CurrentUser, conversation_id: UUID) -> dict:
     rows = await sb.select_service(
         "conversations",
@@ -83,7 +115,7 @@ async def ask_question(
             },
         )
         evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
-        answer = await answer_question(question, evidence, ai)
+        answer = await answer_question(question, evidence, _UsageRecordingGenerator(ai, sb))
     except AIServiceError as exc:
         logger.warning("Question %s could not be answered: %s", user_message_id, exc)
         answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)

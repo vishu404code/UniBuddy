@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.middleware.auth import CurrentSession, session_with_roles
-from app.schemas.dashboards import ManagementStats, StaffDashboard, StudentDashboard
-from app.services.dashboards import management_stats, staff_dashboard, student_dashboard
+from app.schemas.dashboards import ManagementAnalytics, ManagementStats, StaffDashboard, StudentDashboard
+from app.services.dashboards import management_analytics, management_stats, staff_dashboard, student_dashboard
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
 
@@ -33,3 +33,12 @@ async def management_overview(
     sb: PostgresClient = Depends(get_data_client),
 ):
     return await management_stats(sb)
+
+
+@router.get("/management/analytics", response_model=ManagementAnalytics)
+async def management_analytics_overview(
+    _session: Annotated[CurrentSession, Depends(session_with_roles("management"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Read-only, aggregate. Management only: the role comes from the database profile."""
+    return await management_analytics(sb)
