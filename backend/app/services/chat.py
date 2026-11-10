@@ -116,6 +116,11 @@ async def ask_question(
         )
         evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
         answer = await answer_question(question, evidence, _UsageRecordingGenerator(ai, sb))
+        # Counts only, never the question or the answer. Shows why an answer was or was not given.
+        logger.info(
+            "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s",
+            user.campus_id is not None, len(evidence), len(answer.citations), answer.abstained,
+        )
     except AIServiceError as exc:
         logger.warning("Question %s could not be answered: %s", user_message_id, exc)
         answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)
@@ -149,7 +154,7 @@ async def forward_message_to_faculty(
     sb: PostgresClient,
     user: CurrentUser,
     message_id: UUID,
-    department_id: UUID,
+    department_id: UUID | None,
     priority: str,
     description: str | None,
 ) -> dict:
@@ -175,12 +180,14 @@ async def forward_message_to_faculty(
     if existing:
         raise DocumentConflict(f"This question was already forwarded as {existing[0]['ticket_number']}")
 
-    department = await sb.select_service(
-        "departments",
-        {"select": "id", "id": f"eq.{department_id}", "campus_id": f"eq.{user.campus_id}"},
-    )
-    if not department:
-        raise DocumentError("Department does not belong to your campus")
+    # No department is allowed. The ticket then goes to the campus queue, which Authority can see.
+    if department_id is not None:
+        department = await sb.select_service(
+            "departments",
+            {"select": "id", "id": f"eq.{department_id}", "campus_id": f"eq.{user.campus_id}"},
+        )
+        if not department:
+            raise DocumentError("Department does not belong to your campus")
 
     question = message["content"]
     ticket_id = uuid4()
@@ -192,7 +199,7 @@ async def forward_message_to_faculty(
                     "id": str(ticket_id),
                     "student_id": str(user.id),
                     "campus_id": str(user.campus_id),
-                    "department_id": str(department_id),
+                    "department_id": str(department_id) if department_id is not None else None,
                     "subject": question[:120],
                     "question": question,
                     "description": description,

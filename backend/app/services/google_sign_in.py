@@ -9,6 +9,7 @@ Google verifies the person and the email. The database decides access:
   never a Student profile first. Authority and Management still come only from authorized provisioning.
 """
 
+import logging
 from collections.abc import Callable
 from typing import Any
 from uuid import UUID, uuid4
@@ -18,14 +19,16 @@ from app.auth.linking import ProfileRecord, SignInOutcome, decide_sign_in
 from app.auth.session import issue_session_token
 from app.services.errors import DataServiceError
 
+logger = logging.getLogger("unibuddy.auth")
 ACCOUNT_COLUMNS = "id,email,google_subject"
 Verifier = Callable[[str, str], dict[str, Any]]
 
-# Pre-authorized Faculty, decided on the server. A verified Google email listed here gets a Faculty
-# profile on its first sign-in. Faculty needs a campus to see its campus records, so the campus is
-# set by name. No department is set here.
-PREAUTHORIZED_FACULTY_CAMPUS: dict[str, str] = {
-    "tarun.s26366@nst.rishihood.edu.in": "Rishihood University, Sonipat",
+# Pre-authorized roles, decided on the server. A verified Google email listed here gets that role on
+# its first sign-in, before any default Student profile is created. Faculty needs a campus to see its
+# campus records, so it is set by name. Management has no campus. No department is set here.
+PREAUTHORIZED_ACCOUNTS: dict[str, tuple[str, str | None]] = {
+    "tarun.s26366@nst.rishihood.edu.in": ("faculty", "Rishihood University, Sonipat"),
+    "jaysinghf204@gmail.com": ("management", None),
 }
 
 
@@ -58,28 +61,30 @@ async def _candidates(sb, identity: GoogleIdentity) -> list[ProfileRecord]:
 
 
 async def _create_profile(sb, account_id: UUID, identity: GoogleIdentity) -> None:
-    """The pre-authorized Faculty check runs first, so a listed email never gets a Student profile."""
-    campus_name = PREAUTHORIZED_FACULTY_CAMPUS.get(identity.email.strip().lower())
-    if campus_name is None:
+    """The pre-authorized check runs first, so a listed email never gets a Student profile."""
+    preauthorized = PREAUTHORIZED_ACCOUNTS.get(identity.email.strip().lower())
+    if preauthorized is None:
         await _create_student_profile(sb, account_id, identity)
     else:
-        await _create_faculty_profile(sb, account_id, identity, campus_name)
+        role, campus_name = preauthorized
+        await _create_preauthorized_profile(sb, account_id, identity, role, campus_name)
 
 
-async def _create_faculty_profile(sb, account_id: UUID, identity: GoogleIdentity, campus_name: str) -> None:
-    campuses = await sb.select_service("campuses", {"select": "id", "name": f"eq.{campus_name}"})
-    if len(campuses) != 1:
-        raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.")
+async def _create_preauthorized_profile(
+    sb, account_id: UUID, identity: GoogleIdentity, role: str, campus_name: str | None
+) -> None:
+    campus_id = None
+    if campus_name is not None:
+        campuses = await sb.select_service("campuses", {"select": "id", "name": f"eq.{campus_name}"})
+        if len(campuses) != 1:
+            raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.")
+        campus_id = str(campuses[0]["id"])
+    function = "open_preauthorized_faculty_signup" if role == "faculty" else "open_preauthorized_management_signup"
+    payload = {"p_account": str(account_id), "p_email": identity.email, "p_full_name": identity.full_name}
+    if role == "faculty":
+        payload["p_campus"] = campus_id
     try:
-        await sb.rpc_service(
-            "open_preauthorized_faculty_signup",
-            {
-                "p_account": str(account_id),
-                "p_email": identity.email,
-                "p_full_name": identity.full_name,
-                "p_campus": str(campuses[0]["id"]),
-            },
-        )
+        await sb.rpc_service(function, payload)
     except DataServiceError as exc:
         raise GoogleSignInError(503, "signup_failed", "Your account could not be created. Try again.") from exc
 
@@ -96,17 +101,30 @@ async def _create_student_profile(sb, account_id: UUID, identity: GoogleIdentity
 
 
 async def _assign_existing_campus(sb, account_id: UUID) -> None:
-    """A new Student gets the campus only when exactly one campus exists in the database, so no
-    campus is invented or guessed. With several campuses the Student stays unassigned for an
-    authorized person to place."""
+    """A Student gets the campus only when exactly one campus exists in the database, so no campus is
+    invented or guessed. With several campuses the Student stays unassigned for an authorized person.
+
+    The database function sets the campus only for a Student who has none. A failure here never blocks
+    sign-in: the Student can still use the app, and the next sign-in tries again."""
     campuses = await sb.select_service("campuses", {"select": "id"})
     if len(campuses) != 1:
         return
-    await sb.update_service(
-        "profiles",
-        {"id": f"eq.{account_id}", "role": "eq.student", "campus_id": "is.null"},
-        {"campus_id": str(campuses[0]["id"])},
+    try:
+        await sb.rpc_service(
+            "assign_campus_to_student",
+            {"p_account": str(account_id), "p_campus": str(campuses[0]["id"])},
+        )
+    except DataServiceError:
+        logger.warning("Campus could not be assigned to a new Student; sign-in continues")
+
+
+async def _heal_student_campus(sb, account_id: UUID) -> None:
+    """A Student who signed in before the campus could be set is given it on the next sign-in."""
+    rows = await sb.select_service(
+        "profiles", {"select": "id", "id": f"eq.{account_id}", "role": "eq.student", "campus_id": "is.null"}
     )
+    if rows:
+        await _assign_existing_campus(sb, account_id)
 
 
 async def _profile_exists(sb, account_id: UUID) -> bool:
@@ -136,6 +154,8 @@ async def _resolve_account(sb, identity: GoogleIdentity, verifier_ok: bool = Tru
     account_id = decision.profile_id
     if not await _profile_exists(sb, account_id):
         await _create_profile(sb, account_id, identity)
+    else:
+        await _heal_student_campus(sb, account_id)
 
     if decision.outcome is SignInOutcome.LINK:
         linked = await sb.update_service(

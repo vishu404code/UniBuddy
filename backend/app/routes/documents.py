@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 
 from app.config import settings
 from app.middleware.auth import CurrentSession, session_with_roles
@@ -10,6 +10,8 @@ from app.schemas.documents import DocumentOut
 from app.services.documents import (
     stored_bytes_estimate,
     archive_document,
+    restore_document,
+    set_document_scope,
     require_university_wide_permission,
     processing_note,
     publish_document,
@@ -135,6 +137,31 @@ async def publish(
     sb: PostgresClient = Depends(get_data_client),
 ):
     row = await publish_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
+    return _to_out(row)
+
+
+@router.post("/{document_id}/restore", response_model=DocumentOut)
+async def restore(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Authority only. Brings an archived document back as a draft so it can be published again."""
+    row = await restore_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
+    return _to_out(row)
+
+
+@router.post("/{document_id}/scope", response_model=DocumentOut)
+async def change_scope(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
+    scope: Annotated[Literal["campus", "university_wide"], Body(embed=True)],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Authority only. Changes an unpublished draft between campus and university-wide."""
+    row = await set_document_scope(
+        sb=sb, user=session.user, access_token=session.access_token, document_id=document_id, scope=scope
+    )
     return _to_out(row)
 
 

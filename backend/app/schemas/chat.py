@@ -27,7 +27,8 @@ class AskResponse(BaseModel):
 
 
 class ForwardRequest(BaseModel):
-    department_id: UUID
+    # Optional. Without a department the ticket goes to the campus queue.
+    department_id: UUID | None = None
     priority: Literal["low", "medium", "high"] = "medium"
     description: str | None = Field(default=None, max_length=2000)
 

@@ -125,6 +125,22 @@ class FakeDataClient:
                 "campus_id": None, "department_id": None, "cross_campus_record_access": False,
             })
             return {"id": account, "role": "student"}
+        if function == "assign_campus_to_student":
+            for row in self.tables["profiles"]:
+                if row["id"] == payload["p_account"] and row["role"] == "student" and row["campus_id"] is None:
+                    if any(c["id"] == payload["p_campus"] for c in self.tables["campuses"]):
+                        row["campus_id"] = payload["p_campus"]
+                        return True
+            return False
+        if function == "open_preauthorized_management_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "management",
+                "campus_id": None, "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "management"}
         if function == "open_preauthorized_faculty_signup":
             account, email = payload["p_account"], payload["p_email"].lower()
             if payload.get("p_campus") is None:
