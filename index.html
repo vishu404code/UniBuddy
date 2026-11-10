@@ -240,6 +240,8 @@ async function pollDocProcessing(){
 }
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const humanStatus=s=>({submitted:'Submitted',assigned:'Assigned',in_progress:'In Progress',resolved:'Resolved'}[s]||s||'Submitted');
+// A ticket with no department went to the campus queue, which Authority sees.
+const deptLabel=t=>t.department_id?(S.departments.find(d=>d.id===t.department_id)?.name||'Department'):'Campus queue';
 function ticketView(t){return {...t,id:t.ticket_number||t.id,uuid:t.id,subj:t.subject,q:t.question,desc:t.description||'',pri:t.priority||'medium',status:t.status||'submitted',date:new Date(t.created_at).toLocaleDateString(),dept:t.department_name||'Department',fac:t.assigned_faculty_id?'Assigned':'Unassigned',reply:'',events:[]}}
 async function loadViewData(view=S.view){
   if(!S.user)return;
@@ -257,7 +259,7 @@ async function loadViewData(view=S.view){
   // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
   if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
   if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
-  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});
+  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=deptLabel(t)});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
   S.loading=false;R();
   watchOpenTicket();
@@ -446,7 +448,7 @@ function annView(){
 function docsView(){
   const canManage=['faculty','authority'].includes(S.role);
   return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div>${canManage?`<button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button>`:''}</div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
+<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}${S.role==='authority'&&d.publication==='archived'?`<button class="btn sm" data-a="restore-doc" data-v="${d.uuid}">Restore to draft</button>`:''}${S.role==='authority'&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn sm" data-a="scope-univ" data-v="${d.uuid}">Make university-wide</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
 
 function profileView(){
   return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${esc(S.user?.campus_id||'Not assigned')}" disabled><label>Department</label><input value="${esc(S.user?.department_id||'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
@@ -505,8 +507,9 @@ function modal(){
   if(m.done){
     return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Your query has reached the department faculty queue.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
   }
-  const q=S.chat[m.i-1]?.t||'Question',noDepartments=!S.departments.length;
-  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${esc(q)}</div><div class="g2"><div><label>Department</label><select id="md" ${noDepartments?'disabled':''}>${S.departments.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select>${noDepartments?'<small>No departments are set up for your campus yet. Ask the Authority to configure one.</small>':''}</div><div><label>Priority</label><select id="mp"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms" ${noDepartments?'disabled':''}>Submit Ticket</button></div></div></div>`;
+  const q=S.chat[m.i-1]?.t||'Question',abc=S.departments.find(d=>d.name==='ABC');
+  const deptOptions=`<option value="" ${abc?'':'selected'}>No department (campus queue)</option>`+S.departments.map(d=>`<option value="${d.id}" ${abc&&d.id===abc.id?'selected':''}>${esc(d.name)}</option>`).join('');
+  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${esc(q)}</div><div class="g2"><div><label>Department (optional)</label><select id="md">${deptOptions}</select><small>Leave it on “No department” and the question goes to the campus queue for Authority.</small></div><div><label>Priority</label><select id="mp"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`;
 }
 
 // Render Engine
@@ -572,7 +575,7 @@ async function refreshOpenTicket(){
   ]);
   let changed=false;
   if(list.ok){
-    const next=pageItems(list).map(ticketView).map(x=>({...x,dept:S.departments.find(d=>d.id===x.department_id)?.name||'Department'}));
+    const next=pageItems(list).map(ticketView).map(x=>({...x,dept:deptLabel(x)}));
     const sig=l=>JSON.stringify(l.map(x=>[x.uuid,x.status,x.assigned_faculty_id||null]));
     if(sig(next)!==sig(S.tickets)){S.tickets=next;changed=true}
   }
@@ -623,6 +626,14 @@ document.addEventListener('click',async e=>{
     if(res.data&&res.data.id){S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)]}
     S.modal=null;R();await loadViewData('docs');toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
   }
+  else if(a=='restore-doc'||a=='scope-univ'){
+    if(S.actionBusy)return;
+    S.actionBusy=true;el.disabled=true;
+    const res=a==='restore-doc'?await apiCall(`/documents/${v}/restore`,{method:'POST'}):await apiCall(`/documents/${v}/scope`,{method:'POST',body:JSON.stringify({scope:'university_wide'})});
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
+    await loadViewData('docs');toast(a==='restore-doc'?'Restored as a draft. Publish it when ready.':'Now university-wide as a draft. Publish it to take effect.');
+  }
   else if(a=='publish-doc'||a=='archive-doc'){
     el.disabled=true;const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
     if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
@@ -660,8 +671,7 @@ document.addEventListener('click',async e=>{
   }
   else if(a=='ms'){
     if(S.actionBusy)return;
-    const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value;
-    if(!departmentId){toast('No department is configured for your campus yet.');return}
+    const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value||null;
     if(!msg?.mid){toast('The question is missing its server reference. Ask it again, then forward it.');return}
     const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Submitting…';
     const res=await apiCall(`/chat/messages/${msg.mid}/forward`,{method:'POST',body:JSON.stringify({department_id:departmentId,priority:$('#mp').value,description:$('#mx').value||null})});
