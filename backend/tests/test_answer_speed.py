@@ -76,3 +76,33 @@ async def test_question_is_saved_before_the_reply_and_timings_are_logged(caplog)
     line = next(r.getMessage() for r in caplog.records if r.getMessage().startswith("answer:"))
     assert "total_ms=" in line and "embed_ms=" in line and "match_ms=" in line and "answer_ms=" in line
     assert "Are hostel fees waived" not in line and "waived" not in line
+
+
+from app.ai.rag import Evidence, merge_part_evidence, split_question_parts
+
+
+def _ev(page, text, sim=0.7, doc=None):
+    return Evidence(chunk_id=uuid4(), document_id=doc or DOC_A, title="Policy", page_number=page,
+                    content=text, similarity=sim)
+
+
+def test_multi_part_questions_are_split_and_simple_ones_are_not():
+    assert split_question_parts("What is the minimum CGPA to apply for a Leave of Absence?") == [
+        "What is the minimum CGPA to apply for a Leave of Absence?"]
+    parts = split_question_parts("If I take an LOA, do I still have to appear for exams, and how long can the leave last?")
+    assert parts == ["If I take an LOA, do I still have to appear for exams", "how long can the leave last"]
+    # Commas inside a part ("tuition, hostel and dining") are not treated as a split
+    assert len(split_question_parts("During an LOA, are tuition, hostel and dining fees charged, and what is the minimum CGPA to apply?")) == 2
+
+
+def test_each_part_keeps_its_best_source_when_the_limit_is_small():
+    fees = [_ev(2, "fees waived"), _ev(6, "tuition payable"), _ev(8, "fees waived again")]
+    cgpa = [_ev(3, "minimum CGPA 8.0")]
+    merged = merge_part_evidence([fees, cgpa], limit=3)
+    assert {e.page_number for e in merged} == {2, 3, 6}
+
+
+def test_repeated_pages_are_kept_once_when_parts_overlap():
+    same = [_ev(4, "leave length six months")]
+    merged = merge_part_evidence([same, same], limit=8)
+    assert [e.page_number for e in merged] == [4]

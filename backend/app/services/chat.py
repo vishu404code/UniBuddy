@@ -5,7 +5,14 @@ from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from app.ai.gemini_client import AIServiceError, GeminiClient
-from app.ai.rag import Answer, answer_question, select_evidence
+from app.ai.rag import (
+    MULTI_PART_EVIDENCE,
+    Answer,
+    answer_question,
+    merge_part_evidence,
+    select_evidence,
+    split_question_parts,
+)
 from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
 from app.services.postgres_client import PostgresClient
@@ -112,27 +119,33 @@ async def ask_question(
 
     try:
         # The question is saved while its query is embedded, so the two waits overlap.
-        embed_task = asyncio.ensure_future(timed("embed_ms", ai.embed_query(question)))
+        parts = split_question_parts(question)
+        embed_task = asyncio.ensure_future(timed("embed_ms", asyncio.gather(*(ai.embed_query(part) for part in parts))))
         try:
             # The save always finishes before the answer is written, so the question is never stored after its reply.
             await sb.insert_service(
                 "messages",
                 [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
             )
-            query_vector = await embed_task
+            vectors = await embed_task
         except BaseException:
             embed_task.cancel()
             raise
-        rows = await timed("match_ms", sb.rpc_as_user(
-            access_token,
-            "match_document_chunks",
-            {
-                "query_embedding": _vector_literal(query_vector),
-                "match_count": top_k,
-                "min_similarity": min_similarity,
-            },
-        ))
-        evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
+        # Each part of a multi-part question is searched on its own, under the same access rules (RLS).
+        match_rows = await timed("match_ms", asyncio.gather(*(
+            sb.rpc_as_user(
+                access_token,
+                "match_document_chunks",
+                {
+                    "query_embedding": _vector_literal(vector),
+                    "match_count": top_k,
+                    "min_similarity": min_similarity,
+                },
+            )
+            for vector in vectors
+        )))
+        per_part = [select_evidence(rows, min_similarity=min_similarity, limit=top_k) for rows in match_rows]
+        evidence = per_part[0] if len(per_part) == 1 else merge_part_evidence(per_part, limit=MULTI_PART_EVIDENCE)
         answer = await timed("answer_ms", answer_question(question, evidence, _UsageRecordingGenerator(ai, sb)))
         # Counts and durations only, never the question or the answer.
         logger.info(
