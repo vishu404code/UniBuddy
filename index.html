@@ -96,6 +96,7 @@ footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-t
 .ts{font-size:11.5px;color:var(--slate);margin-top:4px;opacity:.85}.tsr{text-align:right}
 .a{display:flex;gap:12px;margin:18px 0}.a .body{flex:1;min-width:0}.a .who{font-weight:600;font-size:13.5px;margin-bottom:2px}
 .vb{display:inline-flex;align-items:center;gap:5px;background:var(--ice);color:var(--indd);border:1px solid #d3e0f6;border-radius:99px;padding:2px 10px 2px 8px;font-size:12px;font-weight:600}
+.ans ul,.ans ol{margin:6px 0 6px 20px;padding:0}.ans li{margin:3px 0}.ans p{margin:0 0 8px}.ans p:last-child{margin-bottom:0}
 .src{margin-top:10px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;background:var(--bg2);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--slate);border-left:3px solid var(--ind)}.src button{color:var(--indd);font-weight:600;background:none;border:0;cursor:pointer;padding:0;text-decoration:underline}
 .nf{margin-top:12px;background:var(--lav);border:1px solid #e1dbfa;border-radius:14px;padding:14px}
 .ld{display:inline-flex;gap:5px;padding:10px 0}.ld span{width:7px;height:7px;border-radius:50%;background:var(--ind);animation:bl 1.2s infinite}.ld span:nth-child(2){animation-delay:.18s}.ld span:nth-child(3){animation-delay:.36s}@keyframes bl{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
@@ -189,10 +190,14 @@ const toast=m=>{
 const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
 // Reads are retried while the free backend wakes up (cold start: 502/503/504 or a network error).
 // Writes (POST, PATCH) are never retried here, so one click cannot create a second record.
+// Timings for this page, read from the browser console: window.__ubTimes (endpoint, status, ms). No ids or tokens.
+window.__ubTimes=window.__ubTimes||[];
 async function apiCall(endpoint,options={}){
   if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
   const method=String(options.method||'GET').toUpperCase();
-  const attempts=method==='GET'?3:1;
+  const attempts=(method==='GET'||options.idempotent)?3:1;
+  const started=performance.now();
+  const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
   const token=localStorage.getItem('ub-token');
   const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
@@ -200,6 +205,7 @@ async function apiCall(endpoint,options={}){
     const last=i===attempts-1;
     try{
       const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
+      window.__ubTimes.push({endpoint:label,status:res.status,ms:Math.round(performance.now()-started)});
       if(res.ok){let data=null;try{data=await res.json()}catch(e){}return {ok:true,status:res.status,data}}
       if(!last&&[502,503,504].includes(res.status)){await sleepMs(4000*(i+1));continue}
       let errData={};try{errData=await res.json()}catch(e){}
@@ -242,6 +248,17 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const humanStatus=s=>({submitted:'Submitted',assigned:'Assigned',in_progress:'In Progress',resolved:'Resolved'}[s]||s||'Submitted');
 // A ticket with no department went to the campus queue, which Authority sees.
 const deptLabel=t=>t.department_id?(S.departments.find(d=>d.id===t.department_id)?.name||'Department'):'Campus queue';
+// After the server confirms a ticket change, only that ticket is updated: its open detail and its row.
+function applyTicketUpdate(data){
+  const view={...ticketView(data.ticket),events:data.events||[]};
+  view.dept=deptLabel(view);
+  S.detail={ticket:view,events:data.events||[]};
+  S.tickets=(S.tickets||[]).map(t=>t.uuid===view.uuid?{...t,...view}:t);
+}
+async function reloadTicketList(){
+  const r=await apiCall('/tickets?limit=50');
+  if(r.ok)S.tickets=pageItems(r).map(ticketView).map(x=>({...x,dept:deptLabel(x)}));
+}
 function ticketView(t){return {...t,id:t.ticket_number||t.id,uuid:t.id,subj:t.subject,q:t.question,desc:t.description||'',pri:t.priority||'medium',status:t.status||'submitted',date:new Date(t.created_at).toLocaleDateString(),dept:t.department_name||'Department',fac:t.assigned_faculty_id?'Assigned':'Unassigned',reply:'',events:[]}}
 async function loadViewData(view=S.view){
   if(!S.user)return;
@@ -253,7 +270,7 @@ async function loadViewData(view=S.view){
   if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
   if(view==='docs'||view==='x')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
   if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
-  if(['student','faculty','authority'].includes(S.role))tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
+  if(['student','faculty','authority'].includes(S.role)&&!S.departments.length)tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
@@ -269,12 +286,15 @@ async function loadViewData(view=S.view){
 async function handleGoogleCredential(id_token){
   if(!id_token)return;
   const er=$('#err');
-  if(er)er.textContent='Verifying with UniBuddy Google Auth...';
-  
-  const res=await apiCall('/auth/google',{
-    method:'POST',
-    body:JSON.stringify({id_token})
-  });
+  const began=Date.now();
+  const progress=()=>{if(er)er.textContent=`Verifying with UniBuddy Google Auth... ${Math.round((Date.now()-began)/1000)}s`+(Date.now()-began>8000?' (the free server may be waking up)':'')};
+  progress();
+  const ticker=setInterval(progress,1000);
+  // Sign-in is idempotent: a repeat after a cold start cannot create a second account.
+  let res;
+  try{
+    res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true});
+  }finally{clearInterval(ticker)}
   
   if(res.ok&&res.data?.access_token){
     localStorage.setItem('ub-token',res.data.access_token);
@@ -351,12 +371,33 @@ function chat(){
   return `<div class="chatw"><div class="msgs" id="msgs"><div class="col">${m.length?m.map((x,i)=>msg(x,i)).join(''):`<div class="empty"><div class="welcome"><span class="mark">U</span><h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1><p>Your university, your questions, one intelligent assistant.</p><div class="chips">${SUG.map(s=>`<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}</div></div></div>`}</div></div>
 <div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Verified answers from campus documents with source citations.</div></div></div>`}
 
+// Answers are plain text from the model. Escape first, then turn **bold**, '-' bullets, numbered lists and
+// paragraphs into tags. Nothing from the answer is ever treated as HTML.
+function fmtAnswer(t){
+  const inline=s=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  let html='',list=null,para=[];
+  const flushPara=()=>{if(para.length){html+=`<p>${para.join(' ')}</p>`;para=[]}};
+  const closeList=()=>{if(list){html+=`</${list}>`;list=null}};
+  for(const raw of esc(String(t||'')).replace(/\r/g,'').split('\n')){
+    const line=raw.trim();
+    if(!line){flushPara();closeList();continue}
+    const bullet=line.match(/^[-*\u2022]\s+(.*)$/),numbered=line.match(/^\d+[.)]\s+(.*)$/);
+    if(bullet||numbered){
+      flushPara();const kind=bullet?'ul':'ol';
+      if(list!==kind){closeList();html+=`<${kind}>`;list=kind}
+      html+=`<li>${inline((bullet||numbered)[1])}</li>`;continue;
+    }
+    closeList();para.push(inline(line));
+  }
+  flushPara();closeList();
+  return html||'<p></p>';
+}
 function msg(x,i){
   const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${esc(x.t)}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
   if(x.k=='err')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><p style="margin:8px 0 0">${x.t}</p></div></div>`;
   if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
-  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${x.citations?.length?'<span class="vb">'+I('check')+' Verified Answer</span>':''}<p style="margin:8px 0 0">${esc(x.t)}</p>${x.citations?.length?`<div class="src">${x.citations.map(c=>`<span>Source: ${esc(c.title)}${c.page?` · page ${c.page}`:''}</span>`).join('')}</div>`:''}<div class="ts">${x.time}</div></div></div>`;
-  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${esc(x.t||'I couldn’t find a verified answer in the published documents.')}<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${esc(x.fw)}</span>`:x.mid?`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`:''}</div><div class="ts">${x.time}</div></div></div>`}
+  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${x.citations?.length?'<span class="vb">'+I('check')+' Verified Answer</span>':''}<div class="ans" style="margin:8px 0 0">${fmtAnswer(x.t)}</div>${x.citations?.length?`<div class="src">${x.citations.map(c=>`<span>Source: ${esc(c.title)}${c.page?` · page ${c.page}`:''}</span>`).join('')}</div>`:''}<div class="ts">${x.time}</div></div></div>`;
+  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><div class="ans">${fmtAnswer(x.t||'I couldn’t find a verified answer in the published documents.')}</div><div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${esc(x.fw)}</span>`:x.mid?`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`:''}</div><div class="ts">${x.time}</div></div></div>`}
 
 // Ask AI Assistant — calls the real backend RAG endpoint.
 async function ask(q){
@@ -387,8 +428,8 @@ async function ask(q){
   }else{
     S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
   }
-  await loadConversations();
   R();
+  loadConversations().then(R);
 }
 
 const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
@@ -677,7 +718,7 @@ document.addEventListener('click',async e=>{
     const res=await apiCall(`/chat/messages/${msg.mid}/forward`,{method:'POST',body:JSON.stringify({department_id:departmentId,priority:$('#mp').value,description:$('#mx').value||null})});
     S.actionBusy=false;
     if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not forward this question. Your text is still in the form.');return}
-    if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await loadViewData('queries');R();
+    if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await reloadTicketList();R();
   }
   else if(a=='vt'){S.modal=null;S.view='queries';S.fx='view';R();loadViewData('queries')}
   else if(a=='take-ticket'){
@@ -687,7 +728,7 @@ document.addEventListener('click',async e=>{
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify({take_ticket:true})});
     S.actionBusy=false;
     if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);watchOpenTicket();
+    applyTicketUpdate(res.data);R();toast('Ticket taken. You can now reply or change its status.');watchOpenTicket();
   }
   else if(a=='respond'||a=='resolve'){
     if(S.actionBusy)return;
@@ -700,8 +741,7 @@ document.addEventListener('click',async e=>{
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify(a==='resolve'?{status:'resolved'}:{reply:r})});
     S.actionBusy=false;
     if(!res.ok){el.disabled=false;el.textContent=label;toast((typeof res.error==='string'?res.error:'The update failed.')+' Your text is still in the box.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
-    await loadViewData(S.view);
+    applyTicketUpdate(res.data);R();
     toast(a=='resolve'?'Ticket resolved. The student can now see the status.':'Response sent. The student can now see it.');
     watchOpenTicket();
   }
@@ -732,6 +772,8 @@ async function restoreSession(){
   }
   R();
 }
+// Starts the free server before the user clicks, so a cold start overlaps with the Google sign-in step.
+if(UB_API_BASE)fetch(UB_API_BASE+'/health',{cache:'no-store'}).catch(()=>{});
 if(localStorage.getItem('ub-token'))restoreSession();
 
 R();
