@@ -17,6 +17,8 @@ EMBEDDING_DIMENSIONS = 1536
 EMBEDDING_BATCH_SIZE = 100
 DOCUMENT_TASK = "RETRIEVAL_DOCUMENT"
 QUERY_TASK = "RETRIEVAL_QUERY"
+# A short, cited answer. Longer answers were slow to read and often ran past the sources.
+ANSWER_MAX_OUTPUT_TOKENS = 450
 
 
 class AIServiceError(Exception):
@@ -97,7 +99,9 @@ class GeminiClient:
             return await self._client.aio.models.generate_content(
                 model=self._chat_model,
                 contents=user,
-                config=types.GenerateContentConfig(system_instruction=system, temperature=0),
+                config=types.GenerateContentConfig(
+                    system_instruction=system, temperature=0, max_output_tokens=ANSWER_MAX_OUTPUT_TOKENS
+                ),
             )
 
         response = await self._call("answer", request)

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import time
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -98,14 +100,30 @@ async def ask_question(
         await _conversation_for_user(sb, user, conversation_id)
 
     user_message_id = uuid4()
-    await sb.insert_service(
-        "messages",
-        [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
-    )
+    timings: dict[str, float] = {}
+    started = time.perf_counter()
+
+    async def timed(name, awaitable):
+        begin = time.perf_counter()
+        try:
+            return await awaitable
+        finally:
+            timings[name] = (time.perf_counter() - begin) * 1000
 
     try:
-        query_vector = await ai.embed_query(question)
-        rows = await sb.rpc_as_user(
+        # The question is saved while its query is embedded, so the two waits overlap.
+        embed_task = asyncio.ensure_future(timed("embed_ms", ai.embed_query(question)))
+        try:
+            # The save always finishes before the answer is written, so the question is never stored after its reply.
+            await sb.insert_service(
+                "messages",
+                [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
+            )
+            query_vector = await embed_task
+        except BaseException:
+            embed_task.cancel()
+            raise
+        rows = await timed("match_ms", sb.rpc_as_user(
             access_token,
             "match_document_chunks",
             {
@@ -113,13 +131,15 @@ async def ask_question(
                 "match_count": top_k,
                 "min_similarity": min_similarity,
             },
-        )
+        ))
         evidence = select_evidence(rows, min_similarity=min_similarity, limit=top_k)
-        answer = await answer_question(question, evidence, _UsageRecordingGenerator(ai, sb))
-        # Counts only, never the question or the answer. Shows why an answer was or was not given.
+        answer = await timed("answer_ms", answer_question(question, evidence, _UsageRecordingGenerator(ai, sb)))
+        # Counts and durations only, never the question or the answer.
         logger.info(
-            "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s",
+            "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s total_ms=%d embed_ms=%d match_ms=%d answer_ms=%d",
             user.campus_id is not None, len(evidence), len(answer.citations), answer.abstained,
+            (time.perf_counter() - started) * 1000, timings.get("embed_ms", 0), timings.get("match_ms", 0),
+            timings.get("answer_ms", 0),
         )
     except AIServiceError as exc:
         logger.warning("Question %s could not be answered: %s", user_message_id, exc)

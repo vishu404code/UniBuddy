@@ -14,7 +14,9 @@ SYSTEM_PROMPT = (
     "You answer questions for a university campus assistant. Use only the numbered SOURCES. "
     "Cite every claim with the source number in square brackets, for example [1]. "
     f"If the sources do not contain the answer, reply with exactly {INSUFFICIENT_MARKER} and nothing else. "
-    "Do not use outside knowledge. Do not guess dates, fees, rules or deadlines."
+    "Do not use outside knowledge. Do not guess dates, fees, rules or deadlines. "
+    "Keep the answer short and plain: at most 5 short bullets (use '-') or 2 short paragraphs. "
+    "No headings, no tables, no code blocks."
 )
 
 
@@ -65,7 +67,17 @@ def select_evidence(rows: list[dict[str, Any]], min_similarity: float, limit: in
         if float(row["similarity"]) >= min_similarity
     ]
     evidence.sort(key=lambda item: item.similarity, reverse=True)
-    return evidence[:limit]
+    # A copy of the same file stores the same text on the same page. Keep the best-matching copy of each page
+    # so the limit is spent on different passages. Same text on different pages is kept (boilerplate can repeat).
+    unique: list[Evidence] = []
+    seen: set[tuple[int | None, str]] = set()
+    for item in evidence:
+        key = (item.page_number, " ".join(item.content.split()))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    return unique[:limit]
 
 
 def build_user_prompt(question: str, evidence: list[Evidence]) -> str:
