@@ -29,6 +29,7 @@ Verifier = Callable[[str, str], dict[str, Any]]
 PREAUTHORIZED_ACCOUNTS: dict[str, tuple[str, str | None]] = {
     "tarun.s26366@nst.rishihood.edu.in": ("faculty", "Rishihood University, Sonipat"),
     "jaysinghf204@gmail.com": ("management", None),
+    "pratham25072007@gmail.com": ("management", None),
 }
 
 

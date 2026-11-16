@@ -275,3 +275,29 @@ async def test_scope_cannot_change_on_a_published_document():
     with pytest.raises(DocumentConflict):
         await set_document_scope(sb=sb, user=authority, access_token=str(authority.id),
                                  document_id=UUID(doc["id"]), scope="university_wide")
+
+
+@pytest.mark.asyncio
+async def test_second_preauthorized_management_identity_gets_management_before_any_student_profile():
+    sb = FakeDataClient()
+    _sonipat(sb)
+
+    await _sign_in(sb, "pratham25072007@gmail.com", subject="google-pratham")
+
+    assert [row["role"] for row in sb.tables["profiles"]] == ["management"]
+    assert sb.tables["profiles"][0]["campus_id"] is None
+    assert sb.tables["profiles"][0]["department_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_existing_management_profile_is_not_changed_by_the_new_mapping():
+    sb = FakeDataClient()
+    _sonipat(sb)
+    existing = str(uuid4())
+    sb.tables["account_identities"].append({"id": existing, "email": "jaysinghf204@gmail.com", "google_subject": "google-jay"})
+    sb.tables["profiles"].append({"id": existing, "email": "jaysinghf204@gmail.com", "full_name": "Jay", "role": "management",
+                                  "campus_id": None, "department_id": None, "cross_campus_record_access": False})
+
+    await _sign_in(sb, "jaysinghf204@gmail.com", subject="google-jay")
+
+    assert [(row["email"], row["role"]) for row in sb.tables["profiles"]] == [("jaysinghf204@gmail.com", "management")]
