@@ -435,17 +435,20 @@ async function ask(q){
 const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
 // Chat history is stored on the server for each signed-in Student. The database rules return only that person's conversations.
 const fmtTime=iso=>{try{return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
+// Chat history on screen covers the last 72 hours. Older messages stay stored on the server; only the display changes.
+const CHAT_VISIBLE_MS=72*60*60*1000;
+const withinChatWindow=iso=>{const t=Date.parse(iso);return Number.isFinite(t)&&Date.now()-t<=CHAT_VISIBLE_MS};
 const messageView=m=>m.role==='user'
   ?{r:'u',t:m.content,time:fmtTime(m.created_at),n:0,mid:m.id}
   :{r:'a',k:(m.citations||[]).length?'ok':'nf',t:m.content,citations:m.citations||[],time:fmtTime(m.created_at),n:0,mid:m.id};
 async function loadConversations(){
   const r=await apiCall('/chat/conversations?limit=30');
-  if(r.ok)S.hist=pageItems(r).map(c=>({id:c.id,title:c.title||'Conversation'}));
+  if(r.ok)S.hist=pageItems(r).filter(c=>withinChatWindow(c.updated_at||c.created_at)).map(c=>({id:c.id,title:c.title||'Conversation'}));
 }
 async function openConversation(id,render=true){
   const r=await apiCall(`/chat/conversations/${id}/messages?limit=100`);
   if(!r.ok){toast('Could not open this conversation. Please try again.');return false}
-  S.chat=pageItems(r).map(messageView);
+  S.chat=pageItems(r).filter(m=>withinChatWindow(m.created_at)).map(messageView);
   S.conversationId=id;
   if(render){S.view='chat';S.nav=false;S.fx='view';R()}
   return true;
@@ -492,7 +495,7 @@ function docsView(){
 <div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}${S.role==='authority'&&d.publication==='archived'?`<button class="btn sm" data-a="restore-doc" data-v="${d.uuid}">Restore to draft</button>`:''}${S.role==='authority'&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn sm" data-a="scope-univ" data-v="${d.uuid}">Make university-wide</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
 
 function profileView(){
-  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${esc(S.user?.campus_id||'Not assigned')}" disabled><label>Department</label><input value="${esc(S.user?.department_id||'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
+  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${S.user?.campus_id?'Assigned to your campus':'Not assigned'}" disabled><label>Department</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
 
 function helpView(){
   return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
