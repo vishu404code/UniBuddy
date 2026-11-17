@@ -9,6 +9,7 @@ so services don't change when the backend is switched.
 """
 
 import asyncio
+import logging
 import re
 from collections.abc import Callable
 from typing import Any
@@ -17,11 +18,13 @@ from uuid import UUID
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
+from psycopg_pool import ConnectionPool, PoolTimeout
 
 from app.services.errors import DataServiceError
 from app.storage.objects import ObjectNotFound, ObjectStore, ObjectStoreError
 
 IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
+logger = logging.getLogger("unibuddy.data")
 RESERVED = frozenset({"select", "order", "limit", "offset"})
 COMPARISONS = {"eq": "=", "neq": "<>", "lt": "<", "lte": "<=", "gt": ">", "gte": ">="}
 TABLE_FUNCTIONS = frozenset({"match_document_chunks", "claim_document_jobs", "publish_document_version"})
@@ -108,13 +111,33 @@ class PostgresClient:
         session_secret: str,
         object_store: ObjectStore | None = None,
         connect: Callable[[str], psycopg.Connection] | None = None,
+        pool_size: int = 15,
     ):
         if not dsn:
             raise DataServiceError(503, "database is not configured")
         self._dsn = dsn
         self._session_secret = session_secret
         self._objects = object_store
+        # Production: a small pool, so each request reuses an open connection instead of paying for
+        # a new TLS handshake to Neon. Tests that inject `connect` keep their own connection behaviour.
+        self._pool: ConnectionPool | None = None
+        if connect is None:
+            self._pool = ConnectionPool(
+                conninfo=dsn,
+                min_size=2,
+                max_size=pool_size,
+                kwargs={"row_factory": dict_row, "connect_timeout": 10},
+                timeout=8.0,
+                max_idle=300,
+                open=True,
+            )
         self._connect = connect or (lambda url: psycopg.connect(url, row_factory=dict_row))
+
+    def _checkout(self):
+        """Context manager that yields one connection; the pool commits or rolls back on exit."""
+        if self._pool is not None:
+            return self._pool.connection()
+        return self._connect(self._dsn)
 
     # --- helpers --------------------------------------------------------------------
 
@@ -128,7 +151,7 @@ class PostgresClient:
 
     def _run_sync(self, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
         try:
-            with self._connect(self._dsn) as conn:
+            with self._checkout() as conn:
                 if as_user is None:
                     conn.execute("set local role service_role")
                 else:
@@ -175,6 +198,45 @@ class PostgresClient:
     async def select_service(self, table: str, params: dict[str, str]) -> list[dict[str, Any]]:
         sql, values = self._select_sql(table, params)
         return await self._run(None, lambda c: c.execute(sql, values).fetchall())
+
+    async def find_account_identities(self, google_subject: str, email: str) -> list[dict[str, Any]]:
+        """Fast indexed single-query lookup by Google subject or email."""
+        sql = 'select "id", "email", "google_subject" from "account_identities" where "google_subject" = %s or lower("email") = %s'
+        return await self._run(None, lambda c: c.execute(sql, (google_subject, email.lower())).fetchall())
+
+    async def find_account_and_profile(self, google_subject: str, email: str) -> list[dict[str, Any]]:
+        """Single joined query fetching account identity and profile together in ~500ms."""
+        sql = '''
+            select 
+                a."id", a."email", a."google_subject",
+                p."full_name", p."role", p."campus_id", p."department_id", p."cross_campus_record_access"
+            from "account_identities" a
+            left join "profiles" p on p."id" = a."id"
+            where a."google_subject" = %s or lower(a."email") = %s
+        '''
+        return await self._run(None, lambda c: c.execute(sql, (google_subject, email.lower())).fetchall())
+
+    async def create_student_account(
+        self, account_id: UUID, identity_email: str, identity_subject: str, identity_name: str | None, campus_id: str | None
+    ) -> None:
+        """Pipelined single-roundtrip creation of student identity, profile, and campus assignment."""
+        def do_signup(conn: psycopg.Connection) -> None:
+            with conn.pipeline():
+                conn.execute(
+                    'insert into "account_identities" ("id", "email", "google_subject") values (%s, %s, %s)',
+                    (str(account_id), identity_email, identity_subject),
+                )
+                conn.execute(
+                    "select public.open_student_signup(%s, %s, %s)",
+                    (str(account_id), identity_email, identity_name),
+                )
+                if campus_id:
+                    conn.execute(
+                        "select public.assign_campus_to_student(%s, %s)",
+                        (str(account_id), str(campus_id)),
+                    )
+
+        await self._run(None, do_signup)
 
     async def select_all_service(self, table: str, params: dict[str, str], page_size: int = 1000) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
@@ -237,12 +299,12 @@ class PostgresClient:
         params = [_adapt(v) for v in values.values()] + where_values
         return await self._run(None, lambda c: c.execute(sql, params).fetchall())
 
-    async def delete_service(self, table: str, filters: dict[str, str]) -> None:
+    async def delete_service(self, table: str, filters: dict[str, str]) -> int:
         if not any(column not in RESERVED for column in filters):
             raise DataServiceError(400, "delete needs a filter")
         where, values = _where(filters)
         sql = f"delete from {_ident(table)} where {where}"
-        await self._run(None, lambda c: c.execute(sql, values))
+        return await self._run(None, lambda c: c.execute(sql, values).rowcount)
 
     # --- RPC ------------------------------------------------------------------------
 
@@ -282,6 +344,7 @@ class PostgresClient:
 
     def _store(self) -> ObjectStore:
         if self._objects is None:
+            logger.warning("file storage is not configured in this process")
             raise DataServiceError(503, "file storage is not configured")
         return self._objects
 
@@ -289,6 +352,7 @@ class PostgresClient:
         try:
             await self._store().put_pdf(path, content)
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc
 
     async def download_object(self, bucket: str, path: str) -> bytes:
@@ -297,10 +361,12 @@ class PostgresClient:
         except ObjectNotFound as exc:
             raise DataServiceError(404, "file not found") from exc
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc
 
     async def delete_object(self, bucket: str, path: str) -> None:
         try:
             await self._store().delete(path)
         except ObjectStoreError as exc:
+            logger.warning("file storage call failed: %s", type(exc.__cause__).__name__ if exc.__cause__ else "no cause")
             raise DataServiceError(503, "file storage request failed") from exc

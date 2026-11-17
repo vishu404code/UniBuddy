@@ -5,14 +5,29 @@ safe message with no endpoint, key or credential in it.
 """
 
 import asyncio
+import logging
+import re
 from typing import Any
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.storage.objects import PDF_CONTENT_TYPE, ObjectNotFound, ObjectStoreError, sha256_hex, validate_key
 
 MISSING_CODES = frozenset({"NoSuchKey", "404", "NotFound"})
+logger = logging.getLogger("unibuddy.storage")
+
+
+def describe_storage_error(exc: BaseException) -> str:
+    """Safe summary for logs: exception class, AWS error code and HTTP status only."""
+    if isinstance(exc, ClientError):
+        err = exc.response.get("Error", {})
+        status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        return f"{type(exc).__name__} code={err.get('Code')} status={status}"
+    text = str(exc)
+    text = re.sub(r"(?i)(authorization|signature|x-amz-[a-z-]*|secret|key)[^,;\s]*", "<redacted>", text)
+    return f"{type(exc).__name__}: {text[:160]}"
 
 
 def build_r2_client(account_id: str, access_key_id: str, secret_access_key: str) -> Any:
@@ -22,6 +37,18 @@ def build_r2_client(account_id: str, access_key_id: str, secret_access_key: str)
         aws_access_key_id=access_key_id,
         aws_secret_access_key=secret_access_key,
         region_name="auto",
+    )
+
+
+def build_s3_client(endpoint_url: str, region: str, access_key_id: str, secret_access_key: str) -> Any:
+    """Any S3-compatible service (for example Neon Object Storage). Path-style URLs and SigV4 only."""
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
+        region_name=region,
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
 
@@ -47,6 +74,7 @@ class R2ObjectStore:
                 Metadata={"sha256": digest},
             )
         except (ClientError, BotoCoreError) as exc:
+            logger.warning("object put failed: %s", describe_storage_error(exc))
             raise ObjectStoreError("file could not be stored") from exc
         return digest
 

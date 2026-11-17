@@ -1,5 +1,6 @@
 """Shared clients for the API and the worker. Everything here is server-side."""
 
+import logging
 from functools import lru_cache
 
 from fastapi import HTTPException, status
@@ -11,6 +12,7 @@ from app.services.postgres_client import PostgresClient
 from app.storage.objects import ObjectStore
 
 R2_SETTINGS_MISSING = "R2 storage is not configured"
+S3_SETTINGS_MISSING = "S3 storage is not configured"
 DATABASE_SETTINGS_MISSING = "Database access is not configured"
 
 
@@ -18,8 +20,49 @@ def _r2_configured() -> bool:
     return bool(settings.r2_account_id and settings.r2_access_key_id and settings.r2_secret_access_key)
 
 
+LOCAL_STORAGE_IN_PRODUCTION = "Local file storage is for laptop demos only; production must use a private bucket (R2 or S3)"
+
+
+def _s3_configured() -> bool:
+    return bool(
+        settings.s3_endpoint_url and settings.s3_region and settings.s3_access_key_id
+        and settings.s3_secret_access_key and settings.s3_bucket
+    )
+
+
+def storage_configured() -> bool:
+    """True when the configured file storage can be used (local demo only outside production)."""
+    return _storage_configured()
+
+
+def _storage_configured() -> bool:
+    if settings.storage_backend == "local":
+        return bool(settings.local_storage_dir) and settings.app_env != "production"
+    if settings.storage_backend == "s3":
+        return _s3_configured()
+    return settings.storage_backend == "r2" and _r2_configured()
+
+
 def build_object_store() -> ObjectStore:
-    """Private PDF storage in Cloudflare R2."""
+    """Build local-only demo storage or production Cloudflare R2 storage."""
+    if settings.storage_backend == "local":
+        if settings.app_env == "production":
+            # Hosted hosts such as Render have temporary disks; PDFs there would not survive a restart.
+            raise RuntimeError(LOCAL_STORAGE_IN_PRODUCTION)
+        from app.storage.local import LocalObjectStore
+
+        return LocalObjectStore(settings.local_storage_dir)
+    if settings.storage_backend == "s3":
+        if not _s3_configured():
+            raise RuntimeError(S3_SETTINGS_MISSING)
+        from app.storage.r2 import R2ObjectStore, build_s3_client
+
+        client = build_s3_client(
+            settings.s3_endpoint_url, settings.s3_region, settings.s3_access_key_id, settings.s3_secret_access_key
+        )
+        return R2ObjectStore(client, settings.s3_bucket)
+    if settings.storage_backend != "r2":
+        raise RuntimeError("unsupported storage backend")
     if not _r2_configured():
         raise RuntimeError(R2_SETTINGS_MISSING)
     from app.storage.r2 import R2ObjectStore, build_r2_client
@@ -37,11 +80,14 @@ def build_data_client() -> PostgresClient:
 
 @lru_cache
 def get_data_client() -> PostgresClient:
+    """Database access for every route. File storage is optional here: sign-in, chat and tickets
+    work without it, and only file operations report that storage is not configured."""
     if not settings.database_url or not settings.session_secret:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, DATABASE_SETTINGS_MISSING)
-    if not _r2_configured():
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, R2_SETTINGS_MISSING)
-    return build_data_client()
+    store = build_object_store() if _storage_configured() else None
+    if store is None:
+        logging.getLogger("unibuddy.providers").warning("storage not configured: backend=%s", settings.storage_backend)
+    return PostgresClient(settings.database_url, settings.session_secret, object_store=store)
 
 
 @lru_cache

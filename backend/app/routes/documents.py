@@ -1,14 +1,17 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 
 from app.config import settings
 from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
+    stored_bytes_estimate,
     archive_document,
+    restore_document,
+    set_document_scope,
     require_university_wide_permission,
     processing_note,
     publish_document,
@@ -18,6 +21,9 @@ from app.services.documents import (
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
 
+import logging
+
+logger = logging.getLogger("unibuddy.documents")
 router = APIRouter(prefix="/documents", tags=["documents"])
 STAFF_ROLES = ("faculty", "authority")
 ALL_SIGNED_IN = ("student", "faculty", "authority", "management")
@@ -51,6 +57,35 @@ async def upload(
     _check_form(visibility, scope)
     require_university_wide_permission(session.user, scope)
     data = await file.read(settings.max_upload_bytes + 1)
+    # Same file name and size already in the library: refuse instead of storing a second copy.
+    # Use Replace on the existing document (or archive it) for a new version.
+    if file.filename and data:
+        existing = await sb.select_as_user(
+            session.access_token,
+            "documents",
+            {
+                "select": "id,title,publication_status",
+                "original_filename": f"eq.{file.filename}",
+                "file_size_bytes": f"eq.{len(data)}",
+                "publication_status": "neq.archived",
+                "limit": "1",
+            },
+        )
+        if existing:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"This PDF is already in the library as \"{existing[0]['title']}\" "
+                f"({existing[0]['publication_status']}). Use Replace on that document instead.",
+            )
+    stored = await stored_bytes_estimate(sb)
+    if stored + len(data) > settings.storage_budget_bytes:
+        raise HTTPException(
+            status.HTTP_507_INSUFFICIENT_STORAGE,
+            "File storage is nearly full for this demo (app estimate). Nothing was uploaded; "
+            "archive or ask the administrator before adding files.",
+        )
+    if stored + len(data) > settings.storage_warn_bytes:
+        logger.warning("Document storage above warning level (app estimate)")
     row = await upload_document(
         sb=sb,
         uploader=session.user,
@@ -102,6 +137,31 @@ async def publish(
     sb: PostgresClient = Depends(get_data_client),
 ):
     row = await publish_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
+    return _to_out(row)
+
+
+@router.post("/{document_id}/restore", response_model=DocumentOut)
+async def restore(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Authority only. Brings an archived document back as a draft so it can be published again."""
+    row = await restore_document(sb=sb, user=session.user, access_token=session.access_token, document_id=document_id)
+    return _to_out(row)
+
+
+@router.post("/{document_id}/scope", response_model=DocumentOut)
+async def change_scope(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("authority"))],
+    scope: Annotated[Literal["campus", "university_wide"], Body(embed=True)],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Authority only. Changes an unpublished draft between campus and university-wide."""
+    row = await set_document_scope(
+        sb=sb, user=session.user, access_token=session.access_token, document_id=document_id, scope=scope
+    )
     return _to_out(row)
 
 

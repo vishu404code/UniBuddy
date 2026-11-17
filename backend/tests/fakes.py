@@ -59,6 +59,52 @@ class FakeDataClient:
     async def select_service(self, table, params):
         return [copy.deepcopy(r) for r in self.tables[table] if _matches(r, params)]
 
+    async def find_account_identities(self, google_subject: str, email: str):
+        sub_matches = [copy.deepcopy(r) for r in self.tables["account_identities"] if r.get("google_subject") == google_subject]
+        email_matches = [copy.deepcopy(r) for r in self.tables["account_identities"] if (r.get("email") or "").lower() == email.lower()]
+        seen = {}
+        for r in [*sub_matches, *email_matches]:
+            seen[str(r["id"])] = r
+        return list(seen.values())
+
+    async def find_account_and_profile(self, google_subject: str, email: str):
+        sub_matches = [copy.deepcopy(r) for r in self.tables["account_identities"] if r.get("google_subject") == google_subject]
+        email_matches = [copy.deepcopy(r) for r in self.tables["account_identities"] if (r.get("email") or "").lower() == email.lower()]
+        seen = {}
+        for r in [*sub_matches, *email_matches]:
+            acct_id = str(r["id"])
+            if acct_id not in seen:
+                prof = next((p for p in self.tables["profiles"] if str(p["id"]) == acct_id), {})
+                seen[acct_id] = {
+                    "id": acct_id,
+                    "email": r.get("email"),
+                    "google_subject": r.get("google_subject"),
+                    "full_name": prof.get("full_name"),
+                    "role": prof.get("role"),
+                    "campus_id": prof.get("campus_id"),
+                    "department_id": prof.get("department_id"),
+                    "cross_campus_record_access": prof.get("cross_campus_record_access", False),
+                }
+        return list(seen.values())
+
+    async def create_student_account(self, account_id, identity_email, identity_subject, identity_name, campus_id):
+        await self.insert_service(
+            "account_identities",
+            [{"id": str(account_id), "email": identity_email, "google_subject": identity_subject}],
+        )
+        await self.rpc_service(
+            "open_student_signup",
+            {"p_account": str(account_id), "p_email": identity_email, "p_full_name": identity_name},
+        )
+        if campus_id:
+            try:
+                await self.rpc_service(
+                    "assign_campus_to_student",
+                    {"p_account": str(account_id), "p_campus": str(campus_id)},
+                )
+            except DataServiceError:
+                pass
+
     async def select_all_service(self, table, params, page_size=1000):
         return await self.select_service(table, {k: v for k, v in params.items() if k not in ("limit", "offset")})
 
@@ -100,7 +146,13 @@ class FakeDataClient:
         self.storage.pop(f"{bucket}/{path}", None)
 
     async def delete_service(self, table, filters):
-        self.tables[table] = [r for r in self.tables[table] if not _matches(r, filters)]
+        before = len(self.tables.get(table, []))
+        to_delete = [r for r in self.tables.get(table, []) if _matches(r, filters)]
+        self.tables[table] = [r for r in self.tables.get(table, []) if not _matches(r, filters)]
+        if table == "conversations":
+            deleted_ids = {str(r.get("id")) for r in to_delete}
+            self.tables["messages"] = [m for m in self.tables.get("messages", []) if str(m.get("conversation_id")) not in deleted_ids]
+        return before - len(self.tables[table])
 
     async def insert_service_batched(self, table, rows, batch_size=200):
         await self.insert_service(table, rows)
@@ -116,6 +168,42 @@ class FakeDataClient:
         return rows[offset : offset + limit], len(rows)
 
     async def rpc_service(self, function, payload):
+        if function == "open_student_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "student",
+                "campus_id": None, "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "student"}
+        if function == "assign_campus_to_student":
+            for row in self.tables["profiles"]:
+                if row["id"] == payload["p_account"] and row["role"] == "student" and row["campus_id"] is None:
+                    if any(c["id"] == payload["p_campus"] for c in self.tables["campuses"]):
+                        row["campus_id"] = payload["p_campus"]
+                        return True
+            return False
+        if function == "open_preauthorized_management_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "management",
+                "campus_id": None, "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "management"}
+        if function == "open_preauthorized_faculty_signup":
+            account, email = payload["p_account"], payload["p_email"].lower()
+            if payload.get("p_campus") is None:
+                raise DataServiceError(400, "invalid_account")
+            if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):
+                raise DataServiceError(400, "profile_exists")
+            self.tables["profiles"].append({
+                "id": account, "email": email, "full_name": payload.get("p_full_name"), "role": "faculty",
+                "campus_id": payload["p_campus"], "department_id": None, "cross_campus_record_access": False,
+            })
+            return {"id": account, "role": "faculty"}
         if function == "claim_document_jobs":
             return self._claim(payload)
         if function == "publish_document_version":

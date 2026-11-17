@@ -143,16 +143,14 @@ async def _load_visible_document(sb: PostgresClient, access_token: str, document
     return rows[0]
 
 
-UNIVERSITY_WIDE_ROLES = frozenset({"authority", "super_admin"})
+UNIVERSITY_WIDE_ROLES = frozenset({"authority", "faculty", "super_admin"})
 
 
 def require_university_wide_permission(user: CurrentUser, scope: str) -> None:
-    """Only authority (and Super Admin) may create, publish or archive university-wide content.
-
-    The database enforces the same rule with a trigger on documents, so this is not the only check.
-    """
+    """Faculty, Authority and Super Admin may create, publish or archive university-wide documents.
+    Students and anyone without a staff profile may not. The database trigger enforces the same rule."""
     if scope == "university_wide" and user.role not in UNIVERSITY_WIDE_ROLES:
-        raise DocumentForbidden("Only authority can handle university-wide documents")
+        raise DocumentForbidden("Only faculty or authority can handle university-wide documents")
 
 
 def _can_manage(user: CurrentUser, document: dict[str, Any]) -> bool:
@@ -262,3 +260,83 @@ def processing_note(document: dict[str, Any], ai_configured: bool) -> str | None
     if document["processing_status"] == "failed":
         return document.get("last_error")
     return None
+
+
+async def stored_bytes_estimate(sb) -> int:
+    """Sum of recorded PDF sizes (an estimate of object storage in use). Rows are read with the
+    service role, so every document counts, including archived ones that still have a file."""
+    rows = await sb.select_service("documents", {"select": "file_size_bytes"})
+    return sum(int(r.get("file_size_bytes") or 0) for r in rows)
+
+
+
+async def restore_document(
+    *,
+    sb: PostgresClient,
+    user: CurrentUser,
+    access_token: str,
+    document_id: UUID,
+) -> dict[str, Any]:
+    """Brings an archived document back as a draft, so it can be published again. The same record is
+    reused: no file is uploaded. It is refused while another active copy of the same file exists."""
+    document = await _load_visible_document(sb, access_token, document_id)
+    if not _can_manage(user, document):
+        raise DocumentForbidden("Only the uploader or same-campus authority can restore this document")
+    require_university_wide_permission(user, document["scope"])
+    if document["publication_status"] != "archived":
+        raise DocumentConflict("Only archived documents can be restored")
+    if document["processing_status"] != "ready":
+        raise DocumentConflict("Document is not ready to restore")
+    active_copies = await sb.select_service(
+        "documents",
+        {
+            "select": "id,title",
+            "original_filename": f"eq.{document['original_filename']}",
+            "file_size_bytes": f"eq.{document['file_size_bytes']}",
+            "publication_status": "neq.archived",
+            "id": f"neq.{document_id}",
+            "limit": "1",
+        },
+    )
+    if active_copies:
+        raise DocumentConflict(
+            f"This file is already active as \"{active_copies[0]['title']}\". "
+            "Restore is refused so the library does not hold two copies."
+        )
+    updated = await sb.update_service(
+        "documents",
+        {"id": f"eq.{document_id}", "publication_status": "eq.archived"},
+        {"publication_status": "draft"},
+    )
+    if not updated:
+        raise DocumentConflict("Document changed; reload and try again")
+    return updated[0]
+
+
+async def set_document_scope(
+    *,
+    sb: PostgresClient,
+    user: CurrentUser,
+    access_token: str,
+    document_id: UUID,
+    scope: str,
+) -> dict[str, Any]:
+    """Changes who an unpublished draft is for. Authority only: an existing draft's scope is an Authority decision."""
+    if user.role != "authority":
+        raise DocumentForbidden("Only authority can change the scope of an existing document")
+    document = await _load_visible_document(sb, access_token, document_id)
+    if not _can_manage(user, document):
+        raise DocumentForbidden("Only the uploader or same-campus authority can change this document")
+    require_university_wide_permission(user, scope)
+    if document["publication_status"] != "draft":
+        raise DocumentConflict("Only draft documents can change scope. Restore the document first if needed")
+    if document["scope"] == scope:
+        return document
+    updated = await sb.update_service(
+        "documents",
+        {"id": f"eq.{document_id}", "publication_status": "eq.draft"},
+        {"scope": scope},
+    )
+    if not updated:
+        raise DocumentConflict("Document changed; reload and try again")
+    return updated[0]

@@ -3,10 +3,12 @@ node_modules/
 *.log
 .env
 .env.local
+backend/.env.save
 
 # Backend (Python)
 backend/venv/
 backend/.venv/
+backend/.local-data/
 backend/__pycache__/
 backend/**/__pycache__/
 *.pyc

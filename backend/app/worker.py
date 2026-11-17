@@ -16,7 +16,10 @@ from app.services.providers import build_data_client, get_ai_client
 async def main() -> None:
     if not settings.database_url or not settings.session_secret:
         raise SystemExit("DATABASE_URL and SESSION_SECRET must be set")
-    if not (settings.r2_account_id and settings.r2_access_key_id and settings.r2_secret_access_key):
+    # Local demo storage needs no R2 settings; the R2 check applies only when R2 is the storage backend.
+    if settings.storage_backend == "r2" and not (
+        settings.r2_account_id and settings.r2_access_key_id and settings.r2_secret_access_key
+    ):
         raise SystemExit("R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY must be set")
     sb = build_data_client()
     ai = get_ai_client() if settings.gemini_api_key else None

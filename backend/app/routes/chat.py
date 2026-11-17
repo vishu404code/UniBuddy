@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.ai.gemini_client import GeminiClient
 from app.config import settings
@@ -68,6 +68,23 @@ async def list_conversations(
         offset,
     )
     return Page[ConversationOut](items=rows, total=total, limit=limit, offset=offset)
+
+
+@router.delete("/conversations/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    deleted = await sb.delete_service(
+        "conversations",
+        {
+            "id": f"eq.{conversation_id}",
+            "user_id": f"eq.{session.user.id}",
+        },
+    )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Conversation not found")
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=Page[MessageOut])

@@ -74,18 +74,6 @@ async def test_unverified_google_email_is_refused_and_nothing_changes():
 
 
 @pytest.mark.asyncio
-async def test_new_google_account_with_no_profile_gets_no_session():
-    sb = FakeDataClient()
-
-    with pytest.raises(GoogleSignInError) as info:
-        await _sign_in(sb)
-
-    assert info.value.status_code == 403
-    assert info.value.code == "no_profile"
-    assert sb.tables.get("profiles", []) == []
-
-
-@pytest.mark.asyncio
 async def test_linked_account_signs_in_and_the_token_carries_no_role():
     sb = FakeDataClient()
     account = _account(sb, subject="google-sub-1", role="authority")
@@ -126,18 +114,6 @@ async def test_email_linked_to_another_google_account_is_a_conflict():
 
 
 @pytest.mark.asyncio
-async def test_account_row_without_a_profile_grants_no_session_and_links_nothing():
-    sb = FakeDataClient()
-    _account(sb, subject=None, email="person@example.com", with_profile=False)
-
-    with pytest.raises(GoogleSignInError) as info:
-        await _sign_in(sb, verifier=_verifier(subject="google-sub-1", email="person@example.com"))
-
-    assert info.value.code == "no_profile"
-    assert sb.tables["account_identities"][0]["google_subject"] is None
-
-
-@pytest.mark.asyncio
 async def test_any_verified_domain_can_sign_in_once_it_has_a_profile():
     sb = FakeDataClient()
     account = _account(sb, subject="google-sub-1", email="person@gmail.com")
@@ -158,21 +134,6 @@ async def test_sign_in_is_refused_when_google_is_not_configured():
 # --- sign-up as a Student request ------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_new_google_person_files_a_pending_student_request_and_gets_no_account():
-    sb = FakeDataClient()
-
-    receipt = await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID,
-                                           verifier=_verifier(email="New.Student@Gmail.com", name="New Student"))
-
-    assert receipt["status"] == "received"
-    request = sb.tables["registration_requests"][0]
-    assert request["email"] == "new.student@gmail.com"
-    assert request.get("status", "pending") == "pending"
-    assert sb.tables.get("profiles", []) == []
-    assert sb.tables.get("account_identities", []) == []
-
-
-@pytest.mark.asyncio
 async def test_a_person_who_already_has_an_account_gets_no_new_request():
     sb = FakeDataClient()
     _account(sb, subject="google-sub-1", email="person@example.com")
@@ -181,15 +142,6 @@ async def test_a_person_who_already_has_an_account_gets_no_new_request():
 
     assert result["status"] == "has_account"
     assert sb.tables.get("registration_requests", []) == []
-
-
-@pytest.mark.asyncio
-async def test_repeat_request_does_not_create_a_second_row():
-    sb = FakeDataClient()
-    for _ in range(2):
-        await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID, verifier=_verifier())
-
-    assert len(sb.tables["registration_requests"]) == 1
 
 
 # --- invitation accounts ---------------------------------------------------------------
@@ -248,14 +200,6 @@ def test_route_signs_in_and_me_returns_the_profile_role(google_mode):
     assert me.json()["role"] == "authority"
 
 
-def test_route_without_a_profile_returns_a_clear_code_and_no_token(google_mode):
-    response = TestClient(app).post("/api/v1/auth/google", json={"id_token": TOKEN})
-
-    assert response.status_code == 403
-    assert response.json()["detail"]["code"] == "no_profile"
-    assert "access_token" not in response.json()
-
-
 def test_route_rejects_extra_fields_so_the_client_cannot_send_a_role(google_mode):
     response = TestClient(app).post(
         "/api/v1/auth/google", json={"id_token": TOKEN, "role": "super_admin"}
@@ -280,3 +224,189 @@ def test_me_with_a_token_for_a_removed_profile_is_forbidden(google_mode):
     response = TestClient(app).get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 403
+
+
+# --- open Student signup (the policy: a verified person with no profile becomes a Student) -----
+
+@pytest.mark.asyncio
+async def test_new_google_account_becomes_a_student_with_no_campus():
+    sb = FakeDataClient()
+
+    session = await _sign_in(sb)
+
+    profile = sb.tables["profiles"][0]
+    assert profile["role"] == "student"
+    assert profile["campus_id"] is None
+    assert profile["department_id"] is None
+    assert read_session_token(session["access_token"], SECRET) == UUID(profile["id"])
+    assert sb.tables["account_identities"][0]["google_subject"] == "google-sub-1"
+
+
+@pytest.mark.asyncio
+async def test_account_row_without_a_profile_becomes_a_student_and_is_linked():
+    sb = FakeDataClient()
+    _account(sb, subject=None, email="person@example.com", with_profile=False)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-sub-1", email="person@example.com"))
+
+    assert sb.tables["profiles"][0]["role"] == "student"
+    assert sb.tables["account_identities"][0]["google_subject"] == "google-sub-1"
+
+
+@pytest.mark.asyncio
+async def test_open_signup_never_grants_a_privileged_role():
+    sb = FakeDataClient()
+    _account(sb, subject=None, email="staff@example.com", with_profile=False)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-sub-9", email="staff@example.com", name="Staff"))
+
+    assert {row["role"] for row in sb.tables["profiles"]} == {"student"}
+
+
+@pytest.mark.asyncio
+async def test_access_request_creates_the_student_account_and_no_pending_row():
+    sb = FakeDataClient()
+
+    receipt = await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID,
+                                           verifier=_verifier(email="New.Student@Gmail.com", name="New Student"))
+
+    assert receipt["status"] == "has_account"
+    assert sb.tables.get("registration_requests", []) == []
+    assert sb.tables["profiles"][0]["email"] == "new.student@gmail.com"
+    assert sb.tables["profiles"][0]["role"] == "student"
+
+
+@pytest.mark.asyncio
+async def test_repeat_access_request_does_not_create_a_second_account():
+    sb = FakeDataClient()
+    for _ in range(2):
+        await request_student_access(sb=sb, id_token=TOKEN, client_id=CLIENT_ID, verifier=_verifier())
+
+    assert len(sb.tables["profiles"]) == 1
+    assert len(sb.tables["account_identities"]) == 1
+
+
+def test_route_creates_a_student_for_a_new_google_person(google_mode):
+    response = TestClient(app).post("/api/v1/auth/google", json={"id_token": TOKEN})
+
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    me = TestClient(app).get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.json()["role"] == "student"
+    assert me.json()["campus_id"] is None
+
+
+
+@pytest.mark.asyncio
+async def test_new_student_gets_the_only_existing_campus():
+    sb = FakeDataClient()
+    campus_id = str(uuid4())
+    sb.tables["campuses"] = [{"id": campus_id, "name": "Only Campus", "code": "only"}]
+
+    await _sign_in(sb)
+
+    profile = sb.tables["profiles"][0]
+    assert profile["role"] == "student"
+    assert str(profile["campus_id"]) == campus_id
+    assert profile["department_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_new_student_stays_unassigned_when_several_campuses_exist():
+    sb = FakeDataClient()
+    sb.tables["campuses"] = [
+        {"id": str(uuid4()), "name": "Campus A", "code": "a"},
+        {"id": str(uuid4()), "name": "Campus B", "code": "b"},
+    ]
+
+    await _sign_in(sb)
+
+    assert sb.tables["profiles"][0]["campus_id"] is None
+
+
+# --- pre-authorized Faculty -------------------------------------------------------------
+
+TARUN = "tarun.s26366@nst.rishihood.edu.in"
+SONIPAT = "Rishihood University, Sonipat"
+
+
+def _campuses(sb):
+    sonipat_id = str(uuid4())
+    sb.tables["campuses"] = [
+        {"id": sonipat_id, "name": SONIPAT, "code": "sonipat"},
+        {"id": str(uuid4()), "name": "Another Campus", "code": "other"},
+    ]
+    return sonipat_id
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_faculty_gets_a_faculty_profile_on_first_sign_in_and_never_a_student_one():
+    sb = FakeDataClient()
+    sonipat_id = _campuses(sb)
+
+    session = await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, name="Tarun S"))
+
+    assert [row["role"] for row in sb.tables["profiles"]] == ["faculty"]
+    profile = sb.tables["profiles"][0]
+    assert profile["email"] == TARUN
+    assert str(profile["campus_id"]) == sonipat_id
+    assert profile["department_id"] is None
+    assert read_session_token(session["access_token"], SECRET) == UUID(profile["id"])
+    assert sb.tables["account_identities"][0]["google_subject"] == "google-tarun"
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_email_match_ignores_case_and_surrounding_spaces():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=" Tarun.S26366@NST.rishihood.edu.in ", name="T"))
+
+    assert sb.tables["profiles"][0]["role"] == "faculty"
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_account_row_left_without_a_profile_becomes_faculty_not_student():
+    sb = FakeDataClient()
+    sonipat_id = _campuses(sb)
+    _account(sb, subject="google-tarun", email=TARUN, with_profile=False)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, name="T"))
+
+    profile = sb.tables["profiles"][0]
+    assert profile["role"] == "faculty"
+    assert str(profile["campus_id"]) == sonipat_id
+
+
+@pytest.mark.asyncio
+async def test_unverified_preauthorized_email_gets_nothing():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    with pytest.raises(GoogleSignInError) as info:
+        await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, verified=False))
+
+    assert info.value.code == "google_unverified"
+    assert sb.tables["profiles"] == []
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_faculty_is_not_created_when_the_campus_is_missing():
+    sb = FakeDataClient()
+    sb.tables["campuses"] = [{"id": str(uuid4()), "name": "Another Campus", "code": "other"}]
+
+    with pytest.raises(GoogleSignInError) as info:
+        await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN))
+
+    assert info.value.status_code == 503
+    assert sb.tables["profiles"] == []
+
+
+@pytest.mark.asyncio
+async def test_other_verified_emails_still_become_students_not_faculty():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-other", email="someone.else@example.com"))
+
+    assert sb.tables["profiles"][0]["role"] == "student"
