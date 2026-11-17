@@ -57,17 +57,9 @@ async def _upload(sb, user, scope):
 
 
 @pytest.mark.asyncio
-async def test_faculty_can_upload_university_wide_documents():
-    doc = await _upload(FakeDataClient(), _user("faculty"), "university_wide")
-    assert doc["scope"] == "university_wide"
-
-
-@pytest.mark.asyncio
-async def test_student_cannot_handle_university_wide_documents():
-    from app.services.documents import require_university_wide_permission
-
+async def test_faculty_cannot_upload_university_wide_documents():
     with pytest.raises(DocumentForbidden):
-        require_university_wide_permission(_user("student"), "university_wide")
+        await _upload(FakeDataClient(), _user("faculty"), "university_wide")
 
 
 @pytest.mark.asyncio
@@ -103,7 +95,7 @@ async def test_authority_publishes_a_university_wide_document():
     assert published["publication_status"] == "published"
 
 
-def test_faculty_upload_route_accepts_university_wide_scope():
+def test_faculty_upload_route_refuses_university_wide_scope():
     verifier_user = _user("faculty")
     app.dependency_overrides[get_token_verifier] = lambda: type("V", (), {"verify": lambda self, t: __import__("uuid").UUID(t)})()
     app.dependency_overrides[get_profile_repository] = lambda: FakeProfileRepository(
@@ -119,8 +111,7 @@ def test_faculty_upload_route_accepts_university_wide_scope():
         )
     finally:
         app.dependency_overrides.clear()
-    assert response.status_code == 202
-    assert response.json()["scope"] == "university_wide"
+    assert response.status_code == 403
 
 
 def test_faculty_publish_route_refuses_a_university_wide_document():

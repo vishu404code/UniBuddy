@@ -34,5 +34,4 @@ class GoogleTokenIn(BaseModel):
 class SessionOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: CurrentUser | None = None
 

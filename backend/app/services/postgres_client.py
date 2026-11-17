@@ -18,7 +18,11 @@ from uuid import UUID
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
-from psycopg_pool import ConnectionPool, PoolTimeout
+try:
+    from psycopg_pool import ConnectionPool, PoolTimeout
+except ImportError:
+    ConnectionPool = None
+    PoolTimeout = None
 
 from app.services.errors import DataServiceError
 from app.storage.objects import ObjectNotFound, ObjectStore, ObjectStoreError
@@ -121,7 +125,7 @@ class PostgresClient:
         # Production: a small pool, so each request reuses an open connection instead of paying for
         # a new TLS handshake to Neon. Tests that inject `connect` keep their own connection behaviour.
         self._pool: ConnectionPool | None = None
-        if connect is None:
+        if connect is None and ConnectionPool is not None:
             self._pool = ConnectionPool(
                 conninfo=dsn,
                 min_size=2,

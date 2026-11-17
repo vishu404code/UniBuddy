@@ -2,9 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = parseInt(process.env.PORT, 10) || 3000;
-const ALT_PORT = parseInt(process.env.ALT_PORT, 10) || 8099;
-const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+const PORT = process.env.PORT || 3000;
+const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -19,7 +18,7 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon'
 };
 
-function handleRequest(req, res) {
+const server = http.createServer((req, res) => {
   // Proxy /api/* to the FastAPI backend
   if (req.url.startsWith('/api/')) {
     const targetUrl = new URL(req.url, BACKEND_URL);
@@ -86,19 +85,8 @@ function handleRequest(req, res) {
       res.end(content);
     });
   });
-}
-
-const server = http.createServer(handleRequest);
-server.listen(PORT, () => {
-  console.log(`UniBuddy server running at http://localhost:${PORT}/ and http://127.0.0.1:${PORT}/`);
 });
 
-if (ALT_PORT && ALT_PORT !== PORT) {
-  const altServer = http.createServer(handleRequest);
-  altServer.on('error', (err) => {
-    console.log(`Note: Alternate port ${ALT_PORT} could not be bound (${err.code}). Main port ${PORT} active.`);
-  });
-  altServer.listen(ALT_PORT, () => {
-    console.log(`Google OAuth authorized origin preview also running at http://127.0.0.1:${ALT_PORT}/`);
-  });
-}
+server.listen(PORT, () => {
+  console.log(`UniBuddy server running at http://localhost:${PORT}/`);
+});

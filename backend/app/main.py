@@ -2,7 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -21,38 +21,18 @@ from app.routes.tickets import router as tickets_router
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
 from app.services.errors import DataServiceError
-from app.services.providers import get_ai_client, get_data_client, storage_configured
+from app.services.providers import get_ai_client, get_data_client
 
 logger = logging.getLogger("unibuddy")
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Pre-warm Google certs cache in background so first sign-in is instant
-    from app.auth.google_identity import warm_google_certs_cache
-    asyncio.create_task(asyncio.to_thread(warm_google_certs_cache))
-
-    if settings.database_url and settings.session_secret:
-        async def _warm_db():
-            try:
-                sb = get_data_client()
-                from app.services.google_sign_in import _get_single_campus_id
-                await _get_single_campus_id(sb)
-                logger.info("Database connection and campus cache pre-warmed")
-            except Exception as exc:
-                logger.debug("Database warmup skipped: %s", exc)
-        asyncio.create_task(_warm_db())
-
     worker_task = None
-    if settings.document_worker_enabled and settings.database_url and settings.session_secret and storage_configured():
-        try:
-            ai = get_ai_client() if settings.gemini_api_key else None
-            worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
-            logger.info("Document worker started in this process")
-        except HTTPException as exc:
-            # Keep the API up (health checks, sign-in, read routes) when storage is not configured yet.
-            # Uploads still fail with a clear 503 until the missing settings are added.
-            logger.warning("Document worker not started: %s", exc.detail)
+    if settings.document_worker_enabled and settings.database_url and settings.session_secret:
+        ai = get_ai_client() if settings.gemini_api_key else None
+        worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
+        logger.info("Document worker started in this process")
     try:
         yield
     finally:
@@ -101,8 +81,109 @@ async def ai_error_handler(_request: Request, exc: AIServiceError):
 
 
 @app.get(f"{settings.api_v1_prefix}/health")
+@app.get("/health")
 def health_check():
-    return {"status": "ok", "app": settings.app_name, "env": settings.app_env}
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+        "env": settings.app_env,
+        "database_configured": bool(settings.database_url),
+        "ai_configured": bool(settings.gemini_api_key),
+        "r2_configured": bool(
+            settings.r2_account_id
+            and settings.r2_access_key_id
+            and settings.r2_secret_access_key
+        ),
+        "google_auth_configured": bool(settings.google_client_id),
+    }
+
+
+@app.get(f"{settings.api_v1_prefix}/health/services")
+async def health_services():
+    """Separately tests connectivity to Database, AI, Storage and Auth."""
+    results = {
+        "database": {"status": "unconfigured", "details": None},
+        "gemini_ai": {"status": "unconfigured", "details": None},
+        "object_storage": {"status": "unconfigured", "details": None},
+        "google_auth": {"status": "unconfigured", "details": None},
+    }
+    all_ok = True
+
+    # 1. Database
+    if settings.database_url:
+        try:
+            client = get_data_client()
+            await client.select_service("campuses", {"limit": "1"})
+            results["database"] = {"status": "connected", "details": "Neon PostgreSQL OK"}
+        except Exception as exc:
+            all_ok = False
+            results["database"] = {"status": "error", "details": str(exc)}
+    else:
+        results["database"] = {
+            "status": "unconfigured",
+            "details": "DATABASE_URL not set in backend/.env",
+        }
+
+    # 2. Gemini AI
+    if settings.gemini_api_key:
+        results["gemini_ai"] = {
+            "status": "configured",
+            "chat_model": settings.gemini_chat_model,
+            "embedding_model": settings.gemini_embedding_model,
+        }
+    else:
+        results["gemini_ai"] = {
+            "status": "unconfigured",
+            "details": "GEMINI_API_KEY not set in backend/.env",
+        }
+
+    # 3. Object Storage
+    if (
+        settings.r2_account_id
+        and settings.r2_access_key_id
+        and settings.r2_secret_access_key
+    ):
+        results["object_storage"] = {
+            "status": "configured",
+            "bucket": settings.r2_bucket,
+        }
+    else:
+        results["object_storage"] = {
+            "status": "unconfigured",
+            "details": "R2_ACCOUNT_ID or R2 credentials not set in backend/.env",
+        }
+
+    # 4. Google Auth
+    if settings.google_client_id:
+        results["google_auth"] = {
+            "status": "configured",
+            "client_id": settings.google_client_id[:16] + "...",
+        }
+    else:
+        results["google_auth"] = {
+            "status": "unconfigured",
+            "details": "GOOGLE_CLIENT_ID not set in backend/.env",
+        }
+
+    status_code = 200 if (settings.database_url and all_ok) else 200
+    return JSONResponse(status_code=status_code, content={"ready": all_ok, "services": results})
+
+
+@app.post(f"{settings.api_v1_prefix}/health/diagnose-gemini")
+async def diagnose_gemini_endpoint():
+    """Diagnostic endpoint to test live Gemini API connection without exposing secrets."""
+    if not settings.gemini_api_key:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unconfigured",
+                "message": "GEMINI_API_KEY is not configured in backend/.env",
+            },
+        )
+    ai = get_ai_client()
+    diag = await ai.test_connection()
+    status_code = 200 if diag.get("status") == "connected" else 502
+    return JSONResponse(status_code=status_code, content=diag)
 
 
 for router in (
