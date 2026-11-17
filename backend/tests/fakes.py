@@ -146,7 +146,13 @@ class FakeDataClient:
         self.storage.pop(f"{bucket}/{path}", None)
 
     async def delete_service(self, table, filters):
-        self.tables[table] = [r for r in self.tables[table] if not _matches(r, filters)]
+        before = len(self.tables.get(table, []))
+        to_delete = [r for r in self.tables.get(table, []) if _matches(r, filters)]
+        self.tables[table] = [r for r in self.tables.get(table, []) if not _matches(r, filters)]
+        if table == "conversations":
+            deleted_ids = {str(r.get("id")) for r in to_delete}
+            self.tables["messages"] = [m for m in self.tables.get("messages", []) if str(m.get("conversation_id")) not in deleted_ids]
+        return before - len(self.tables[table])
 
     async def insert_service_batched(self, table, rows, batch_size=200):
         await self.insert_service(table, rows)

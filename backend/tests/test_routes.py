@@ -320,3 +320,43 @@ def test_upload_is_refused_before_the_app_storage_budget_is_passed(harness, monk
     assert response.status_code == 507
     assert "Nothing was uploaded" in response.json()["detail"]
     assert sb.tables["documents"] == []
+
+
+def test_student_can_delete_conversation(harness):
+    client, sb, _ = harness
+    conv_id = str(uuid4())
+    msg_id = str(uuid4())
+    sb.tables["conversations"].append({
+        "id": conv_id,
+        "user_id": STUDENT_ID,
+        "title": "History chat to delete",
+    })
+    sb.tables["messages"].append({
+        "id": msg_id,
+        "conversation_id": conv_id,
+        "role": "user",
+        "content": "hello",
+    })
+
+    # Other student's conversation
+    other_conv_id = str(uuid4())
+    sb.tables["conversations"].append({
+        "id": other_conv_id,
+        "user_id": str(uuid4()),
+        "title": "Other student chat",
+    })
+
+    # Student cannot delete someone else's conversation
+    res_other = client.delete(f"{API}/chat/conversations/{other_conv_id}", headers=_auth(STUDENT_ID))
+    assert res_other.status_code == 404
+    assert any(c["id"] == other_conv_id for c in sb.tables["conversations"])
+
+    # Faculty cannot access student conversation delete endpoint
+    res_fac = client.delete(f"{API}/chat/conversations/{conv_id}", headers=_auth(FACULTY_ID))
+    assert res_fac.status_code == 403
+
+    # Student deletes their own conversation
+    res = client.delete(f"{API}/chat/conversations/{conv_id}", headers=_auth(STUDENT_ID))
+    assert res.status_code == 204
+    assert not any(c["id"] == conv_id for c in sb.tables["conversations"])
+    assert not any(m["conversation_id"] == conv_id for m in sb.tables["messages"])

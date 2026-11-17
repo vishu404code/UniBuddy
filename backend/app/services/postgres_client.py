@@ -299,12 +299,12 @@ class PostgresClient:
         params = [_adapt(v) for v in values.values()] + where_values
         return await self._run(None, lambda c: c.execute(sql, params).fetchall())
 
-    async def delete_service(self, table: str, filters: dict[str, str]) -> None:
+    async def delete_service(self, table: str, filters: dict[str, str]) -> int:
         if not any(column not in RESERVED for column in filters):
             raise DataServiceError(400, "delete needs a filter")
         where, values = _where(filters)
         sql = f"delete from {_ident(table)} where {where}"
-        await self._run(None, lambda c: c.execute(sql, values))
+        return await self._run(None, lambda c: c.execute(sql, values).rowcount)
 
     # --- RPC ------------------------------------------------------------------------
 
