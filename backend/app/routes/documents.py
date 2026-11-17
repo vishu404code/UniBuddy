@@ -8,6 +8,7 @@ from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
+    clean_metadata,
     stored_bytes_estimate,
     archive_document,
     restore_document,
@@ -51,11 +52,20 @@ async def upload(
     visibility: Annotated[str, Form()] = "public_students",
     scope: Annotated[str, Form()] = "campus",
     department_id: Annotated[UUID | None, Form()] = None,
+    academic_year: Annotated[str | None, Form()] = None,
+    batch_year: Annotated[int | None, Form()] = None,
+    section: Annotated[str | None, Form()] = None,
+    course_id: Annotated[UUID | None, Form()] = None,
+    source_person: Annotated[str | None, Form()] = None,
     sb: PostgresClient = Depends(get_data_client),
 ):
     """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}."""
     _check_form(visibility, scope)
     require_university_wide_permission(session.user, scope)
+    metadata = clean_metadata(
+        academic_year=academic_year, batch_year=batch_year, section=section,
+        course_id=course_id, source_person=source_person,
+    )
     data = await file.read(settings.max_upload_bytes + 1)
     # Same file name and size already in the library: refuse instead of storing a second copy.
     # Use Replace on the existing document (or archive it) for a new version.
@@ -98,6 +108,7 @@ async def upload(
         data=data,
         max_bytes=settings.max_upload_bytes,
         storage_bucket=settings.r2_bucket,
+        metadata=metadata,
     )
     response.headers["Location"] = f"{settings.api_v1_prefix}/documents/{row['id']}"
     return _to_out(row)
@@ -198,6 +209,8 @@ async def list_documents(
     scope: Literal["campus", "university_wide"] | None = None,
     campus_id: UUID | None = None,
     department_id: UUID | None = None,
+    course_id: UUID | None = None,
+    batch_year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
     sb: PostgresClient = Depends(get_data_client),
 ):
     """Documents the caller may see. Filters narrow the results; they never widen access."""
@@ -214,6 +227,10 @@ async def list_documents(
         filters["campus_id"] = f"eq.{campus_id}"
     if department_id:
         filters["department_id"] = f"eq.{department_id}"
+    if course_id:
+        filters["course_id"] = f"eq.{course_id}"
+    if batch_year is not None:
+        filters["batch_year"] = f"eq.{batch_year}"
     rows, total = await sb.select_page_as_user(
         session.access_token, "documents", {"select": "*", **filters}, limit, offset
     )

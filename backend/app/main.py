@@ -12,7 +12,9 @@ from app.routes.admin import router as admin_router
 from app.routes.announcements import router as announcements_router
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
+from app.routes.courses import router as courses_router
 from app.routes.departments import router as departments_router
+from app.routes.people import router as people_router
 from app.routes.dashboards import router as dashboards_router
 from app.routes.documents import router as documents_router
 from app.routes.notifications import router as notifications_router
@@ -101,5 +103,7 @@ for router in (
     provisioning_router,
     admin_router,
     departments_router,
+    courses_router,
+    people_router,
 ):
     app.include_router(router, prefix=settings.api_v1_prefix)

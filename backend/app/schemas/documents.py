@@ -21,4 +21,9 @@ class DocumentOut(BaseModel):
     campus_id: UUID | None
     department_id: UUID | None
     replaces_document_id: UUID | None = None
+    academic_year: str | None = None
+    batch_year: int | None = None
+    section: str | None = None
+    course_id: UUID | None = None
+    source_person: str | None = None
     created_at: datetime

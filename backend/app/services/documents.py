@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -56,6 +57,55 @@ async def _check_department(sb: PostgresClient, department_id: UUID, campus_id: 
         raise DocumentError("Department does not belong to your campus")
 
 
+async def _check_course(sb: PostgresClient, course_id: UUID, campus_id: UUID) -> None:
+    """A document can only use an active course from the uploader's own campus."""
+    rows = await sb.select_service(
+        "courses",
+        {"select": "id,active", "id": f"eq.{course_id}", "campus_id": f"eq.{campus_id}"},
+    )
+    if not rows or not rows[0]["active"]:
+        raise DocumentError("Choose an active course from your campus")
+
+
+@dataclass(frozen=True)
+class AcademicMetadata:
+    """Optional browsing fields. They help people find a document; they never change who can read it."""
+
+    academic_year: str | None = None
+    batch_year: int | None = None
+    section: str | None = None
+    course_id: UUID | None = None
+    source_person: str | None = None
+
+
+def _clean_text(value: str | None, limit: int) -> str | None:
+    if value is None or not value.strip():
+        return None
+    cleaned = " ".join(value.split())
+    if len(cleaned) > limit:
+        raise DocumentError(f"Text must be {limit} characters or fewer")
+    return cleaned
+
+
+def clean_metadata(
+    *,
+    academic_year: str | None,
+    batch_year: int | None,
+    section: str | None,
+    course_id: UUID | None,
+    source_person: str | None,
+) -> AcademicMetadata:
+    if batch_year is not None and not (2000 <= batch_year <= 2100):
+        raise DocumentError("Batch year must be between 2000 and 2100")
+    return AcademicMetadata(
+        academic_year=_clean_text(academic_year, 20),
+        batch_year=batch_year,
+        section=_clean_text(section, 10),
+        course_id=course_id,
+        source_person=_clean_text(source_person, 120),
+    )
+
+
 async def _store_and_queue(
     *,
     sb: PostgresClient,
@@ -70,6 +120,7 @@ async def _store_and_queue(
     storage_bucket: str,
     replaces_document_id: UUID | None,
     content_type: str | None,
+    metadata: AcademicMetadata | None = None,
 ) -> dict[str, Any]:
     require_university_wide_permission(uploader, scope)
     validate_upload(data, content_type, title, max_bytes)
@@ -77,6 +128,9 @@ async def _store_and_queue(
         raise DocumentForbidden("Your account has no campus assigned")
     if department_id is not None:
         await _check_department(sb, department_id, uploader.campus_id)
+    meta = metadata or AcademicMetadata()
+    if meta.course_id is not None:
+        await _check_course(sb, meta.course_id, uploader.campus_id)
 
     document_id = uuid4()
     storage_path = f"{uploader.campus_id}/{document_id}.pdf"
@@ -97,6 +151,11 @@ async def _store_and_queue(
         "processing_status": "pending",
         "publication_status": "draft",
         "replaces_document_id": str(replaces_document_id) if replaces_document_id else None,
+        "academic_year": meta.academic_year,
+        "batch_year": meta.batch_year,
+        "section": meta.section,
+        "course_id": str(meta.course_id) if meta.course_id else None,
+        "source_person": meta.source_person,
     }
     try:
         await sb.insert_service("documents", [row])
@@ -128,11 +187,13 @@ async def upload_document(
     data: bytes,
     max_bytes: int,
     storage_bucket: str,
+    metadata: AcademicMetadata | None = None,
 ) -> dict[str, Any]:
     return await _store_and_queue(
         sb=sb, uploader=uploader, title=title, visibility=visibility, scope=scope,
         department_id=department_id, filename=filename, data=data, max_bytes=max_bytes,
         storage_bucket=storage_bucket, replaces_document_id=None, content_type=content_type,
+        metadata=metadata,
     )
 
 
@@ -205,6 +266,14 @@ async def replace_document(
         storage_bucket=storage_bucket,
         replaces_document_id=document_id,
         content_type=content_type,
+        # A new version keeps the metadata of the version it replaces.
+        metadata=AcademicMetadata(
+            academic_year=original.get("academic_year"),
+            batch_year=original.get("batch_year"),
+            section=original.get("section"),
+            course_id=UUID(str(original["course_id"])) if original.get("course_id") else None,
+            source_person=original.get("source_person"),
+        ),
     )
 
 

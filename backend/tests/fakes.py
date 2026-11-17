@@ -39,6 +39,10 @@ def _matches(row: dict[str, Any], params: dict[str, str]) -> bool:
         elif value == "is.null":
             if row.get(key) is not None:
                 return False
+        elif value.startswith("in.(") and value.endswith(")"):
+            wanted = {item for item in value[4:-1].split(",") if item}
+            if str(row.get(key)) not in wanted:
+                return False
         else:
             raise NotImplementedError(f"fake does not support filter {value}")
     return True
@@ -76,6 +80,9 @@ class FakeDataClient:
             if table == "tickets" and "ticket_number" not in stored:
                 stored["ticket_number"] = f"UB-{len(self.tables[table]) + 1:04d}"
             self.tables[table].append(stored)
+
+    async def delete_service(self, table, filters):
+        self.tables[table] = [row for row in self.tables[table] if not _matches(row, filters)]
 
     async def update_service(self, table, filters, values):
         updated = []
