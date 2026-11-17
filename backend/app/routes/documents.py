@@ -1,3 +1,6 @@
+import logging
+import re
+from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -9,7 +12,14 @@ from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
     clean_metadata,
+    DocumentNotFound,
+    check_pdf_access,
+    read_pdf,
+    attach_course_names,
+    batch_filter,
+    course_filter,
     stored_bytes_estimate,
+    text_filter,
     archive_document,
     restore_document,
     set_document_scope,
@@ -21,8 +31,6 @@ from app.services.documents import (
 )
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
-
-import logging
 
 logger = logging.getLogger("unibuddy.documents")
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -195,8 +203,42 @@ async def get_document(
     rows = await sb.select_as_user(session.access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
     if not rows:
         raise HTTPException(404, "Document not found")
+    await attach_course_names(sb, session.access_token, rows)
     return _to_out(rows[0])
 
+
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("student", "faculty", "authority"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """The PDF itself. Visibility is checked against the caller's own access (RLS) and again here, so
+    students never receive drafts, archived documents or documents outside their audience and scope.
+    The storage bucket stays private: the server reads the file and streams it back."""
+    rows = await sb.select_as_user(session.access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
+    if not rows:
+        raise DocumentNotFound("This document is not available to your account.")
+    document = rows[0]
+    check_pdf_access(session.user, document)
+    data = await read_pdf(sb, settings.r2_bucket, document)
+    logger.info("pdf opened: role=%s document=%s", session.user.role, document_id)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{_safe_filename(document)}"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+def _safe_filename(document: dict) -> str:
+    base = document.get("original_filename") or document.get("title") or "document"
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", str(base)).strip("._") or "document"
+    cleaned = cleaned[:100]
+    return cleaned if cleaned.lower().endswith(".pdf") else f"{cleaned}.pdf"
 
 @router.get("", response_model=Page[DocumentOut])
 async def list_documents(
@@ -209,11 +251,16 @@ async def list_documents(
     scope: Literal["campus", "university_wide"] | None = None,
     campus_id: UUID | None = None,
     department_id: UUID | None = None,
-    course_id: UUID | None = None,
-    batch_year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    course_id: Annotated[str | None, Query(max_length=40)] = None,
+    academic_year: Annotated[str | None, Query(max_length=40)] = None,
+    batch_year: Annotated[str | None, Query(max_length=12)] = None,
+    section: Annotated[str | None, Query(max_length=12)] = None,
+    created_from: datetime | None = None,
+    created_before: datetime | None = None,
     sb: PostgresClient = Depends(get_data_client),
 ):
-    """Documents the caller may see. Filters narrow the results; they never widen access."""
+    """Documents the caller may see. Filters narrow the results; they never widen access.
+    A filter value of "unspecified" selects records where that field is not recorded."""
     filters = {"order": "created_at.desc"}
     if processing_status:
         filters["processing_status"] = f"eq.{processing_status}"
@@ -227,11 +274,20 @@ async def list_documents(
         filters["campus_id"] = f"eq.{campus_id}"
     if department_id:
         filters["department_id"] = f"eq.{department_id}"
-    if course_id:
-        filters["course_id"] = f"eq.{course_id}"
+    if course_id is not None:
+        filters["course_id"] = course_filter(course_id)
+    if academic_year is not None:
+        filters["academic_year"] = text_filter(academic_year, 20)
     if batch_year is not None:
-        filters["batch_year"] = f"eq.{batch_year}"
+        filters["batch_year"] = batch_filter(batch_year)
+    if section is not None:
+        filters["section"] = text_filter(section, 10)
+    if created_from is not None:
+        filters["created_at"] = f"gte.{created_from.isoformat()}"
+    if created_before is not None:
+        filters["created_at~before"] = f"lt.{created_before.isoformat()}"
     rows, total = await sb.select_page_as_user(
         session.access_token, "documents", {"select": "*", **filters}, limit, offset
     )
+    await attach_course_names(sb, session.access_token, rows)
     return Page[DocumentOut](items=[_to_out(r) for r in rows], total=total, limit=limit, offset=offset)

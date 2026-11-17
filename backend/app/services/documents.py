@@ -1,9 +1,12 @@
+import re
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID, uuid4
 
 from app.schemas.auth import CurrentUser
 from app.services.postgres_client import PostgresClient
+from fastapi import HTTPException
+
 from app.services.errors import DataServiceError
 
 PDF_CONTENT_TYPE = "application/pdf"
@@ -33,6 +36,10 @@ class DocumentConflict(DocumentError):
 
 class DocumentProcessingFailed(DocumentError):
     status_code = 422
+
+
+class DocumentUnavailable(DocumentError):
+    status_code = 503
 
 
 def validate_upload(data: bytes, content_type: str | None, title: str, max_bytes: int) -> None:
@@ -121,6 +128,7 @@ async def _store_and_queue(
     replaces_document_id: UUID | None,
     content_type: str | None,
     metadata: AcademicMetadata | None = None,
+    validate_options: bool = True,
 ) -> dict[str, Any]:
     require_university_wide_permission(uploader, scope)
     validate_upload(data, content_type, title, max_bytes)
@@ -131,6 +139,8 @@ async def _store_and_queue(
     meta = metadata or AcademicMetadata()
     if meta.course_id is not None:
         await _check_course(sb, meta.course_id, uploader.campus_id)
+    if validate_options:
+        await check_metadata_options(sb, uploader.campus_id, meta)
 
     document_id = uuid4()
     storage_path = f"{uploader.campus_id}/{document_id}.pdf"
@@ -266,7 +276,9 @@ async def replace_document(
         storage_bucket=storage_bucket,
         replaces_document_id=document_id,
         content_type=content_type,
-        # A new version keeps the metadata of the version it replaces.
+        # A new version keeps the metadata of the version it replaces, so it is not re-checked against
+        # today's options: an option retired since then must not block the replacement.
+        validate_options=False,
         metadata=AcademicMetadata(
             academic_year=original.get("academic_year"),
             batch_year=original.get("batch_year"),
@@ -409,3 +421,123 @@ async def set_document_scope(
     if not updated:
         raise DocumentConflict("Document changed; reload and try again")
     return updated[0]
+
+
+# --- Filter options --------------------------------------------------------------------------
+
+OPTION_LABELS = {"academic_year": "academic year", "batch": "batch year", "section": "section"}
+
+
+async def require_active_option(sb: PostgresClient, campus_id: UUID, kind: str, value: str) -> None:
+    """New selections must be active options on the uploader's campus. Existing records are not re-checked."""
+    rows = await sb.select_service(
+        "filter_options", {"select": "value,active", "campus_id": f"eq.{campus_id}", "kind": f"eq.{kind}"}
+    )
+    wanted = value.strip().lower()
+    if not any(row["active"] and str(row["value"]).strip().lower() == wanted for row in rows):
+        raise DocumentError(f"Choose an active {OPTION_LABELS[kind]} from the list")
+
+
+async def check_metadata_options(sb: PostgresClient, campus_id: UUID | None, meta: AcademicMetadata) -> None:
+    if campus_id is None:
+        if meta.academic_year or meta.batch_year is not None or meta.section:
+            raise DocumentForbidden("Your account has no campus assigned")
+        return
+    if meta.academic_year:
+        await require_active_option(sb, campus_id, "academic_year", meta.academic_year)
+    if meta.batch_year is not None:
+        await require_active_option(sb, campus_id, "batch", str(meta.batch_year))
+    if meta.section:
+        await require_active_option(sb, campus_id, "section", meta.section)
+
+
+# --- PDF access ------------------------------------------------------------------------------
+
+PROCESSING_MESSAGES = {
+    "pending": "This PDF is waiting to be processed. It can be opened when processing is complete.",
+    "processing": "This PDF is still being processed. It can be opened when processing is complete.",
+    "failed": "This PDF could not be processed, so it cannot be opened. Upload it again.",
+}
+
+
+def _staff_can_open(user: CurrentUser, document: dict[str, Any]) -> bool:
+    """Mirrors can_read_document() in the database: the uploader always; published documents for their
+    campus or university-wide; drafts and archived documents only for Authority on their campus."""
+    same_campus_or_univ = document["scope"] == "university_wide" or str(document.get("campus_id")) == str(user.campus_id)
+    if str(document["uploaded_by"]) == str(user.id):
+        return True
+    if document["publication_status"] == "published":
+        return same_campus_or_univ
+    return user.role == "authority" and same_campus_or_univ
+
+
+def check_pdf_access(user: CurrentUser, document: dict[str, Any]) -> None:
+    """Students get published, public, ready documents for their campus or university-wide only.
+    Anything else is reported as not available, so drafts and other audiences are not revealed."""
+    if user.role == "student":
+        allowed = (
+            document["publication_status"] == "published"
+            and document["visibility"] == "public_students"
+            and document["processing_status"] == "ready"
+            and (document["scope"] == "university_wide" or str(document.get("campus_id")) == str(user.campus_id))
+        )
+        if not allowed:
+            raise DocumentNotFound("This document is not available to your account.")
+    elif user.role in ("faculty", "authority"):
+        if not _staff_can_open(user, document):
+            raise DocumentNotFound("This document is not available to your account.")
+    else:
+        raise DocumentForbidden("Your role cannot open documents")
+    status = document["processing_status"]
+    if status != "ready":
+        raise DocumentConflict(PROCESSING_MESSAGES.get(status, "This PDF cannot be opened right now."))
+
+
+async def read_pdf(sb: PostgresClient, bucket: str, document: dict[str, Any]) -> bytes:
+    """Reads the file with the server's storage access. The bucket stays private; the client never
+    receives a storage key or a storage URL."""
+    try:
+        return await sb.download_object(bucket, document["storage_path"])
+    except DataServiceError as exc:
+        if exc.status_code == 404:
+            raise DocumentNotFound("The PDF file is missing from storage. Ask Authority to upload it again.") from exc
+        raise DocumentUnavailable("File storage is unavailable right now. Try again in a few minutes.") from exc
+
+
+# --- Filters shared by the document and announcement lists ----------------------------------
+
+UNSPECIFIED = "unspecified"
+
+def text_filter(value: str, limit: int) -> str:
+    if value == UNSPECIFIED:
+        return "is.null"
+    cleaned = " ".join(value.split())
+    if not cleaned or len(cleaned) > limit:
+        raise HTTPException(422, f"filter value must be 1 to {limit} characters")
+    return f"eq.{cleaned}"
+
+def batch_filter(value: str) -> str:
+    if value == UNSPECIFIED:
+        return "is.null"
+    if not (len(value) == 4 and value.isdigit() and 2000 <= int(value) <= 2100):
+        raise HTTPException(422, "batch must be a four-digit year, or unspecified")
+    return f"eq.{int(value)}"
+
+def course_filter(value: str) -> str:
+    if value == UNSPECIFIED:
+        return "is.null"
+    try:
+        return f"eq.{UUID(value)}"
+    except ValueError as exc:
+        raise HTTPException(422, "course must be an id, or unspecified") from exc
+
+async def attach_course_names(sb: PostgresClient, access_token: str, rows: list[dict]) -> None:
+    """Course names come from the courses table under the caller's own access. A course the caller
+    may not read gets no name."""
+    ids = sorted({str(row["course_id"]) for row in rows if row.get("course_id")})
+    names: dict[str, str] = {}
+    if ids:
+        courses = await sb.select_as_user(access_token, "courses", {"select": "id,name", "id": f"in.({','.join(ids)})"})
+        names = {str(course["id"]): course["name"] for course in courses}
+    for row in rows:
+        row["course_name"] = names.get(str(row["course_id"])) if row.get("course_id") else None

@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from app.schemas.announcements import AnnouncementCreate
 from app.schemas.auth import CurrentUser
-from app.services.documents import DocumentError, DocumentForbidden
+from app.services.documents import DocumentError, DocumentForbidden, require_active_option
 from app.services.postgres_client import PostgresClient
 
 
@@ -46,6 +46,14 @@ async def create_announcement(*, sb: PostgresClient, user: CurrentUser, body: An
         raise DocumentForbidden("Your account has no campus assigned")
     if body.course_id is not None:
         await _check_course(sb, user.campus_id, body.course_id)
+    if has_target:
+        # Year, batch and section are chosen from the campus's active options.
+        if body.academic_year:
+            await require_active_option(sb, user.campus_id, "academic_year", body.academic_year.strip())
+        if body.batch_year is not None:
+            await require_active_option(sb, user.campus_id, "batch", str(body.batch_year))
+        if body.section:
+            await require_active_option(sb, user.campus_id, "section", body.section.strip())
     person_ids = list(dict.fromkeys(body.person_ids))
     if person_ids:
         await _check_people(sb, user.campus_id, person_ids)

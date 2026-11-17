@@ -51,6 +51,15 @@ def _student(sb, campus_id, *, name="Test Student", email=None, batch=None, cour
     return make_profile(student_id, role="student", campus_id=campus_id)
 
 
+def _options(sb, campus_id, *, years=("2026-27",), batches=("2026",), sections=("A", "B")):
+    """Active filter options for a campus (test fixtures). Upload and announcement metadata must use them."""
+    for kind, values in (("academic_year", years), ("batch", batches), ("section", sections)):
+        for value in values:
+            sb.tables["filter_options"].append({
+                "id": str(uuid4()), "campus_id": campus_id, "kind": kind, "value": value, "active": True,
+            })
+
+
 async def _upload(sb, user, **overrides):
     options = dict(
         sb=sb, uploader=user, title="LOA policy", visibility="public_students", scope="campus",
@@ -128,6 +137,7 @@ async def test_removing_an_unused_course_deletes_it():
 async def test_removing_a_course_in_use_deactivates_it_and_keeps_the_record():
     sb = FakeDataClient()
     campus = _campus(sb)
+    _options(sb, campus)
     authority = _authority(campus)
     course = await create_course(sb, authority, "BBA")
     metadata = clean_metadata(academic_year="2026-27", batch_year=2026, section="A",
@@ -171,6 +181,7 @@ async def test_renaming_to_an_existing_name_on_the_campus_is_refused():
 async def test_upload_stores_the_academic_metadata_with_the_document():
     sb = FakeDataClient()
     campus = _campus(sb)
+    _options(sb, campus)
     authority = _authority(campus)
     course = await create_course(sb, authority, "CS & AI")
     faculty = _faculty(campus)
@@ -235,6 +246,7 @@ def test_metadata_limits_are_checked_and_blank_text_is_dropped():
 async def test_targeted_announcement_stores_its_filters_and_campus():
     sb = FakeDataClient()
     campus = _campus(sb)
+    _options(sb, campus)
     authority = _authority(campus)
     course = await create_course(sb, authority, "BBA")
     body = AnnouncementCreate(title="Batch 2026 BBA", body="Orientation on Monday.",
@@ -253,6 +265,7 @@ async def test_targeted_announcement_stores_its_filters_and_campus():
 async def test_selected_people_get_recipient_rows_and_must_be_students_on_the_campus():
     sb = FakeDataClient()
     campus = _campus(sb)
+    _options(sb, campus)
     other_campus = _campus(sb, "Other")
     authority = _authority(campus)
     student = _student(sb, campus, name="Asha Rao")
@@ -349,3 +362,20 @@ async def test_student_picker_is_empty_for_a_user_without_a_campus():
     session = SimpleNamespace(user=nobody, access_token=str(nobody.id))
 
     assert await find_students(session=session, q="", sb=sb) == []
+
+
+@pytest.mark.asyncio
+async def test_metadata_must_use_an_active_option_of_the_campus():
+    sb = FakeDataClient()
+    campus = _campus(sb)
+    _options(sb, campus, years=("2026-27",), sections=("A",))
+    sb.tables["filter_options"][0]["active"] = False  # retire the academic year
+    faculty = _faculty(campus)
+
+    with pytest.raises(DocumentError):
+        await _upload(sb, faculty, metadata=clean_metadata(academic_year="2026-27", batch_year=None,
+                                                           section=None, course_id=None, source_person=None))
+    with pytest.raises(DocumentError):
+        await _upload(sb, faculty, metadata=clean_metadata(academic_year=None, batch_year=None,
+                                                           section="Z", course_id=None, source_person=None))
+    assert sb.tables["documents"] == []

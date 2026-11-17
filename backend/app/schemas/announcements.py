@@ -46,4 +46,5 @@ class AnnouncementOut(BaseModel):
     batch_year: int | None = None
     section: str | None = None
     course_id: UUID | None = None
+    course_name: str | None = None
     created_at: datetime

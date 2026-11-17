@@ -40,7 +40,9 @@ def _ident(name: str) -> str:
 def _where(filters: dict[str, str]) -> tuple[str, list[Any]]:
     clauses: list[str] = []
     params: list[Any] = []
-    for column, expression in filters.items():
+    for key, expression in filters.items():
+        # A key may carry a suffix after "~" so one column can have two conditions (a date range).
+        column = key.partition("~")[0]
         if column in RESERVED:
             continue
         col = _ident(column)

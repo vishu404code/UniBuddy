@@ -26,15 +26,30 @@ ROW_DEFAULTS = {
 }
 
 
+def _text(value: Any) -> str:
+    # PostgREST writes booleans as true and false.
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
 def _matches(row: dict[str, Any], params: dict[str, str]) -> bool:
-    for key, value in params.items():
+    for full_key, value in params.items():
+        key = full_key.partition("~")[0]
         if key in RESERVED_PARAMS:
             continue
-        if value.startswith("eq."):
-            if str(row.get(key)) != value[3:]:
+        if value.startswith(("gte.", "lt.")):
+            operator, _, bound = value.partition(".")
+            current = str(row.get(key) or "")
+            if operator == "gte" and not current >= bound:
+                return False
+            if operator == "lt" and not current < bound:
+                return False
+        elif value.startswith("eq."):
+            if _text(row.get(key)) != value[3:]:
                 return False
         elif value.startswith("neq."):
-            if str(row.get(key)) == value[4:]:
+            if _text(row.get(key)) == value[4:]:
                 return False
         elif value == "is.null":
             if row.get(key) is not None:

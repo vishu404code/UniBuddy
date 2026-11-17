@@ -26,4 +26,5 @@ class DocumentOut(BaseModel):
     section: str | None = None
     course_id: UUID | None = None
     source_person: str | None = None
+    course_name: str | None = None
     created_at: datetime
