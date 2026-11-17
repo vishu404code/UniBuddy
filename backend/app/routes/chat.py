@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.ai.gemini_client import GeminiClient
 from app.config import settings
@@ -17,6 +18,7 @@ from app.schemas.chat import (
 )
 from app.schemas.common import Page
 from app.services.chat import ask_question, forward_message_to_faculty
+from app.services.chat_retention import cutoff_for, tidy_student_chats_safely
 from app.services.providers import get_ai_client, get_data_client
 from app.services.postgres_client import PostgresClient
 
@@ -60,14 +62,28 @@ async def list_conversations(
     offset: Annotated[int, Query(ge=0)] = 0,
     sb: PostgresClient = Depends(get_data_client),
 ):
-    rows, total = await sb.select_page_as_user(
+    """Conversations with messages in the last 72 hours. Each visit also tidies one batch of older
+    chats into private summaries (see chat_retention). That step never fails this request."""
+    try:
+        ai = get_ai_client()
+    except HTTPException:
+        ai = None  # AI not configured: old chats wait for a visit that can summarize them
+    await tidy_student_chats_safely(sb=sb, ai=ai, user=session.user)
+    cutoff = cutoff_for(datetime.now(timezone.utc))
+    recent = await sb.select_as_user(
+        session.access_token,
+        "messages",
+        {"select": "conversation_id", "created_at": f"gte.{cutoff.isoformat()}", "limit": "1000"},
+    )
+    ids = sorted({str(row["conversation_id"]) for row in recent})
+    if not ids:
+        return Page[ConversationOut](items=[], total=0, limit=limit, offset=offset)
+    rows = await sb.select_as_user(
         session.access_token,
         "conversations",
-        {"select": "id,title,created_at", "order": "created_at.desc"},
-        limit,
-        offset,
+        {"select": "id,title,created_at", "id": f"in.({','.join(ids)})", "order": "created_at.desc"},
     )
-    return Page[ConversationOut](items=rows, total=total, limit=limit, offset=offset)
+    return Page[ConversationOut](items=rows[offset : offset + limit], total=len(rows), limit=limit, offset=offset)
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=Page[MessageOut])
@@ -78,12 +94,14 @@ async def list_messages(
     offset: Annotated[int, Query(ge=0)] = 0,
     sb: PostgresClient = Depends(get_data_client),
 ):
+    cutoff = cutoff_for(datetime.now(timezone.utc))
     rows, total = await sb.select_page_as_user(
         session.access_token,
         "messages",
         {
             "select": "id,role,content,citations,created_at",
             "conversation_id": f"eq.{conversation_id}",
+            "created_at": f"gte.{cutoff.isoformat()}",
             "order": "created_at.asc",
         },
         limit,
