@@ -446,7 +446,7 @@ const messageView=m=>m.role==='user'
   :{r:'a',k:(m.citations||[]).length?'ok':'nf',t:m.content,citations:m.citations||[],time:fmtTime(m.created_at),n:0,mid:m.id};
 async function loadConversations(){
   const r=await apiCall('/chat/conversations?limit=30');
-  if(r.ok)S.hist=pageItems(r).filter(c=>withinChatWindow(c.updated_at||c.created_at)).map(c=>({id:c.id,title:c.title||'Conversation'}));
+  if(r.ok)S.hist=pageItems(r).map(c=>({id:c.id,title:c.title||'Conversation'}));
 }
 async function openConversation(id,render=true){
   const r=await apiCall(`/chat/conversations/${id}/messages?limit=100`);
@@ -669,10 +669,14 @@ function optionSection(kind,title,hint){
 async function reloadOptions(){const r=await apiCall('/filter-options?include_inactive=true');if(r.ok)S.options=Array.isArray(r.data)?r.data:[];R()}
 
 function profileView(){
-  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled>${S.role==='management'?'':`<label>Campus</label><input value="${S.user?.campus_id?'Assigned to your campus':'Not assigned'}" disabled><label>Department</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled>`}<p class="mut">To change your role${S.role==='management'?'':' or campus'}, contact an authorized UniBuddy administrator.</p></div></div>`}
+  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled>${S.role==='management'?'':`<label>${S.role==='student'?'Institute':'Campus'}</label><input value="${S.user?.campus_id?(S.role==='student'?'Assigned to your institute':'Assigned to your campus'):'Not assigned'}" disabled><label>${S.role==='student'?'Course':'Department'}</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled>`}<p class="mut">To change your role${S.role==='management'?'':(S.role==='student'?' or institute':' or campus')}, contact an authorized UniBuddy administrator.</p></div></div>`}
 
+// Help & Support for Students: one way to reach Management, by email. Only the address configured in
+// runtime-config.js (supportEmail, an approved Management support address) is shown. No other help content.
+function supportEmail(){const e=String(window.UB_CONFIG?.supportEmail||'').trim();return /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(e)?e:''}
 function helpView(){
-  return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
+  const email=supportEmail();
+  return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">To contact Management about UniBuddy, send an email.</p>${email?`<a class="btn p" href="mailto:${esc(email)}">Email Management</a><p class="mut" style="font-size:13px;margin:10px 0 0">${esc(email)}</p>`:'<p class="mut">The support email address has not been configured yet.</p>'}</div></div>`}
 
 // Role Portals
 function student(){

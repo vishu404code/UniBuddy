@@ -3,4 +3,7 @@
 window.UB_CONFIG = Object.freeze({
   apiBase: "https://unibuddy-backend-demo.onrender.com/api/v1",
   googleClientId: "675157891879-ufpn2fmb16n6qkq7qjjeclre6eaem085.apps.googleusercontent.com",
+  // Management support address shown on Help & Support. Set only to an approved Management address.
+  // Leave empty until one is approved; the page then says the address is not configured.
+  supportEmail: "",
 });
