@@ -137,3 +137,4 @@ def test_health_services_diagnostics(km_harness):
     assert "services" in data
     assert "database" in data["services"]
     assert "gemini_ai" in data["services"]
+

@@ -40,3 +40,4 @@ as $$
       and (doc.scope = 'university_wide' or doc.campus_id = public.app_campus_id())
     );
 $$;
+
