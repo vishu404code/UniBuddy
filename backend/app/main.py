@@ -28,6 +28,21 @@ logger = logging.getLogger("unibuddy")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Pre-warm Google certs cache in background so first sign-in is instant
+    from app.auth.google_identity import warm_google_certs_cache
+    asyncio.create_task(asyncio.to_thread(warm_google_certs_cache))
+
+    if settings.database_url and settings.session_secret:
+        async def _warm_db():
+            try:
+                sb = get_data_client()
+                from app.services.google_sign_in import _get_single_campus_id
+                await _get_single_campus_id(sb)
+                logger.info("Database connection and campus cache pre-warmed")
+            except Exception as exc:
+                logger.debug("Database warmup skipped: %s", exc)
+        asyncio.create_task(_warm_db())
+
     worker_task = None
     if settings.document_worker_enabled and settings.database_url and settings.session_secret and storage_configured():
         try:

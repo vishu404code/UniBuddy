@@ -322,3 +322,91 @@ async def test_new_student_stays_unassigned_when_several_campuses_exist():
     await _sign_in(sb)
 
     assert sb.tables["profiles"][0]["campus_id"] is None
+
+
+# --- pre-authorized Faculty -------------------------------------------------------------
+
+TARUN = "tarun.s26366@nst.rishihood.edu.in"
+SONIPAT = "Rishihood University, Sonipat"
+
+
+def _campuses(sb):
+    sonipat_id = str(uuid4())
+    sb.tables["campuses"] = [
+        {"id": sonipat_id, "name": SONIPAT, "code": "sonipat"},
+        {"id": str(uuid4()), "name": "Another Campus", "code": "other"},
+    ]
+    return sonipat_id
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_faculty_gets_a_faculty_profile_on_first_sign_in_and_never_a_student_one():
+    sb = FakeDataClient()
+    sonipat_id = _campuses(sb)
+
+    session = await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, name="Tarun S"))
+
+    assert [row["role"] for row in sb.tables["profiles"]] == ["faculty"]
+    profile = sb.tables["profiles"][0]
+    assert profile["email"] == TARUN
+    assert str(profile["campus_id"]) == sonipat_id
+    assert profile["department_id"] is None
+    assert read_session_token(session["access_token"], SECRET) == UUID(profile["id"])
+    assert sb.tables["account_identities"][0]["google_subject"] == "google-tarun"
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_email_match_ignores_case_and_surrounding_spaces():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=" Tarun.S26366@NST.rishihood.edu.in ", name="T"))
+
+    assert sb.tables["profiles"][0]["role"] == "faculty"
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_account_row_left_without_a_profile_becomes_faculty_not_student():
+    sb = FakeDataClient()
+    sonipat_id = _campuses(sb)
+    _account(sb, subject="google-tarun", email=TARUN, with_profile=False)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, name="T"))
+
+    profile = sb.tables["profiles"][0]
+    assert profile["role"] == "faculty"
+    assert str(profile["campus_id"]) == sonipat_id
+
+
+@pytest.mark.asyncio
+async def test_unverified_preauthorized_email_gets_nothing():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    with pytest.raises(GoogleSignInError) as info:
+        await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN, verified=False))
+
+    assert info.value.code == "google_unverified"
+    assert sb.tables["profiles"] == []
+
+
+@pytest.mark.asyncio
+async def test_preauthorized_faculty_is_not_created_when_the_campus_is_missing():
+    sb = FakeDataClient()
+    sb.tables["campuses"] = [{"id": str(uuid4()), "name": "Another Campus", "code": "other"}]
+
+    with pytest.raises(GoogleSignInError) as info:
+        await _sign_in(sb, verifier=_verifier(subject="google-tarun", email=TARUN))
+
+    assert info.value.status_code == 503
+    assert sb.tables["profiles"] == []
+
+
+@pytest.mark.asyncio
+async def test_other_verified_emails_still_become_students_not_faculty():
+    sb = FakeDataClient()
+    _campuses(sb)
+
+    await _sign_in(sb, verifier=_verifier(subject="google-other", email="someone.else@example.com"))
+
+    assert sb.tables["profiles"][0]["role"] == "student"

@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>UniBuddy — Campus AI Assistant & Query Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth)initGoogleAuth()"></script>
 <script src="./runtime-config.js"></script>
 <style>
 :root{--bg:#FFFFFF;--ice:#EAF1FC;--lav:#F0EDFF;--bg2:#F4F6FA;--ind:#7187C9;--indd:#5a70b4;--navy:#263653;--deep:#263653;--ink:#263653;--slate:#687386;--bd:#E3E8F0;--sh:0 1px 2px rgba(38,54,83,.05),0 8px 22px -10px rgba(38,54,83,.14);--sh2:0 2px 4px rgba(38,54,83,.05),0 18px 38px -14px rgba(38,54,83,.24);--grad:linear-gradient(180deg,#6b81c3,#4f66a8);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
@@ -96,6 +96,7 @@ footer{padding:24px;text-align:center;color:var(--slate);font-size:13px;border-t
 .ts{font-size:11.5px;color:var(--slate);margin-top:4px;opacity:.85}.tsr{text-align:right}
 .a{display:flex;gap:12px;margin:18px 0}.a .body{flex:1;min-width:0}.a .who{font-weight:600;font-size:13.5px;margin-bottom:2px}
 .vb{display:inline-flex;align-items:center;gap:5px;background:var(--ice);color:var(--indd);border:1px solid #d3e0f6;border-radius:99px;padding:2px 10px 2px 8px;font-size:12px;font-weight:600}
+.ans ul,.ans ol{margin:6px 0 6px 20px;padding:0}.ans li{margin:3px 0}.ans p{margin:0 0 8px}.ans p:last-child{margin-bottom:0}
 .src{margin-top:10px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;background:var(--bg2);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--slate);border-left:3px solid var(--ind)}.src button{color:var(--indd);font-weight:600;background:none;border:0;cursor:pointer;padding:0;text-decoration:underline}
 .nf{margin-top:12px;background:var(--lav);border:1px solid #e1dbfa;border-radius:14px;padding:14px}
 .ld{display:inline-flex;gap:5px;padding:10px 0}.ld span{width:7px;height:7px;border-radius:50%;background:var(--ind);animation:bl 1.2s infinite}.ld span:nth-child(2){animation-delay:.18s}.ld span:nth-child(3){animation-delay:.36s}@keyframes bl{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
@@ -152,7 +153,11 @@ const $=s=>document.querySelector(s),now=()=>new Date().toLocaleTimeString([],{h
 
 // Public settings only. The deploy-specific URL and OAuth client ID live in runtime-config.js.
 const _isLocalPreview=['localhost','127.0.0.1'].includes(window.location.hostname);
-const UB_API_BASE=String(window.UB_CONFIG?.apiBase||(_isLocalPreview?'http://127.0.0.1:8010/api/v1':'')).replace(/\/$/,'');
+const UB_API_BASE=String(
+  (_isLocalPreview && !window.UB_CONFIG?.forceRemoteApi)
+    ? (['3000', '8099'].includes(window.location.port) ? '/api/v1' : 'http://127.0.0.1:8000/api/v1')
+    : (window.UB_CONFIG?.apiBase || '')
+).replace(/\/$/,'');
 const UB_GOOGLE_CLIENT_ID=String(window.UB_CONFIG?.googleClientId||'');
 
 const pn=()=>S.user?.full_name||S.user?.name||S.user?.email||'Campus User',ini=()=>pn()[0].toUpperCase();
@@ -189,10 +194,14 @@ const toast=m=>{
 const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
 // Reads are retried while the free backend wakes up (cold start: 502/503/504 or a network error).
 // Writes (POST, PATCH) are never retried here, so one click cannot create a second record.
+// Timings for this page, read from the browser console: window.__ubTimes (endpoint, status, ms). No ids or tokens.
+window.__ubTimes=window.__ubTimes||[];
 async function apiCall(endpoint,options={}){
   if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
   const method=String(options.method||'GET').toUpperCase();
-  const attempts=method==='GET'?3:1;
+  const attempts=(method==='GET'||options.idempotent)?3:1;
+  const started=performance.now();
+  const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
   const token=localStorage.getItem('ub-token');
   const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
@@ -200,12 +209,15 @@ async function apiCall(endpoint,options={}){
     const last=i===attempts-1;
     try{
       const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
+      window.__ubTimes.push({endpoint:label,status:res.status,ms:Math.round(performance.now()-started)});
       if(res.ok){let data=null;try{data=await res.json()}catch(e){}return {ok:true,status:res.status,data}}
       if(!last&&[502,503,504].includes(res.status)){await sleepMs(4000*(i+1));continue}
       let errData={};try{errData=await res.json()}catch(e){}
-      const detail=typeof errData.detail==='string'?errData.detail:'';
+      const detail=typeof errData.detail==='string'
+        ? errData.detail
+        : (errData.detail?.message || errData.message || '');
       let error=detail||'Request failed';
-      if(res.status===503)error=/storage/i.test(detail)?'File storage is unavailable right now. Nothing was uploaded; try again later.':'UniBuddy is waking up on free hosting. Please wait a minute and try again.';
+      if(res.status===503&&!detail)error=/storage/i.test(detail)?'File storage is unavailable right now. Nothing was uploaded; try again later.':'UniBuddy service is unavailable right now. Please try again in a moment.';
       return {ok:false,status:res.status,error};
     }catch(err){
       if(!last&&method==='GET'){await sleepMs(4000*(i+1));continue}
@@ -240,6 +252,19 @@ async function pollDocProcessing(){
 }
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const humanStatus=s=>({submitted:'Submitted',assigned:'Assigned',in_progress:'In Progress',resolved:'Resolved'}[s]||s||'Submitted');
+// A ticket with no department went to the campus queue, which Authority sees.
+const deptLabel=t=>t.department_id?(S.departments.find(d=>d.id===t.department_id)?.name||'Department'):'Campus queue';
+// After the server confirms a ticket change, only that ticket is updated: its open detail and its row.
+function applyTicketUpdate(data){
+  const view={...ticketView(data.ticket),events:data.events||[]};
+  view.dept=deptLabel(view);
+  S.detail={ticket:view,events:data.events||[]};
+  S.tickets=(S.tickets||[]).map(t=>t.uuid===view.uuid?{...t,...view}:t);
+}
+async function reloadTicketList(){
+  const r=await apiCall('/tickets?limit=50');
+  if(r.ok)S.tickets=pageItems(r).map(ticketView).map(x=>({...x,dept:deptLabel(x)}));
+}
 function ticketView(t){return {...t,id:t.ticket_number||t.id,uuid:t.id,subj:t.subject,q:t.question,desc:t.description||'',pri:t.priority||'medium',status:t.status||'submitted',date:new Date(t.created_at).toLocaleDateString(),dept:t.department_name||'Department',fac:t.assigned_faculty_id?'Assigned':'Unassigned',reply:'',events:[]}}
 async function loadViewData(view=S.view){
   if(!S.user)return;
@@ -251,42 +276,59 @@ async function loadViewData(view=S.view){
   if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
   if(view==='docs'||view==='x')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
   if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
-  if(['student','faculty','authority'].includes(S.role))tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
+  if(['student','faculty','authority'].includes(S.role)&&!S.departments.length)tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
-  if(view==='fdash'||view==='x')tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
+  if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
+  // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
+  if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
   if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
-  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=S.departments.find(d=>d.id===t.department_id)?.name||'Department'});
+  await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=deptLabel(t)});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
   S.loading=false;R();
+  watchOpenTicket();
 }
 
 // Google Sign-In Credential Handler
 async function handleGoogleCredential(id_token){
   if(!id_token)return;
   const er=$('#err');
-  if(er)er.textContent='Verifying with UniBuddy Google Auth...';
-  
-  const res=await apiCall('/auth/google',{
-    method:'POST',
-    body:JSON.stringify({id_token})
-  });
+  if(er){
+    er.style.color='var(--slate)';
+    er.textContent='Signing in…';
+  }
+  let res;
+  try{
+    res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true});
+  }catch(e){
+    res={ok:false,status:0,error:'Sign-in request failed.'};
+  }
   
   if(res.ok&&res.data?.access_token){
+    if(er)er.textContent='';
     localStorage.setItem('ub-token',res.data.access_token);
-    const meRes=await apiCall('/auth/me');
-    if(meRes.ok&&meRes.data){
-      const me=meRes.data;
+    let me=res.data.user;
+    if(!me){
+      const meRes=await apiCall('/auth/me');
+      if(meRes.ok&&meRes.data)me=meRes.data;
+    }
+    if(me){
       S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
       S.role=me.role;
-      S.scr='app';S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';R();await loadViewData(S.view);
+      S.scr='app';
+      S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
+      S.loading=false;
+      R();
       toast('Signed in as '+(me.full_name||me.email));
+      loadViewData(S.view);
       return;
     }
     localStorage.removeItem('ub-token');
   }
   
-  const messages={0:'Cannot reach UniBuddy right now. Check the backend address and try again.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact the UniBuddy administrator.',503:'UniBuddy sign-in is not configured yet.'};
-  if(er)er.textContent=messages[res.status]||'Sign-in failed. Please try again or contact the UniBuddy administrator.';
+  if(er)er.style.color='#b4445a';
+  const messages={0:'Cannot reach UniBuddy backend. Make sure the server is running.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact the UniBuddy administrator.',503:'UniBuddy sign-in is not configured yet.'};
+  const errorMsg = (res.error && res.error !== 'Request failed') ? res.error : (messages[res.status] || 'Sign-in failed. Please try again or contact the UniBuddy administrator.');
+  if(er)er.textContent=errorMsg;
 }
 
 // Email-Based Role Authentication
@@ -346,12 +388,33 @@ function chat(){
   return `<div class="chatw"><div class="msgs" id="msgs"><div class="col">${m.length?m.map((x,i)=>msg(x,i)).join(''):`<div class="empty"><div class="welcome"><span class="mark">U</span><h1 class="ed" style="font-size:clamp(28px,4vw,38px)">How can I help you today?</h1><p>Your university, your questions, one intelligent assistant.</p><div class="chips">${SUG.map(s=>`<button class="chip" data-a="sq" data-v="${s[2]}">${I(s[0])}${s[1]}</button>`).join('')}</div></div></div>`}</div></div>
 <div class="comp"><div class="cbox"><button class="ib" data-a="attach" aria-label="Attach">${I('clip')}</button><input id="ci" placeholder="Ask UniBuddy anything..." autocomplete="off"><button class="send" data-a="send" aria-label="Send">${I('up')}</button></div><div class="note">Verified answers from campus documents with source citations.</div></div></div>`}
 
+// Answers are plain text from the model. Escape first, then turn **bold**, '-' bullets, numbered lists and
+// paragraphs into tags. Nothing from the answer is ever treated as HTML.
+function fmtAnswer(t){
+  const inline=s=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  let html='',list=null,para=[];
+  const flushPara=()=>{if(para.length){html+=`<p>${para.join(' ')}</p>`;para=[]}};
+  const closeList=()=>{if(list){html+=`</${list}>`;list=null}};
+  for(const raw of esc(String(t||'')).replace(/\r/g,'').split('\n')){
+    const line=raw.trim();
+    if(!line){flushPara();closeList();continue}
+    const bullet=line.match(/^[-*\u2022]\s+(.*)$/),numbered=line.match(/^\d+[.)]\s+(.*)$/);
+    if(bullet||numbered){
+      flushPara();const kind=bullet?'ul':'ol';
+      if(list!==kind){closeList();html+=`<${kind}>`;list=kind}
+      html+=`<li>${inline((bullet||numbered)[1])}</li>`;continue;
+    }
+    closeList();para.push(inline(line));
+  }
+  flushPara();closeList();
+  return html||'<p></p>';
+}
 function msg(x,i){
   const c=x.n?' in':'';if(x.r=='u')return `<div class="u${c}"><div class="ub">${esc(x.t)}</div></div><div class="ts tsr">${x.time}</div>`;const L='<span class="mark">U</span>';
   if(x.k=='err')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><p style="margin:8px 0 0">${x.t}</p></div></div>`;
   if(x.k=='ty')return `<div class="a${c}">${L}<div class="body"><div class="ld"><span></span><span></span><span></span></div></div></div>`;
-  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${x.citations?.length?'<span class="vb">'+I('check')+' Verified Answer</span>':''}<p style="margin:8px 0 0">${esc(x.t)}</p>${x.citations?.length?`<div class="src">${x.citations.map(c=>`<span>Source: ${esc(c.title)}${c.page?` · page ${c.page}`:''}</span>`).join('')}</div>`:''}<div class="ts">${x.time}</div></div></div>`;
-  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${esc(x.t||'I couldn’t find a verified answer in the published documents.')}<div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${esc(x.fw)}</span>`:x.mid?`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`:''}</div><div class="ts">${x.time}</div></div></div>`}
+  if(x.k=='ok')return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div>${x.citations?.length?'<span class="vb">'+I('check')+' Verified Answer</span>':''}<div class="ans" style="margin:8px 0 0">${fmtAnswer(x.t)}</div>${x.citations?.length?`<div class="src">${x.citations.map(c=>`<span>Source: ${esc(c.title)}${c.page?` · page ${c.page}`:''}</span>`).join('')}</div>`:''}<div class="ts">${x.time}</div></div></div>`;
+  return `<div class="a${c}">${L}<div class="body"><div class="who">UniBuddy</div><div class="ans">${fmtAnswer(x.t||'I couldn’t find a verified answer in the published documents.')}</div><div class="nf">${x.fw?`<span class="vb">${I('check')} Forwarded as ${esc(x.fw)}</span>`:x.mid?`<button class="btn p sm" data-a="fwd" data-v="${i}">Forward to Faculty</button>`:''}</div><div class="ts">${x.time}</div></div></div>`}
 
 // Ask AI Assistant — calls the real backend RAG endpoint.
 async function ask(q){
@@ -382,8 +445,8 @@ async function ask(q){
   }else{
     S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
   }
-  await loadConversations();
   R();
+  loadConversations().then(R);
 }
 
 const ttl=()=>{const u=S.chat.find(x=>x.r=='u');return u?u.t.slice(0,30):'Query'};
@@ -443,7 +506,7 @@ function annView(){
 function docsView(){
   const canManage=['faculty','authority'].includes(S.role);
   return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div>${canManage?`<button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button>`:''}</div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
+<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}${S.role==='authority'&&d.publication==='archived'?`<button class="btn sm" data-a="restore-doc" data-v="${d.uuid}">Restore to draft</button>`:''}${S.role==='authority'&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn sm" data-a="scope-univ" data-v="${d.uuid}">Make university-wide</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
 
 function profileView(){
   return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${esc(S.user?.campus_id||'Not assigned')}" disabled><label>Department</label><input value="${esc(S.user?.department_id||'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
@@ -464,7 +527,30 @@ function faculty(){
 function placeholder(){
   const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
   const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
+  if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd(r[1]+' Portal')}<div class="page">${mgmtView()}</div></main></div>`;
   return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
+
+// Management Stats: aggregate counts only. No student names, emails, question text or chat contents.
+// Gemini usage is shown only where it was recorded; nothing is estimated.
+function mgmtView(){
+  const a=S.analytics;
+  if(!a)return '<div class="pg"><h1 class="ed">Management Stats</h1><p class="mut">Loading aggregate analytics…</p></div>';
+  const t=a.ticket_totals||{},g=a.gemini||{};
+  const pct=x=>x==null?'—':`${Math.round(x*100)}%`;
+  const hrs=x=>x==null?'—':`${x} h`;
+  const bars=rows=>{const max=Math.max(1,...rows.map(r=>r.count));return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px">${rows.map(r=>`<div title="${esc(r.day)}: ${r.count}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="background:var(--navy);opacity:.8;border-radius:3px 3px 0 0;height:${Math.round(r.count/max*100)}%;min-height:${r.count?2:0}px"></div></div>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667)"><span>${esc(rows[0]?.day||'')}</span><span>${esc(rows[rows.length-1]?.day||'')}</span></div>`};
+  const campuses=(t.campuses||[]).map(c=>`<tr><td>${esc(c.name)}</td><td>${c.total_tickets}</td><td>${c.resolved_tickets}</td><td>${pct(c.resolution_rate)}</td><td>${hrs(c.avg_first_response_hours)}</td></tr>`).join('');
+  const usage=g.rows_recorded
+    ?`<div class="strip">${[['Answer calls recorded',g.requests],['Input tokens',g.input_tokens??'—'],['Output tokens',g.output_tokens??'—']].map(([l,v])=>`<div class="sti"><div><b>${v}</b><span>${l}</span></div></div>`).join('')}</div>
+<p class="mut" style="font-size:13px">Token totals cover only the calls where Gemini returned counts: input for ${g.rows_with_input_tokens} of ${g.rows_recorded} calls, output for ${g.rows_with_output_tokens} of ${g.rows_recorded}.</p>
+<p class="mut" style="font-size:13px">Models: ${(g.models||[]).map(esc).join(', ')||'—'}. Recording since ${esc(new Date(g.first_recorded_at).toLocaleString())}.</p>`
+    :'<p class="mut">No Gemini usage has been recorded yet.</p>';
+  return `<div class="pg wide"><h1 class="ed">Management Stats</h1><p class="sub">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>
+<div class="strip">${[['Questions asked',a.questions_total],['Tickets',t.total_tickets],['Resolved',t.resolved_tickets],['Resolution rate',pct(t.resolution_rate)],['Avg first response',hrs(t.avg_first_response_hours)]].map(([l,v])=>`<div class="sti"><div><b>${v??'—'}</b><span>${l}</span></div></div>`).join('')}</div>
+<div class="dgrid"><section class="card"><h3>Questions per day (last 30 days, UTC)</h3>${bars(a.questions_by_day||[])}</section><section class="card"><h3>Tickets per day (last 30 days, UTC)</h3>${bars(a.tickets_by_day||[])}</section></div>
+<section class="card" style="margin-top:16px"><h3>By campus</h3><div class="tw"><table><tr><th>Campus</th><th>Tickets</th><th>Resolved</th><th>Resolution rate</th><th>Avg first response</th></tr>${campuses||'<tr><td colspan="5" class="mut">No campus data.</td></tr>'}</table></div></section>
+<section class="card" style="margin-top:16px"><h3>Gemini answer usage</h3>${usage}<p class="mut" style="font-size:13px">Usage before this feature was deployed was never recorded, so historical usage is unavailable. Embedding calls for documents and questions are not recorded in this version.</p></section></div>`;
+}
 
 // Modals
 function modal(){
@@ -474,23 +560,30 @@ function modal(){
     return `<div class="ov${o}"><div class="modal"><h2 class="ed">New announcement</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Published announcements appear to students immediately. Uploading a PDF does not create one.</p><label>Title</label><input id="an-title" maxlength="200" placeholder="e.g. Exam timetable published"><label>Message</label><textarea id="an-body" rows="5" maxlength="4000" placeholder="Write the announcement text"></textarea><div class="g2"><div><label>Audience</label><select id="an-aud"><option value="all_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="an-scope"><option value="campus">My campus</option>${uni?'<option value="university_wide">University-wide</option>':''}</select></div></div><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="an-imp" type="checkbox" style="width:auto"> Mark as important</label><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-ann">Publish</button></div></div></div>`;
   }
   if(m.type==='upload-doc'){
-    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload an approved PDF. It is processed by the AI service and stays a draft until published.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Leave of Absence Policy 2026–27"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="doc-scope"><option value="campus">My campus</option>${S.role==='authority'?'<option value="university_wide">University-wide</option>':''}</select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload PDF</button></div></div></div>`;
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload an approved PDF. It is processed by the AI service and stays a draft until published.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Leave of Absence Policy 2026–27"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="doc-scope">${['authority','faculty'].includes(S.role)?'<option value="university_wide" selected>University-wide</option><option value="campus">My campus</option>':'<option value="campus" selected>My campus</option>'}</select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload PDF</button></div></div></div>`;
   }
   if(m.done){
     return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Your query has reached the department faculty queue.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
   }
-  const q=S.chat[m.i-1]?.t||'Question',noDepartments=!S.departments.length;
-  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${esc(q)}</div><div class="g2"><div><label>Department</label><select id="md" ${noDepartments?'disabled':''}>${S.departments.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select>${noDepartments?'<small>No departments are set up for your campus yet. Ask the Authority to configure one.</small>':''}</div><div><label>Priority</label><select id="mp"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms" ${noDepartments?'disabled':''}>Submit Ticket</button></div></div></div>`;
+  const q=S.chat[m.i-1]?.t||'Question',abc=S.departments.find(d=>d.name==='ABC');
+  const deptOptions=`<option value="" ${abc?'':'selected'}>No department (campus queue)</option>`+S.departments.map(d=>`<option value="${d.id}" ${abc&&d.id===abc.id?'selected':''}>${esc(d.name)}</option>`).join('');
+  return `<div class="ov${o}"><div class="modal"><h2>Forward to Faculty</h2><label>Original question</label><div class="demo" style="margin:0;color:var(--ink);padding:10px 12px;background:var(--bg2);border-radius:10px">${esc(q)}</div><div class="g2"><div><label>Department (optional)</label><select id="md">${deptOptions}</select><small>Leave it on “No department” and the question goes to the campus queue for Authority.</small></div><div><label>Priority</label><select id="mp"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><label>Additional description</label><textarea id="mx" rows="3" placeholder="Add any helpful context for faculty"></textarea><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="ms">Submit Ticket</button></div></div></div>`;
 }
 
 // Render Engine
 function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   const prevScroll=$('.page')?.scrollTop||0;
+  // Fields in an open dialog and the search box keep what was typed or chosen when the page is redrawn.
+  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#gs')]
+    .filter(el=>el.type!=='file').map(el=>({id:el.id,value:el.value,checked:el.checked}));
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
   const html=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
   // Only rewrite the page when its markup actually changed: a refresh with the same data causes no blink.
-  if(html!==window.__lastRenderHtml){window.__lastRenderHtml=html;a.innerHTML=html}
+  if(html!==window.__lastRenderHtml){
+    window.__lastRenderHtml=html;a.innerHTML=html;
+    kept.forEach(k=>{const el=document.getElementById(k.id);if(!el)return;if(el.type==='checkbox')el.checked=k.checked;else el.value=k.value});
+  }
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
   if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
@@ -516,27 +609,40 @@ function initGoogleAuth(){
   }else if(S.scr==='login'&&UB_GOOGLE_CLIENT_ID&&!window.__ubGoogleRetry){window.__ubGoogleRetry=setTimeout(()=>{window.__ubGoogleRetry=null;if(S.scr==='login')initGoogleAuth()},500)}
 }
 
-// An open ticket re-checks its status and replies every 15 s. It never redraws while a field has focus,
-// a write is in flight or a modal is open, so typed text is not lost.
+// My Queries and the staff ticket list re-check every 15 s: the list (status, assignment) and the open
+// ticket (status, replies). A redraw happens only when something changed, and never while a field has
+// focus, a write is in flight or a dialog is open, so typed text and the reply draft are not lost.
 let detailPollTimer=null;
 function watchOpenTicket(){
   clearTimeout(detailPollTimer);detailPollTimer=null;
-  if(!S.user||!S.detail?.ticket||!['tix','queries'].includes(S.view))return;
+  if(!S.user||!['tix','queries'].includes(S.view))return;
   detailPollTimer=setTimeout(refreshOpenTicket,15000);
+}
+function ticketsBusy(){
+  const a=document.activeElement;
+  return !!(a&&['TEXTAREA','INPUT','SELECT'].includes(a.tagName))||!!S.actionBusy||!!S.modal;
 }
 async function refreshOpenTicket(){
   detailPollTimer=null;
+  if(!S.user||!['tix','queries'].includes(S.view))return;
+  if(ticketsBusy()){watchOpenTicket();return}
   const t=S.detail?.ticket;
-  if(!t||!S.user||!['tix','queries'].includes(S.view))return;
-  const a=document.activeElement;
-  const typing=a&&['TEXTAREA','INPUT','SELECT'].includes(a.tagName);
-  if(typing||S.actionBusy||S.modal){watchOpenTicket();return}
-  const res=await apiCall(`/tickets/${t.uuid}`);
-  if(res.ok){
-    const next={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
-    const sig=x=>JSON.stringify([x.ticket.status,(x.events||[]).length]);
-    if(sig(next)!==sig(S.detail)){S.detail=next;R()}
+  const [list,detail]=await Promise.all([
+    apiCall('/tickets?limit=50'),
+    t?apiCall(`/tickets/${t.uuid}`):Promise.resolve(null)
+  ]);
+  let changed=false;
+  if(list.ok){
+    const next=pageItems(list).map(ticketView).map(x=>({...x,dept:deptLabel(x)}));
+    const sig=l=>JSON.stringify(l.map(x=>[x.uuid,x.status,x.assigned_faculty_id||null]));
+    if(sig(next)!==sig(S.tickets)){S.tickets=next;changed=true}
   }
+  if(detail?.ok){
+    const next={ticket:{...ticketView(detail.data.ticket),events:detail.data.events||[]},events:detail.data.events||[]};
+    const sig=x=>JSON.stringify([x.ticket.status,x.ticket.assigned_faculty_id||null,(x.events||[]).length]);
+    if(sig(next)!==sig(S.detail)){S.detail=next;changed=true}
+  }
+  if(changed&&!ticketsBusy())R();
   watchOpenTicket();
 }
 
@@ -565,15 +671,26 @@ document.addEventListener('click',async e=>{
   else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
   else if(a=='ann-modal'){S.modal={type:'new-ann'};R()}
   else if(a=='submit-doc-upload'){
+    // One click = one POST. apiCall never retries a POST, and the button stays disabled until the answer arrives.
+    if(S.actionBusy)return;
     const title=$('#doc-title')?.value.trim(),file=$('#doc-file')?.files?.[0],vis=$('#doc-vis')?.value||'public_students',scope=$('#doc-scope')?.value||'campus';
     if(!title||!file){toast('Enter a title and choose a PDF.');return}
     if(file.type!=='application/pdf'&& !file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
     const body=new FormData();body.append('title',title);body.append('file',file);body.append('visibility',vis);body.append('scope',scope);
-    const button=el;button.disabled=true;button.textContent='Uploading…';
+    const button=el;S.actionBusy=true;button.disabled=true;button.textContent='Uploading…';
     const res=await apiCall('/documents',{method:'POST',body});
+    S.actionBusy=false;
     if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
     if(res.data&&res.data.id){S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)]}
     S.modal=null;R();await loadViewData('docs');toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
+  }
+  else if(a=='restore-doc'||a=='scope-univ'){
+    if(S.actionBusy)return;
+    S.actionBusy=true;el.disabled=true;
+    const res=a==='restore-doc'?await apiCall(`/documents/${v}/restore`,{method:'POST'}):await apiCall(`/documents/${v}/scope`,{method:'POST',body:JSON.stringify({scope:'university_wide'})});
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
+    await loadViewData('docs');toast(a==='restore-doc'?'Restored as a draft. Publish it when ready.':'Now university-wide as a draft. Publish it to take effect.');
   }
   else if(a=='publish-doc'||a=='archive-doc'){
     el.disabled=true;const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
@@ -611,19 +728,24 @@ document.addEventListener('click',async e=>{
     R();toast('Announcement published.');
   }
   else if(a=='ms'){
-    const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value;
-    if(!departmentId){toast('No department is configured for your campus yet.');return}
+    if(S.actionBusy)return;
+    const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value||null;
     if(!msg?.mid){toast('The question is missing its server reference. Ask it again, then forward it.');return}
+    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Submitting…';
     const res=await apiCall(`/chat/messages/${msg.mid}/forward`,{method:'POST',body:JSON.stringify({department_id:departmentId,priority:$('#mp').value,description:$('#mx').value||null})});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not forward this question.');return}
-    if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await loadViewData('queries');R();
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not forward this question. Your text is still in the form.');return}
+    if(assistantMessage)assistantMessage.fw=res.data.ticket_number;S.modal={done:res.data.ticket_number};await reloadTicketList();R();
   }
   else if(a=='vt'){S.modal=null;S.view='queries';S.fx='view';R();loadViewData('queries')}
   else if(a=='take-ticket'){
+    if(S.actionBusy)return;
     const t=S.detail?.ticket;if(!t)return;
+    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Taking…';
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify({take_ticket:true})});
-    if(!res.ok){toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]}};await loadViewData(S.view);watchOpenTicket();
+    S.actionBusy=false;
+    if(!res.ok){el.disabled=false;el.textContent=label;toast(typeof res.error==='string'?res.error:'Could not take this ticket.');return}
+    applyTicketUpdate(res.data);R();toast('Ticket taken. You can now reply or change its status.');watchOpenTicket();
   }
   else if(a=='respond'||a=='resolve'){
     if(S.actionBusy)return;
@@ -636,8 +758,7 @@ document.addEventListener('click',async e=>{
     const res=await apiCall(`/tickets/${t.uuid}`,{method:'PATCH',body:JSON.stringify(a==='resolve'?{status:'resolved'}:{reply:r})});
     S.actionBusy=false;
     if(!res.ok){el.disabled=false;el.textContent=label;toast((typeof res.error==='string'?res.error:'The update failed.')+' Your text is still in the box.');return}
-    S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};
-    await loadViewData(S.view);
+    applyTicketUpdate(res.data);R();
     toast(a=='resolve'?'Ticket resolved. The student can now see the status.':'Response sent. The student can now see it.');
     watchOpenTicket();
   }
@@ -650,6 +771,8 @@ document.addEventListener('keydown',e=>{
   if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}
 });
 document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
+// Coming back to the tab refreshes My Queries and the staff ticket list at once, not after the next 15 s tick.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.user&&['tix','queries'].includes(S.view))refreshOpenTicket()});
 document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
 
 // Restore the signed-in session from the backend (the server checks the token)
@@ -666,6 +789,8 @@ async function restoreSession(){
   }
   R();
 }
+// Starts the free server before the user clicks, so a cold start overlaps with the Google sign-in step.
+if(UB_API_BASE)fetch(UB_API_BASE+'/health',{cache:'no-store'}).catch(()=>{});
 if(localStorage.getItem('ub-token'))restoreSession();
 
 R();

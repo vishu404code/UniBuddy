@@ -28,3 +28,10 @@ async def staff_dashboard(sb: PostgresClient, access_token: str) -> dict[str, An
 async def management_stats(sb: PostgresClient) -> dict[str, Any]:
     """Aggregates computed in the database. Contains no ticket or student contents."""
     return await sb.rpc_service("management_ticket_stats", {})
+
+
+async def management_analytics(sb: PostgresClient) -> dict[str, Any]:
+    """Aggregates only: question and ticket counts by day, recorded Gemini usage, and ticket totals."""
+    activity = await sb.rpc_service("management_activity_stats", {})
+    tickets = await sb.rpc_service("management_ticket_stats", {})
+    return {**activity, "ticket_totals": tickets}

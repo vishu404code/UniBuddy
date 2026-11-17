@@ -111,7 +111,7 @@ class PostgresClient:
         session_secret: str,
         object_store: ObjectStore | None = None,
         connect: Callable[[str], psycopg.Connection] | None = None,
-        pool_size: int = 5,
+        pool_size: int = 15,
     ):
         if not dsn:
             raise DataServiceError(503, "database is not configured")
@@ -124,11 +124,11 @@ class PostgresClient:
         if connect is None:
             self._pool = ConnectionPool(
                 conninfo=dsn,
-                min_size=1,
+                min_size=2,
                 max_size=pool_size,
                 kwargs={"row_factory": dict_row, "connect_timeout": 10},
-                check=ConnectionPool.check_connection,
-                timeout=15,
+                timeout=8.0,
+                max_idle=300,
                 open=True,
             )
         self._connect = connect or (lambda url: psycopg.connect(url, row_factory=dict_row))
@@ -198,6 +198,45 @@ class PostgresClient:
     async def select_service(self, table: str, params: dict[str, str]) -> list[dict[str, Any]]:
         sql, values = self._select_sql(table, params)
         return await self._run(None, lambda c: c.execute(sql, values).fetchall())
+
+    async def find_account_identities(self, google_subject: str, email: str) -> list[dict[str, Any]]:
+        """Fast indexed single-query lookup by Google subject or email."""
+        sql = 'select "id", "email", "google_subject" from "account_identities" where "google_subject" = %s or lower("email") = %s'
+        return await self._run(None, lambda c: c.execute(sql, (google_subject, email.lower())).fetchall())
+
+    async def find_account_and_profile(self, google_subject: str, email: str) -> list[dict[str, Any]]:
+        """Single joined query fetching account identity and profile together in ~500ms."""
+        sql = '''
+            select 
+                a."id", a."email", a."google_subject",
+                p."full_name", p."role", p."campus_id", p."department_id", p."cross_campus_record_access"
+            from "account_identities" a
+            left join "profiles" p on p."id" = a."id"
+            where a."google_subject" = %s or lower(a."email") = %s
+        '''
+        return await self._run(None, lambda c: c.execute(sql, (google_subject, email.lower())).fetchall())
+
+    async def create_student_account(
+        self, account_id: UUID, identity_email: str, identity_subject: str, identity_name: str | None, campus_id: str | None
+    ) -> None:
+        """Pipelined single-roundtrip creation of student identity, profile, and campus assignment."""
+        def do_signup(conn: psycopg.Connection) -> None:
+            with conn.pipeline():
+                conn.execute(
+                    'insert into "account_identities" ("id", "email", "google_subject") values (%s, %s, %s)',
+                    (str(account_id), identity_email, identity_subject),
+                )
+                conn.execute(
+                    "select public.open_student_signup(%s, %s, %s)",
+                    (str(account_id), identity_email, identity_name),
+                )
+                if campus_id:
+                    conn.execute(
+                        "select public.assign_campus_to_student(%s, %s)",
+                        (str(account_id), str(campus_id)),
+                    )
+
+        await self._run(None, do_signup)
 
     async def select_all_service(self, table: str, params: dict[str, str], page_size: int = 1000) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []

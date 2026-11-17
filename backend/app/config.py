@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     # Comma-separated origins allowed to call this API (the frontend dev server and any hosted frontend).
-    allowed_origins: str = "http://localhost:3000,http://localhost:5173,https://vishu404code.github.io"
+    allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8099,http://127.0.0.1:8099,http://localhost:5173,https://vishu404code.github.io"
 
     # Neon PostgreSQL (with pgvector). Server-side only. Connect as a non-superuser role that is
     # granted authenticated and service_role (see docs/SETUP.md).
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     document_max_attempts: int = 3
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

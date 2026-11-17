@@ -4,3 +4,4 @@ window.UB_CONFIG = Object.freeze({
   apiBase: "https://unibuddy-backend-demo.onrender.com/api/v1",
   googleClientId: "675157891879-ufpn2fmb16n6qkq7qjjeclre6eaem085.apps.googleusercontent.com",
 });
+ 

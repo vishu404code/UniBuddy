@@ -5,6 +5,7 @@ vectors live in one space. Documents use the RETRIEVAL_DOCUMENT task type and qu
 use RETRIEVAL_QUERY, which is how Gemini's retrieval embeddings are meant to be used.
 """
 
+from dataclasses import dataclass
 from typing import Any
 
 from google import genai
@@ -16,10 +17,25 @@ EMBEDDING_DIMENSIONS = 1536
 EMBEDDING_BATCH_SIZE = 100
 DOCUMENT_TASK = "RETRIEVAL_DOCUMENT"
 QUERY_TASK = "RETRIEVAL_QUERY"
+# A short, cited answer. Longer answers were slow to read and often ran past the sources.
+ANSWER_MAX_OUTPUT_TOKENS = 450
 
 
 class AIServiceError(Exception):
     """A safe, key-free reason an AI call failed. It never contains the API key or request content."""
+
+
+@dataclass(frozen=True)
+class GenerationUsage:
+    """Usage metadata for one successful answer call. Counts are None when Gemini did not return them."""
+
+    model: str
+    input_tokens: int | None
+    output_tokens: int | None
+
+
+def _count(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
 
 
 class GeminiClient:
@@ -78,13 +94,25 @@ class GeminiClient:
         [vector] = await self._embed([text], QUERY_TASK)
         return vector
 
-    async def complete(self, system: str, user: str) -> str:
+    async def complete_with_usage(self, system: str, user: str) -> tuple[str, GenerationUsage]:
         async def request():
             return await self._client.aio.models.generate_content(
                 model=self._chat_model,
                 contents=user,
-                config=types.GenerateContentConfig(system_instruction=system, temperature=0),
+                config=types.GenerateContentConfig(
+                    system_instruction=system, temperature=0, max_output_tokens=ANSWER_MAX_OUTPUT_TOKENS
+                ),
             )
 
         response = await self._call("answer", request)
-        return (response.text or "").strip()
+        meta = getattr(response, "usage_metadata", None)
+        usage = GenerationUsage(
+            model=self._chat_model,
+            input_tokens=_count(getattr(meta, "prompt_token_count", None)),
+            output_tokens=_count(getattr(meta, "candidates_token_count", None)),
+        )
+        return (response.text or "").strip(), usage
+
+    async def complete(self, system: str, user: str) -> str:
+        text, _ = await self.complete_with_usage(system, user)
+        return text
