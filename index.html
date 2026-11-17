@@ -268,14 +268,14 @@ async function loadViewData(view=S.view){
   if(S.user.id!==S.chatOwner){S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=S.user.id}
   if(S.role==='student')tasks.push(loadConversations());
   if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
-  if(view==='docs'||view==='x')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
-  if(view==='ann'||view==='dash'||view==='x')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
+  if((view==='docs'||view==='x')&&S.role!=='management')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
+  if((view==='ann'||view==='dash'||view==='x')&&S.role!=='management')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
   if(['student','faculty','authority'].includes(S.role)&&!S.departments.length)tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
   if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
-  if(S.bell)tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
+  if(S.bell&&S.role!=='management')tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
   await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=deptLabel(t)});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
   S.loading=false;R();
@@ -358,12 +358,12 @@ ${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.h
 const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
 const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['docs','Documents','file'],['profile','Profile','user']];
 const AN=[['x','Campus Overview','home'],['tix','Tickets','inbox'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
-const MN=[['x','Management Stats','home'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
+const MN=[['x','Management Stats','home'],['profile','Profile','user']];
 
 // Header
 function hd(title,ai){
   const u=S.notifs.filter(n=>n.u).length;
-  return `<div class="hd"><div class="row"><button class="ib menu" data-a="navo" aria-label="Menu">${I('menu')}</button><b style="font-weight:600">${title}</b>${ai?'<span class="on-ind" style="margin-left:6px"><span class="pu"></span>Online</span>':''}</div><button class="ib" data-a="bell" aria-label="Notifications">${I('bell')}${u?'<span class="dot"></span>':''}</button>${S.bell?`<div class="drop">${S.notifs.length?S.notifs.map((n,i)=>`<div class="n ${n.u?'un':''}" data-a="nt" data-v="${i}"><i></i><span>${n.t}</span></div>`).join(''):'<div class="n mut">No notifications</div>'}<button class="lnk" data-a="readall" style="font-size:13px">Mark all as read</button></div>`:''}</div>`}
+  return `<div class="hd"><div class="row"><button class="ib menu" data-a="navo" aria-label="Menu">${I('menu')}</button><b style="font-weight:600">${title}</b>${ai?'<span class="on-ind" style="margin-left:6px"><span class="pu"></span>Online</span>':''}</div>${S.role==='management'?'':`<button class="ib" data-a="bell" aria-label="Notifications">${I('bell')}${u?'<span class="dot"></span>':''}</button>`}${S.bell?`<div class="drop">${S.notifs.length?S.notifs.map((n,i)=>`<div class="n ${n.u?'un':''}" data-a="nt" data-v="${i}"><i></i><span>${n.t}</span></div>`).join(''):'<div class="n mut">No notifications</div>'}<button class="lnk" data-a="readall" style="font-size:13px">Mark all as read</button></div>`:''}</div>`}
 
 // AI Assistant Chat view
 function chat(){
@@ -495,7 +495,7 @@ function docsView(){
 <div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}${S.role==='authority'&&d.publication==='archived'?`<button class="btn sm" data-a="restore-doc" data-v="${d.uuid}">Restore to draft</button>`:''}${S.role==='authority'&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn sm" data-a="scope-univ" data-v="${d.uuid}">Make university-wide</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
 
 function profileView(){
-  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled><label>Campus</label><input value="${S.user?.campus_id?'Assigned to your campus':'Not assigned'}" disabled><label>Department</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled><p class="mut">To change your role or campus, contact an authorized UniBuddy administrator.</p></div></div>`}
+  return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled>${S.role==='management'?'':`<label>Campus</label><input value="${S.user?.campus_id?'Assigned to your campus':'Not assigned'}" disabled><label>Department</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled>`}<p class="mut">To change your role${S.role==='management'?'':' or campus'}, contact an authorized UniBuddy administrator.</p></div></div>`}
 
 function helpView(){
   return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">Ask UniBuddy first. If it cannot find a verified answer, forward the question to faculty and follow it under My Queries.</p><button class="btn p" data-a="view" data-v="chat">Open AI Assistant</button></div></div>`}
@@ -511,9 +511,11 @@ function faculty(){
   return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Live counts from tickets and documents visible to your account.</p><div class="strip">${[['Open Tickets',d.open_tickets],['Resolved',d.resolved_tickets],['Unassigned Queue',d.unassigned_queue],['Assigned To Me',d.assigned_to_me],['Drafts Visible',d.drafts_visible],['Published Visible',d.published_visible]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${table}</div>`:`<div class="pg">${table}${t?detail(t,true):''}</div>`}</div></main></div>`}
 
 function placeholder(){
-  const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN,v=S.view;
+  const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN;
+  if(S.role==='management'&&!['x','profile'].includes(S.view))S.view='x';
+  const v=S.view;
   const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
-  if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd(r[1]+' Portal')}<div class="page">${mgmtView()}</div></main></div>`;
+  if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd('')}<div class="page">${mgmtView()}</div></main></div>`;
   return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
 
 // Management Stats: aggregate counts only. No student names, emails, question text or chat contents.
@@ -521,21 +523,27 @@ function placeholder(){
 function mgmtView(){
   const a=S.analytics;
   if(!a)return '<div class="pg"><h1 class="ed">Management Stats</h1><p class="mut">Loading aggregate analytics…</p></div>';
-  const t=a.ticket_totals||{},g=a.gemini||{};
+  const t=a.ticket_totals||{};
   const pct=x=>x==null?'—':`${Math.round(x*100)}%`;
   const hrs=x=>x==null?'—':`${x} h`;
-  const bars=rows=>{const max=Math.max(1,...rows.map(r=>r.count));return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px">${rows.map(r=>`<div title="${esc(r.day)}: ${r.count}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="background:var(--navy);opacity:.8;border-radius:3px 3px 0 0;height:${Math.round(r.count/max*100)}%;min-height:${r.count?2:0}px"></div></div>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667)"><span>${esc(rows[0]?.day||'')}</span><span>${esc(rows[rows.length-1]?.day||'')}</span></div>`};
+  // One bar per day, in date order. The range and the total are stated above the chart, and the
+  // three date labels below it show the start, middle and end of the range. Zero days stay as empty space.
+  const dayText=s=>new Date(s+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'});
+  const bars=(rows,what)=>{
+    const n=rows.length,total=rows.reduce((s,r)=>s+(r.count||0),0);
+    const range=n?`Last ${n} days: ${dayText(rows[0].day)} to ${dayText(rows[n-1].day)} ${new Date(rows[n-1].day+'T00:00:00Z').getUTCFullYear()} (UTC)`:'No days in range';
+    if(!n||!total)return `<p class="mut" style="font-size:13px;margin:0 0 10px">${range}</p><div style="height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px dashed #d6dbe6;border-radius:10px"><b style="font-size:26px;color:var(--navy)">0</b><span class="mut" style="font-size:13px">${what} in this period</span></div>`;
+    const max=Math.max(...rows.map(r=>r.count||0)),peak=rows.find(r=>r.count===max);
+    return `<p class="mut" style="font-size:13px;margin:0 0 4px">${range}</p><p class="mut" style="font-size:13px;margin:0 0 10px">${total} ${what.toLowerCase()} in total. Highest day: ${max} on ${dayText(peak.day)}.</p>
+<div style="height:150px;display:flex;align-items:flex-end;gap:3px;border-bottom:1px solid #d6dbe6">${rows.map(r=>`<div title="${dayText(r.day)}: ${r.count||0} ${what.toLowerCase()}" style="flex:1;height:100%;display:flex;align-items:flex-end"><div style="width:100%;border-radius:3px 3px 0 0;${r.count?`height:${Math.max(3,Math.round(r.count/max*100))}%;background:var(--navy)`:'height:2px;background:#e3e7ef'}"></div></div>`).join('')}</div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667);margin-top:6px"><span>${dayText(rows[0].day)}</span><span>${dayText(rows[Math.floor((n-1)/2)].day)}</span><span>${dayText(rows[n-1].day)}</span></div>`;
+  };
   const campuses=(t.campuses||[]).map(c=>`<tr><td>${esc(c.name)}</td><td>${c.total_tickets}</td><td>${c.resolved_tickets}</td><td>${pct(c.resolution_rate)}</td><td>${hrs(c.avg_first_response_hours)}</td></tr>`).join('');
-  const usage=g.rows_recorded
-    ?`<div class="strip">${[['Answer calls recorded',g.requests],['Input tokens',g.input_tokens??'—'],['Output tokens',g.output_tokens??'—']].map(([l,v])=>`<div class="sti"><div><b>${v}</b><span>${l}</span></div></div>`).join('')}</div>
-<p class="mut" style="font-size:13px">Token totals cover only the calls where Gemini returned counts: input for ${g.rows_with_input_tokens} of ${g.rows_recorded} calls, output for ${g.rows_with_output_tokens} of ${g.rows_recorded}.</p>
-<p class="mut" style="font-size:13px">Models: ${(g.models||[]).map(esc).join(', ')||'—'}. Recording since ${esc(new Date(g.first_recorded_at).toLocaleString())}.</p>`
-    :'<p class="mut">No Gemini usage has been recorded yet.</p>';
   return `<div class="pg wide"><h1 class="ed">Management Stats</h1><p class="sub">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>
 <div class="strip">${[['Questions asked',a.questions_total],['Tickets',t.total_tickets],['Resolved',t.resolved_tickets],['Resolution rate',pct(t.resolution_rate)],['Avg first response',hrs(t.avg_first_response_hours)]].map(([l,v])=>`<div class="sti"><div><b>${v??'—'}</b><span>${l}</span></div></div>`).join('')}</div>
-<div class="dgrid"><section class="card"><h3>Questions per day (last 30 days, UTC)</h3>${bars(a.questions_by_day||[])}</section><section class="card"><h3>Tickets per day (last 30 days, UTC)</h3>${bars(a.tickets_by_day||[])}</section></div>
+<div class="dgrid"><section class="card"><h3>Questions per day</h3>${bars(a.questions_by_day||[],'Questions')}</section><section class="card"><h3>Tickets per day</h3>${bars(a.tickets_by_day||[],'Tickets')}</section></div>
 <section class="card" style="margin-top:16px"><h3>By campus</h3><div class="tw"><table><tr><th>Campus</th><th>Tickets</th><th>Resolved</th><th>Resolution rate</th><th>Avg first response</th></tr>${campuses||'<tr><td colspan="5" class="mut">No campus data.</td></tr>'}</table></div></section>
-<section class="card" style="margin-top:16px"><h3>Gemini answer usage</h3>${usage}<p class="mut" style="font-size:13px">Usage before this feature was deployed was never recorded, so historical usage is unavailable. Embedding calls for documents and questions are not recorded in this version.</p></section></div>`;
+</div>`;
 }
 
 // Modals
