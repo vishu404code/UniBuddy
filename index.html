@@ -144,6 +144,7 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .side{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%);width:280px;box-shadow:var(--sh2)}.side.open{transform:none}.scrim.open{display:block;position:fixed;inset:0;background:rgba(38,54,83,.3);z-index:35}.menu{display:grid}
 .two,.dgrid,.askp{grid-template-columns:1fr}.strip{flex-wrap:wrap;gap:14px}.sti{flex:1 1 40%;padding:0 10px}.g2{grid-template-columns:1fr}.mag{grid-template-columns:1fr}.am,.am.big,.am:nth-child(4),.am:nth-child(5){grid-column:auto;grid-row:auto}.am.big{min-height:200px}.qr{grid-template-columns:1fr auto}.qr small{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.stack{display:flex;flex-direction:column;gap:12px;margin-top:18px}.row-link{cursor:pointer}.row-link:hover{box-shadow:var(--sh2)}.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
 </style></head><body><div id="app"></div>
 <script>
 const P={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',bld:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',clip:'<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',chat:'<path d="M4 4h16v12H8l-4 4z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',mega:'<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',out:'<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',inbox:'<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',cap:'<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',tick:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'};
@@ -271,6 +272,7 @@ async function loadViewData(view=S.view){
   if((view==='docs'||view==='x')&&S.role!=='management')tasks.push(apiCall('/documents?limit=50').then(r=>{if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
   if((view==='ann'||view==='dash'||view==='x')&&S.role!=='management')tasks.push(apiCall('/announcements?limit=20').then(r=>{if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
   if(['student','faculty','authority'].includes(S.role)&&!S.departments.length)tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
+  if(['faculty','authority'].includes(S.role)&&['publish','courses'].includes(view))tasks.push(apiCall(S.role==='authority'?'/courses?include_inactive=true':'/courses').then(r=>{if(r.ok)S.courses=Array.isArray(r.data)?r.data:[]}));
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   // Management: aggregate counts and recorded Gemini usage only. Read-only; the backend checks the role.
@@ -355,9 +357,9 @@ ${items.map(i=>`<button class="si ${S.view==i[0]?'on':''}" data-a="view" data-v=
 ${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${esc(h.title)}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
 <div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="View profile"><span class="av">${esc(ini())}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${esc(pn())}</div><div class="mut" style="font-size:12px">${ROLES[S.role]?ROLES[S.role][1]:'User'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
 
-const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['help','Help & Support','help'],['profile','Profile','user']];
-const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['docs','Documents','file'],['profile','Profile','user']];
-const AN=[['x','Campus Overview','home'],['tix','Tickets','inbox'],['ann','Announcements','mega'],['docs','Documents','file'],['profile','Profile','user']];
+const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['docs','Documents','file'],['help','Help & Support','help'],['profile','Profile','user']];
+const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['publish','Publish','upload'],['docs','Documents','file'],['ann','Announcements','mega'],['profile','Profile','user']];
+const AN=[['x','Campus Overview','home'],['tix','Tickets','inbox'],['publish','Publish','upload'],['courses','Courses','list'],['docs','Documents','file'],['ann','Announcements','mega'],['profile','Profile','user']];
 const MN=[['x','Management Stats','home'],['profile','Profile','user']];
 
 // Header
@@ -460,7 +462,7 @@ function dash(){
   return `<div class="pg"><h1 class="ed">Welcome back, ${esc(pn())}</h1><p class="sub">Here’s what is happening on campus today.</p>
 <div class="askp"><div><h3>Ask UniBuddy</h3><p>Get an instant verified answer, or send it on to faculty.</p></div><div class="row"><input id="dq" placeholder="Ask UniBuddy anything..."><button class="btn p" data-a="dask">Ask</button></div></div>
 <div class="strip">${[['list','Total questions',d.total_questions??'—'],['tick','Resolved',d.tickets_by_status?.resolved??'—'],['clock','Open tickets',d.total_tickets==null?null:Math.max(0,d.total_tickets-(d.tickets_by_status?.resolved||0))]].map(s=>`<div class="sti" data-a="view" data-v="queries"><span class="ic">${I(s[0])}</span><div><b>${s[2]}</b><span>${s[1]}</span></div></div>`).join('')}</div>
-<div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div>${ann.slice(0,3).map(a=>`<article class="am blue"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div><h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No announcements available.</p>'}</section>
+<div class="dgrid"><section><div class="sh2">Announcements <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="ann">View all</button></div>${ann.slice(0,3).map((a,i)=>`<article class="am blue row-link" data-a="ann-open" data-v="${i}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div><h3>${esc(a.t)}</h3></article>`).join('')||'<p class="mut">No announcements available.</p>'}</section>
 <section><div class="sh2">Upcoming deadlines</div><p class="mut">Deadlines are not available from the connected backend yet.</p></section></div>
 <section><div class="sh2">Recent query status <button class="lnk" style="font-size:12.5px;padding:0" data-a="view" data-v="queries">View all</button></div><div class="qp">${t.slice(0,3).map(x=>`<div class="qr" data-a="open" data-v="${x.uuid}"><small>${esc(x.id)}</small><span>${esc(x.subj)}</span>${stl(x)}</div>`).join('')||'<p class="mut">No questions yet.</p>'}</div></section></div>`}
 
@@ -482,17 +484,113 @@ function queries(){
   return `<div class="pg"><div class="row sp" style="margin-bottom:16px;flex-wrap:wrap"><h2>My Queries</h2><div class="row"><input id="gs" placeholder="Search tickets" value="${esc(S.fq)}" style="width:190px"><select id="fs" style="width:auto">${['All',...STG].map(s=>`<option ${S.fs==s?'selected':''}>${s}</option>`).join('')}</select></div></div>
 <div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>${f.map(x=>`<tr class="rw ${x.id==S.sel?'on':''}" data-a="open" data-v="${esc(x.id)}"><td><b>${esc(x.id)}</b></td><td>${esc(x.subj)}</td><td>${esc(x.dept)}</td><td>${esc(x.fac)}</td><td>${esc(x.date)}</td><td><span class="pri ${esc(x.pri)}">${esc(x.pri)}</span></td><td>${stl(x)}</td></tr>`).join('')}</table>${f.length?'':'<p class="mut" style="text-align:center;padding:24px">No tickets found. Ask UniBuddy a question to start one.</p>'}</div></div>${t?detail(t,false):''}</div>`}
 
-const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',x:'Workspace'};
+const TT={chat:'AI Assistant',dash:'Dashboard',queries:'My Queries',ann:'Announcements',help:'Help & Support',profile:'Profile',tix:'Faculty · Tickets',fdash:'Staff Dashboard',docs:'Documents',publish:'Publish',courses:'Courses',x:'Workspace'};
 
+// --- Lists. Documents and announcements are separate, newest first. Each row shows a short summary;
+// selecting it opens the full details. The backend decides what each role may see.
+const newestFirst=(a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''));
+const courseLabel=id=>(S.courses||[]).find(c=>c.id===id)?.name||'';
+const targetLabel=x=>[x.academic_year&&`Year ${x.academic_year}`,x.batch_year&&`Batch ${x.batch_year}`,x.course_id&&courseLabel(x.course_id),x.section&&`Section ${x.section}`].filter(Boolean).join(' · ');
+const briefText=t=>{const s=String(t||'').replace(/\s+/g,' ').trim();return s.length>140?s.slice(0,137)+'…':s};
 function annView(){
   const canPost=['authority','faculty'].includes(S.role);
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Announcements</h1><p class="sub">The latest official circulars and notices from your campus.</p></div>${canPost?`<button class="btn p" data-a="ann-modal">${I('plus')} New announcement</button>`:''}</div><div class="mag">${S.announcements.map(a=>`<article class="am ${a.tone||'blue'}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(a.b)}</p></article>`).join('')||'<p class="mut">No official announcements available.</p>'}</div></div>`}
+  const rows=(S.announcements||[]).map((a,i)=>({a,i})).sort((x,y)=>newestFirst(x.a,y.a));
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Announcements</h1><p class="sub">Official circulars and notices, newest first. Select one to read it in full.</p></div>${canPost?`<button class="btn p" data-a="view" data-v="publish">${I('plus')} Publish</button>`:''}</div>
+<div class="stack">${rows.map(({a,i})=>`<article class="am ${a.tone||'blue'} row-link" data-a="ann-open" data-v="${i}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(briefText(a.b))}</p>${targetLabel(a)?`<small class="mut">${esc(targetLabel(a))}</small>`:''}</article>`).join('')||'<p class="mut">No official announcements available.</p>'}</div></div>`}
 
-// Documents View for Staff, Faculty & Authority
+// Documents View: Student (published, visible to them), Faculty and Authority (staff actions live in the details).
 function docsView(){
-  const canManage=['faculty','authority'].includes(S.role);
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:16px"><div><h1 class="ed">University Documents</h1><p class="sub" style="margin:2px 0 0">Official documents indexed for AI assistant verification.</p></div>${canManage?`<button class="btn p" data-a="upload-doc-modal">${I('upload')} Upload Document</button>`:''}</div>
-<div class="card" style="padding:8px 8px 4px"><div class="tw"><table><tr><th>ID</th><th>Document Title</th><th>Scope</th><th>Visibility</th><th>Processing</th><th>Publication</th><th>Action</th></tr>${S.docs.map(d=>`<tr><td><b>${esc(d.id)}</b></td><td><div class="row" style="gap:8px">${I('file')}<b>${esc(d.title)}</b></div></td><td>${esc(d.scope)}</td><td><span class="pill">${esc(d.visibility)}</span></td><td><span class="pill">${esc(d.status)}</span>${d.processing_note?`<small>${esc(d.processing_note)}</small>`:''}</td><td>${esc(d.publication)}</td><td>${canManage&&d.publication==='draft'&&d.status==='ready'?`<button class="btn sm" data-a="publish-doc" data-v="${d.uuid}">Publish</button>`:''}${canManage&&d.publication!=='archived'?`<button class="btn sm" data-a="archive-doc" data-v="${d.uuid}">Archive</button>`:''}${S.role==='authority'&&d.publication==='archived'?`<button class="btn sm" data-a="restore-doc" data-v="${d.uuid}">Restore to draft</button>`:''}${S.role==='authority'&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn sm" data-a="scope-univ" data-v="${d.uuid}">Make university-wide</button>`:''}</td></tr>`).join('')}</table>${S.docs.length?'':'<p class="mut" style="padding:20px">No documents visible to this account.</p>'}</div></div></div>`}
+  const canManage=['faculty','authority'].includes(S.role),rows=[...(S.docs||[])].sort(newestFirst);
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Documents</h1><p class="sub">Official PDFs, newest first. Select one to see its details.</p></div>${canManage?`<button class="btn p" data-a="view" data-v="publish">${I('upload')} Publish</button>`:''}</div>
+<div class="stack">${rows.map(d=>`<article class="am blue row-link" data-a="doc-open" data-v="${esc(d.uuid)}"><div class="row sp"><span class="cat">${esc(targetLabel(d)||'University document')}</span><span class="dt">${esc(d.date)}</span></div><h3>${esc(d.title)}</h3><p>${esc(d.visibility==='staff_only'?'Staff only':'Students and staff')} · ${esc(d.scope==='university_wide'?'University-wide':'My campus')}${canManage?` · ${esc(d.publication)}`:''}</p></article>`).join('')||'<p class="mut">No documents are visible to this account.</p>'}</div></div>`}
+
+// Publish: one place for PDFs and announcements. Only the fields for the chosen type are shown.
+const pubField=(label,control)=>`<div><label>${label}</label>${control}</div>`;
+const courseOptions=()=>'<option value="">No course</option>'+(S.courses||[]).filter(c=>c.active).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+const scopeOptions=()=>['authority','faculty'].includes(S.role)?'<option value="university_wide" selected>University-wide</option><option value="campus">My campus</option>':'<option value="campus" selected>My campus</option>';
+// Announcements default to the campus; only Authority can choose university-wide.
+const annScopeOptions=()=>S.role==='authority'?'<option value="campus" selected>My campus</option><option value="university_wide">University-wide</option>':'<option value="campus" selected>My campus</option>';
+const sharedTargets=()=>`<div class="g2">${pubField('Academic year','<input id="pf-acad" maxlength="20" placeholder="e.g. 2026-27">')}${pubField('Batch year','<input id="pf-batch" type="number" min="2000" max="2100" placeholder="e.g. 2026">')}</div><div class="g2">${pubField('Course',`<select id="pf-course">${courseOptions()}</select>`)}${pubField('Section','<input id="pf-section" maxlength="10" list="pf-sections" placeholder="e.g. A"><datalist id="pf-sections"><option value="A"></option><option value="B"></option></datalist>')}</div>`;
+function publishView(){
+  const t=S.pubType||'pdf',narrowed=(S.pubAud||'all_students')==='all_students';
+  const typeBtn=(k,label)=>`<button class="btn ${t===k?'p':''}" data-a="pub-type" data-v="${k}" aria-pressed="${t===k}">${label}</button>`;
+  const pdf=`<label>Document title</label><input id="pd-title" maxlength="200" placeholder="e.g. Leave of Absence Policy 2026–27">
+<div class="g2">${pubField('Visibility','<select id="pd-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select>')}${pubField('Scope',`<select id="pd-scope">${scopeOptions()}</select>`)}</div>
+${sharedTargets()}
+${pubField('Source or person','<input id="pd-source" maxlength="120" placeholder="e.g. Office of the Registrar">')}
+${pubField('PDF file','<input id="pd-file" type="file" accept=".pdf" style="padding:6px 10px">')}
+<div class="row" style="justify-content:flex-end;margin-top:18px"><button class="btn p" data-a="pub-submit" data-v="pdf">${I('upload')} Upload PDF</button></div>`;
+  const people=(S.pubPeople||[]).map(p=>`<span class="pill">${esc(p.full_name||p.email)} <button class="lnk" data-a="pub-person-remove" data-v="${esc(p.id)}" aria-label="Remove ${esc(p.full_name||p.email)}">Remove</button></span>`).join(' ');
+  const hits=(S.pubQuery||'').trim()?(S.pubResults||[]).map(p=>`<button class="si" data-a="pub-person-add" data-v="${esc(p.id)}">${esc(p.full_name||'Student')} · ${esc(p.email)}</button>`).join('')||'<p class="mut" style="font-size:13px">No matching students on your campus.</p>':'';
+  const ann=`<label>Title</label><input id="pa-title" maxlength="200" placeholder="e.g. Exam timetable published">
+<label>Message</label><textarea id="pa-body" rows="5" maxlength="4000" placeholder="Write the announcement text"></textarea>
+<div class="g2">${pubField('Audience','<select id="pa-aud"><option value="all_students">Students and staff</option><option value="staff_only">Staff only</option></select>')}${pubField('Scope',`<select id="pa-scope">${annScopeOptions()}</select>`)}</div>
+<label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="pa-imp" type="checkbox" style="width:auto"> Mark as important</label>
+<div style="margin-top:14px;${narrowed?'':'display:none'}"><p class="mut" style="font-size:13px;margin:0 0 10px">Leave these empty to send it to every student. Set any of them to narrow it down. Selected people always receive it.</p>${sharedTargets()}
+<label>Selected people</label><div class="chips">${people||'<span class="mut" style="font-size:13px">No one selected</span>'}</div>
+<label>Find a student</label><input id="pa-q" placeholder="Search by name or email" autocomplete="off"><div class="stack" style="margin-top:8px">${hits}</div></div>
+<div class="row" style="justify-content:flex-end;margin-top:18px"><button class="btn p" data-a="pub-submit" data-v="announcement">Publish announcement</button></div>`;
+  return `<div class="pg wide"><h1 class="ed">Publish</h1><p class="sub">Add a PDF or an announcement for the people you choose. Announcements appear in UniBuddy only.</p>
+<div class="row" style="gap:10px;margin:14px 0 18px;flex-wrap:wrap">${typeBtn('pdf','PDF document')}${typeBtn('announcement','Announcement')}</div>
+<div class="card formarea" style="max-width:760px">${t==='announcement'?ann:pdf}</div></div>`;
+}
+function clearPublishForm(){
+  document.querySelectorAll('.formarea input,.formarea textarea,.formarea select').forEach(el=>{if(el.type==='checkbox')el.checked=false;else if(el.tagName==='SELECT')el.selectedIndex=0;else el.value=''});
+  S.pubPeople=[];S.pubResults=[];S.pubQuery='';S.pubAud='all_students';
+}
+async function submitPublish(button){
+  if(S.actionBusy)return;
+  const val=id=>($('#'+id)?.value||'').trim();
+  const batch=val('pf-batch');
+  if(batch&&!(Number(batch)>=2000&&Number(batch)<=2100)){toast('Batch year must be between 2000 and 2100.');return}
+  if(button.dataset.v==='pdf'){
+    const title=val('pd-title'),file=$('#pd-file')?.files?.[0];
+    if(!title||!file){toast('Enter a title and choose a PDF.');return}
+    if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
+    // One click = one POST. The button stays disabled until the answer arrives.
+    const body=new FormData();body.append('title',title);body.append('file',file);
+    body.append('visibility',$('#pd-vis')?.value||'public_students');body.append('scope',$('#pd-scope')?.value||'university_wide');
+    [['academic_year',val('pf-acad')],['batch_year',batch],['section',val('pf-section')],['course_id',$('#pf-course')?.value||''],['source_person',val('pd-source')]].forEach(([k,v])=>{if(v)body.append(k,v)});
+    S.actionBusy=true;button.disabled=true;button.textContent='Uploading…';
+    const res=await apiCall('/documents',{method:'POST',body});
+    S.actionBusy=false;
+    if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
+    if(res.data&&res.data.id)S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)];
+    clearPublishForm();R();toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
+    return;
+  }
+  const title=val('pa-title'),text=val('pa-body');
+  if(!title||!text){toast('Enter a title and a message.');return}
+  const aud=$('#pa-aud')?.value||'all_students';
+  const payload={title,body:text,audience:aud,scope:$('#pa-scope')?.value||'campus',category:'Notice',is_important:!!$('#pa-imp')?.checked};
+  if(aud==='all_students'){
+    if(val('pf-acad'))payload.academic_year=val('pf-acad');
+    if(batch)payload.batch_year=Number(batch);
+    if(val('pf-section'))payload.section=val('pf-section');
+    if($('#pf-course')?.value)payload.course_id=$('#pf-course').value;
+    if((S.pubPeople||[]).length)payload.person_ids=S.pubPeople.map(p=>p.id);
+  }
+  S.actionBusy=true;button.disabled=true;button.textContent='Publishing…';
+  const res=await apiCall('/announcements',{method:'POST',body:JSON.stringify(payload)});
+  S.actionBusy=false;
+  if(!res.ok){button.disabled=false;button.textContent='Publish announcement';toast((typeof res.error==='string'?res.error:'The announcement was not published.')+' Your text is still in the form.');return}
+  S.announcements=[{...res.data,c:res.data.category||'Notice',t:res.data.title,b:res.data.body,d:new Date(res.data.created_at).toLocaleDateString(),tone:'blue',big:res.data.is_important,imp:res.data.is_important},...(S.announcements||[])];
+  clearPublishForm();R();toast('Announcement published.');
+}
+async function searchStudents(q){
+  const r=await apiCall(`/people/students?q=${encodeURIComponent(q)}`);
+  if((S.pubQuery||'')!==q)return;
+  S.pubResults=r.ok&&Array.isArray(r.data)?r.data:[];R();
+}
+
+// Courses (Authority only manages them). A course in use is deactivated instead of deleted.
+async function reloadCourses(){const r=await apiCall('/courses?include_inactive=true');if(r.ok)S.courses=Array.isArray(r.data)?r.data:[];R()}
+function coursesView(){
+  const rows=[...(S.courses||[])];
+  return `<div class="pg wide"><h1 class="ed">Courses</h1><p class="sub">Courses on your campus. Only Authority adds, renames or removes them. A course that is already used is deactivated, so existing records keep it.</p>
+<div class="card formarea" style="margin-top:16px"><div class="row" style="gap:8px;flex-wrap:wrap"><input id="cr-new" maxlength="80" placeholder="New course name, e.g. CS & AI" style="flex:1;min-width:220px"><button class="btn p" data-a="course-add">Add course</button></div></div>
+<div class="card formarea" style="padding:8px 8px 4px;margin-top:16px"><div class="tw"><table><tr><th>Course</th><th>Status</th><th>Actions</th></tr>${rows.map(c=>`<tr><td><input id="cr-${esc(c.id)}" value="${esc(c.name)}" maxlength="80" style="max-width:260px"></td><td><span class="pill">${c.active?'Active':'Inactive'}</span></td><td style="white-space:nowrap"><button class="btn sm" data-a="course-save" data-v="${esc(c.id)}">Save name</button> <button class="btn sm" data-a="course-toggle" data-v="${esc(c.id)}">${c.active?'Deactivate':'Activate'}</button> <button class="btn sm" data-a="course-remove" data-v="${esc(c.id)}">Remove</button></td></tr>`).join('')}</table>${rows.length?'':'<p class="mut" style="padding:20px">No courses yet. Add the first one above.</p>'}</div></div></div>`;
+}
 
 function profileView(){
   return `<div class="pg" style="max-width:640px"><h1 class="ed" style="font-size:clamp(30px,4.5vw,44px)">Your profile</h1><p class="sub">Your identity and access role are managed by UniBuddy.</p><div class="card" style="margin-top:22px"><div class="row" style="margin-bottom:12px"><span class="avb">${esc(ini())}</span><div><h3>${esc(pn())}</h3><div class="mut" style="font-size:13px">${esc(ROLES[S.role]?.[1]||S.role)}</div></div></div><label>Name</label><input value="${esc(S.user?.full_name||'Not provided')}" disabled><label>Email</label><input value="${esc(S.user?.email||'')}" disabled>${S.role==='management'?'':`<label>Campus</label><input value="${S.user?.campus_id?'Assigned to your campus':'Not assigned'}" disabled><label>Department</label><input value="${esc(S.user?.department_id?(S.departments.find(d=>d.id===S.user.department_id)?.name||'Assigned'):'Not assigned')}" disabled>`}<p class="mut">To change your role${S.role==='management'?'':' or campus'}, contact an authorized UniBuddy administrator.</p></div></div>`}
@@ -503,12 +601,12 @@ function helpView(){
 // Role Portals
 function student(){
   const v=S.view;
-  return `<div class="app">${side(SN)}<main class="main">${hd(TT[v]||'Student Portal',v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
+  return `<div class="app">${side(SN)}<main class="main">${hd(TT[v]||'Student Portal',v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='docs'?docsView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
 
 function faculty(){
   const v=S.view,t=S.detail?.ticket,d=S.dashboard||{};
   const table=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td><b>${esc(x.id)}</b></td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets are assigned or visible to this account.</p>'}</div></div>`;
-  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Live counts from tickets and documents visible to your account.</p><div class="strip">${[['Open Tickets',d.open_tickets],['Resolved',d.resolved_tickets],['Unassigned Queue',d.unassigned_queue],['Assigned To Me',d.assigned_to_me],['Drafts Visible',d.drafts_visible],['Published Visible',d.published_visible]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${table}</div>`:`<div class="pg">${table}${t?detail(t,true):''}</div>`}</div></main></div>`}
+  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='publish'?publishView():v=='ann'?annView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Live counts from tickets and documents visible to your account.</p><div class="strip">${[['Open Tickets',d.open_tickets],['Resolved',d.resolved_tickets],['Unassigned Queue',d.unassigned_queue],['Assigned To Me',d.assigned_to_me],['Drafts Visible',d.drafts_visible],['Published Visible',d.published_visible]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${table}</div>`:`<div class="pg">${table}${t?detail(t,true):''}</div>`}</div></main></div>`}
 
 function placeholder(){
   const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN;
@@ -516,7 +614,7 @@ function placeholder(){
   const v=S.view;
   const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
   if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd('')}<div class="page">${mgmtView()}</div></main></div>`;
-  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
+  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':v=='publish'?'Publish':v=='courses'?'Courses':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='publish'?publishView():v=='courses'?coursesView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
 
 // Management Stats: aggregate counts only. No student names, emails, question text or chat contents.
 // Gemini usage is shown only where it was recorded; nothing is estimated.
@@ -549,12 +647,18 @@ function mgmtView(){
 // Modals
 function modal(){
   const m=S.modal,o=m.out?' out':'';
-  if(m.type==='new-ann'){
-    const uni=S.role==='authority';
-    return `<div class="ov${o}"><div class="modal"><h2 class="ed">New announcement</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Published announcements appear to students immediately. Uploading a PDF does not create one.</p><label>Title</label><input id="an-title" maxlength="200" placeholder="e.g. Exam timetable published"><label>Message</label><textarea id="an-body" rows="5" maxlength="4000" placeholder="Write the announcement text"></textarea><div class="g2"><div><label>Audience</label><select id="an-aud"><option value="all_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="an-scope"><option value="campus">My campus</option>${uni?'<option value="university_wide">University-wide</option>':''}</select></div></div><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="an-imp" type="checkbox" style="width:auto"> Mark as important</label><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-ann">Publish</button></div></div></div>`;
+  if(m.type==='ann-detail'){
+    const a=S.announcements?.[m.i];if(!a)return '';
+    const tgt=targetLabel(a);
+    return `<div class="ov${o}"><div class="modal"><div class="row sp" style="margin-bottom:6px"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h2 class="ed" style="margin-top:6px">${esc(a.t)}</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">${esc(a.scope==='university_wide'?'University-wide':'Campus')} · ${esc(a.audience==='staff_only'?'Staff only':'Students and staff')}${tgt?' · '+esc(tgt):''}</p><div style="white-space:pre-wrap;line-height:1.6">${esc(a.b)}</div><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn p" data-a="mc">Close</button></div></div></div>`;
   }
-  if(m.type==='upload-doc'){
-    return `<div class="ov${o}"><div class="modal"><h2 class="ed">Upload University Document</h2><p class="mut" style="font-size:13px;margin:4px 0 14px">Upload an approved PDF. It is processed by the AI service and stays a draft until published.</p><label>Document Title</label><input id="doc-title" placeholder="e.g. Leave of Absence Policy 2026–27"><div class="g2"><div><label>Visibility</label><select id="doc-vis"><option value="public_students">Students and staff</option><option value="staff_only">Staff only</option></select></div><div><label>Scope</label><select id="doc-scope">${['authority','faculty'].includes(S.role)?'<option value="university_wide" selected>University-wide</option><option value="campus">My campus</option>':'<option value="campus" selected>My campus</option>'}</select></div></div><label>PDF File</label><input id="doc-file" type="file" accept=".pdf" style="padding:6px 10px"><div class="row" style="justify-content:flex-end;margin-top:20px"><button class="btn" data-a="mc">Cancel</button><button class="btn p" data-a="submit-doc-upload">Upload PDF</button></div></div></div>`;
+  if(m.type==='doc-detail'){
+    const d=(S.docs||[]).find(x=>x.uuid===m.uuid);if(!d)return '';
+    const canManage=['faculty','authority'].includes(S.role),isAuth=S.role==='authority';
+    const rows=[['File',d.original_filename||'—'],['Visibility',d.visibility==='staff_only'?'Staff only':'Students and staff'],['Scope',d.scope==='university_wide'?'University-wide':'My campus'],['Academic year',d.academic_year||'—'],['Batch',d.batch_year||'—'],['Section',d.section||'—'],['Course',courseLabel(d.course_id)||(d.course_id?'Course':'—')],['Source or person',d.source_person||'—'],['Uploaded',d.date]];
+    if(canManage)rows.push(['Publication',d.publication],['Processing',d.status]);
+    const actions=canManage?[d.publication==='draft'&&d.status==='ready'?`<button class="btn p" data-a="publish-doc" data-v="${esc(d.uuid)}">Publish</button>`:'',d.publication!=='archived'?`<button class="btn" data-a="archive-doc" data-v="${esc(d.uuid)}">Archive</button>`:'',isAuth&&d.publication==='archived'?`<button class="btn" data-a="restore-doc" data-v="${esc(d.uuid)}">Restore to draft</button>`:'',isAuth&&d.publication==='draft'&&d.scope==='campus'?`<button class="btn" data-a="scope-univ" data-v="${esc(d.uuid)}">Make university-wide</button>`:''].join(''):'';
+    return `<div class="ov${o}"><div class="modal"><h2 class="ed">${esc(d.title)}</h2>${rows.map(([k,v])=>`<div class="row sp" style="border-bottom:1px solid var(--bd);padding:8px 0"><span class="mut" style="font-size:13px">${k}</span><span style="text-align:right">${esc(v)}</span></div>`).join('')}${d.processing_note?`<p class="mut" style="font-size:13px;margin-top:10px">${esc(d.processing_note)}</p>`:''}<div class="row" style="justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:20px">${actions}<button class="btn" data-a="mc">Close</button></div></div></div>`;
   }
   if(m.done){
     return `<div class="ov${o}"><div class="modal" style="text-align:center"><div style="display:grid;justify-items:center;margin-bottom:10px">${IC('tick')}</div><h2>Ticket submitted</h2><p class="mut" style="margin:6px 0">Your ticket ID is</p><div style="font-size:24px;font-weight:600;margin:2px 0 8px;color:var(--navy)">${m.done}</div><p class="mut" style="font-size:13px;margin-bottom:18px">Your query has reached the department faculty queue.</p><button class="btn p w" data-a="vt" data-v="${m.done}">View ticket details</button></div></div>`;
@@ -569,7 +673,7 @@ function R(){
   const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   const prevScroll=$('.page')?.scrollTop||0;
   // Fields in an open dialog and the search box keep what was typed or chosen when the page is redrawn.
-  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#gs')]
+  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#app .formarea input[id],#app .formarea textarea[id],#app .formarea select[id],#gs')]
     .filter(el=>el.type!=='file').map(el=>({id:el.id,value:el.value,checked:el.checked}));
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
   const html=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
@@ -643,6 +747,15 @@ async function refreshOpenTicket(){
 function sendChat(){const ci=$('#ci');if(!ci)return;const v=ci.value.trim();if(!v)return;ci.value='';ask(v)}
 function sendDash(){const dq=$('#dq');if(!dq)return;const v=dq.value.trim();if(!v)return;dq.value='';ask(v)}
 
+// Publish form: typing a name searches campus students; choosing an audience shows or hides the targeting fields.
+document.addEventListener('input',e=>{
+  if(e.target.id!=='pa-q')return;
+  const q=e.target.value.trim();S.pubQuery=q;clearTimeout(S.pubTimer);
+  if(!q){S.pubResults=[];return}
+  S.pubTimer=setTimeout(()=>searchStudents(q),250);
+});
+document.addEventListener('change',e=>{if(e.target.id==='pa-aud'){S.pubAud=e.target.value;R()}});
+
 // Global Actions Dispatcher
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-a]');
@@ -662,34 +775,28 @@ document.addEventListener('click',async e=>{
   else if(a=='forgot'){toast('Password sign-in is not available. Use Google sign-in.')}
   else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
   else if(a=='login')doLogin()
-  else if(a=='upload-doc-modal'){S.modal={type:'upload-doc'};R()}
-  else if(a=='ann-modal'){S.modal={type:'new-ann'};R()}
-  else if(a=='submit-doc-upload'){
-    // One click = one POST. apiCall never retries a POST, and the button stays disabled until the answer arrives.
-    if(S.actionBusy)return;
-    const title=$('#doc-title')?.value.trim(),file=$('#doc-file')?.files?.[0],vis=$('#doc-vis')?.value||'public_students',scope=$('#doc-scope')?.value||'campus';
-    if(!title||!file){toast('Enter a title and choose a PDF.');return}
-    if(file.type!=='application/pdf'&& !file.name.toLowerCase().endsWith('.pdf')){toast('Choose a PDF file.');return}
-    const body=new FormData();body.append('title',title);body.append('file',file);body.append('visibility',vis);body.append('scope',scope);
-    const button=el;S.actionBusy=true;button.disabled=true;button.textContent='Uploading…';
-    const res=await apiCall('/documents',{method:'POST',body});
-    S.actionBusy=false;
-    if(!res.ok){button.disabled=false;button.textContent='Upload PDF';toast(typeof res.error==='string'?res.error:'Upload failed. Check your access and try again.');return}
-    if(res.data&&res.data.id){S.docs=[docView(res.data),...(S.docs||[]).filter(d=>d.uuid!==res.data.id)]}
-    S.modal=null;R();await loadViewData('docs');toast('PDF uploaded. It is processing; the status updates automatically.');watchDocProcessing();
-  }
+  else if(a=='pub-type'){S.pubType=v;R()}
+  else if(a=='pub-submit'){submitPublish(el)}
+  else if(a=='pub-person-add'){const p=(S.pubResults||[]).find(x=>x.id===v);if(p&&!(S.pubPeople||[]).some(x=>x.id===p.id))S.pubPeople=[...(S.pubPeople||[]),p];S.pubQuery='';S.pubResults=[];const q=$('#pa-q');if(q)q.value='';R()}
+  else if(a=='pub-person-remove'){S.pubPeople=(S.pubPeople||[]).filter(x=>x.id!==v);R()}
+  else if(a=='doc-open'){S.modal={type:'doc-detail',uuid:v};R()}
+  else if(a=='ann-open'){S.modal={type:'ann-detail',i:+v};R()}
+  else if(a=='course-add'){const name=($('#cr-new')?.value||'').trim();if(!name){toast('Enter a course name.');return}const res=await apiCall('/courses',{method:'POST',body:JSON.stringify({name})});if(!res.ok){toast(typeof res.error==='string'?res.error:'The course was not added.');return}toast('Course added.');await reloadCourses()}
+  else if(a=='course-save'){const name=($('#cr-'+v)?.value||'').trim();if(!name){toast('Enter a course name.');return}const res=await apiCall(`/courses/${v}`,{method:'PATCH',body:JSON.stringify({name})});if(!res.ok){toast(typeof res.error==='string'?res.error:'The course was not renamed.');return}toast('Course renamed.');await reloadCourses()}
+  else if(a=='course-toggle'){const c=(S.courses||[]).find(x=>x.id===v);if(!c)return;const res=await apiCall(`/courses/${v}`,{method:'PATCH',body:JSON.stringify({active:!c.active})});if(!res.ok){toast(typeof res.error==='string'?res.error:'The course was not changed.');return}toast(c.active?'Course deactivated.':'Course activated.');await reloadCourses()}
+  else if(a=='course-remove'){const res=await apiCall(`/courses/${v}`,{method:'DELETE'});if(!res.ok){toast(typeof res.error==='string'?res.error:'The course was not removed.');return}toast(res.data?.action==='deactivated'?'It is in use, so it was deactivated. Existing records keep it.':'Course removed.');await reloadCourses()}
   else if(a=='restore-doc'||a=='scope-univ'){
     if(S.actionBusy)return;
     S.actionBusy=true;el.disabled=true;
     const res=a==='restore-doc'?await apiCall(`/documents/${v}/restore`,{method:'POST'}):await apiCall(`/documents/${v}/scope`,{method:'POST',body:JSON.stringify({scope:'university_wide'})});
     S.actionBusy=false;
     if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
-    await loadViewData('docs');toast(a==='restore-doc'?'Restored as a draft. Publish it when ready.':'Now university-wide as a draft. Publish it to take effect.');
+    S.modal=null;await loadViewData('docs');toast(a==='restore-doc'?'Restored as a draft. Publish it when ready.':'Now university-wide as a draft. Publish it to take effect.');
   }
   else if(a=='publish-doc'||a=='archive-doc'){
     el.disabled=true;const action=a==='publish-doc'?'publish':'archive',res=await apiCall(`/documents/${v}/${action}`,{method:'POST'});
     if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
-    await loadViewData('docs');toast(action==='publish'?'Document published.':'Document archived.');
+    S.modal=null;await loadViewData('docs');toast(action==='publish'?'Document published.':'Document archived.');
   }
   else if(a=='logout'){
     try{localStorage.removeItem('ub-current-user');localStorage.removeItem('ub-token')}catch(x){}
@@ -709,18 +816,6 @@ document.addEventListener('click',async e=>{
   else if(a=='attach')toast('File attachments are not supported yet. You can describe the issue in the forwarded ticket.')
   else if(a=='fwd'){S.modal={i:+v,q:S.chat[+v-1]?.t||'Question'};R()}
   else if(a=='mc'){S.modal.out=1;R();setTimeout(()=>{S.modal=null;R()},160)}
-  else if(a=='submit-ann'){
-    if(S.actionBusy)return;
-    const title=$('#an-title')?.value.trim(),body=$('#an-body')?.value.trim();
-    if(!title||!body){toast('Enter a title and a message.');return}
-    const payload={title,body,audience:$('#an-aud')?.value||'all_students',scope:$('#an-scope')?.value||'campus',category:'Notice',is_important:!!$('#an-imp')?.checked};
-    const label=el.textContent;S.actionBusy=true;el.disabled=true;el.textContent='Publishing…';
-    const res=await apiCall('/announcements',{method:'POST',body:JSON.stringify(payload)});
-    S.actionBusy=false;
-    if(!res.ok){el.disabled=false;el.textContent=label;toast((typeof res.error==='string'?res.error:'The announcement was not published.')+' Your text is still in the form.');return}
-    S.modal=null;S.announcements=[{...res.data,c:res.data.category||'Notice',t:res.data.title,b:res.data.body,d:new Date(res.data.created_at).toLocaleDateString(),tone:'blue',big:res.data.is_important,imp:res.data.is_important},...(S.announcements||[])];
-    R();toast('Announcement published.');
-  }
   else if(a=='ms'){
     if(S.actionBusy)return;
     const m=S.modal,msg=S.chat[m.i-1],assistantMessage=S.chat[m.i],departmentId=$('#md')?.value||null;
