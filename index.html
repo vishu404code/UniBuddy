@@ -3,7 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>UniBuddy — Campus AI Assistant & Knowledge Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="./runtime-config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth)initGoogleAuth()"></script>
 <style>
 :root{--bg:#FFFFFF;--ice:#EAF1FC;--lav:#F0EDFF;--bg2:#F4F6FA;--ind:#7187C9;--indd:#5a70b4;--navy:#263653;--deep:#263653;--ink:#263653;--slate:#687386;--bd:#E3E8F0;--sh:0 1px 2px rgba(38,54,83,.05),0 8px 22px -10px rgba(38,54,83,.14);--sh2:0 2px 4px rgba(38,54,83,.05),0 18px 38px -14px rgba(38,54,83,.24);--grad:linear-gradient(180deg,#6b81c3,#4f66a8);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 *{box-sizing:border-box}html,body{margin:0;height:100%}
@@ -1177,6 +1178,17 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body><div id="app"></div>
 <script>
+// Global error guard: guarantees the screen never turns blank
+window.addEventListener("error", function(e) {
+  console.warn("Global error caught:", e.error || e.message);
+  const a = document.getElementById("app");
+  if (a && !a.hasChildNodes()) {
+    if (typeof R === "function") {
+      try { R(); } catch(x) {}
+    }
+  }
+});
+
 const P={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',bld:'<path d="M4 21V5l8-3 8 3v16"/><path d="M9 21v-5h6v5M9 9h.01M15 9h.01"/>',bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',clip:'<path d="M20 11l-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',chat:'<path d="M4 4h16v12H8l-4 4z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',mega:'<path d="M3 11v3l14 5V6zM17 9a3 3 0 0 1 0 6"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',out:'<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>',inbox:'<path d="M3 13l3-9h12l3 9v7H3zM3 13h5l1 3h6l1-3h5"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',cap:'<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/>',zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',tick:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',refresh:'<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>'};
 const I=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]||P.check}</svg>`,IC=n=>`<div class="ico">${I(n)}</div>`;
 const GI=()=>`<svg style="width:18px;height:18px;flex:none" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>`;
@@ -1270,25 +1282,53 @@ const S={
 
 const saveTickets=()=>{try{localStorage.setItem('ub-tickets',JSON.stringify(S.tickets));localStorage.setItem('ub-notifs',JSON.stringify(S.notifs));localStorage.setItem('ub-docs',JSON.stringify(S.docs))}catch(e){}};
 const T=id=>S.tickets.find(t=>t.id==id),stl=t=>`<span class="pill s${t.st}">${STG[t.st]}</span>`;
-const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();scrollTo(0,0)};
+const go=(s,o={})=>{Object.assign(S,{scr:s,bell:false,nav:false,fx:'screen'},o);R();if(typeof window!=='undefined'&&typeof window.scrollTo==='function')window.scrollTo(0,0)};
 const toast=m=>{S.toast=m;R();setTimeout(()=>{S.toast='';R()},2800)};
 
-// Backend API Client with graceful fallback
-async function apiCall(endpoint,options={}){
-  const token=localStorage.getItem('ub-token');
-  const headers={'Content-Type':'application/json',...(options.headers||{})};
-  if(token)headers['Authorization']=`Bearer ${token}`;
-  try{
-    const res=await fetch('/api/v1'+endpoint,{...options,headers});
-    if(!res.ok){
-      let errData={};
-      try{errData=await res.json()}catch(e){}
-      return {ok:false,status:res.status,error:errData.detail||'Request failed'};
+const UB_API_BASE = (window.UB_CONFIG && window.UB_CONFIG.apiBase) ? window.UB_CONFIG.apiBase.replace(/\/+$/, "") : "/api/v1";
+
+// Backend API Client with production resilience & graceful wake-up retry
+async function apiCall(endpoint, options = {}) {
+  const token = localStorage.getItem("ub-token");
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const ep = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+  const url = UB_API_BASE + ep;
+  
+  const method = String(options.method || "GET").toUpperCase();
+  const maxAttempts = method === "GET" ? 2 : 1;
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, { ...options, headers });
+      if (res.ok) {
+        let data = null;
+        try { data = await res.json(); } catch(e) {}
+        return { ok: true, status: res.status, data };
+      }
+      if ([502, 503, 504].includes(res.status) && attempt < maxAttempts - 1) {
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      let errData = {};
+      try { errData = await res.json(); } catch(e) {}
+      const errMsg = typeof errData.detail === "string"
+        ? errData.detail
+        : (errData.detail?.message || errData.message || "");
+      let error = errMsg || "Request failed";
+      if (res.status === 503) {
+        error = /storage/i.test(errMsg)
+          ? "File storage is unavailable right now. Please try again later."
+          : "UniBuddy backend is waking up on free hosting. Please wait a moment and try again.";
+      }
+      return { ok: false, status: res.status, error };
+    } catch (err) {
+      if (attempt < maxAttempts - 1 && method === "GET") {
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      return { ok: false, status: 0, error: err.message };
     }
-    const data=await res.json();
-    return {ok:true,status:res.status,data};
-  }catch(err){
-    return {ok:false,status:0,error:err.message};
   }
 }
 
@@ -1414,7 +1454,7 @@ function startLoginThread(){
 }
 
 function initLoginEntrances(){
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || false;
   const slot = document.getElementById('slot');
   const hero = document.getElementById('hero');
   const word = document.getElementById('word');
@@ -1791,7 +1831,8 @@ async function seqDemo(){
 }
 
 function initLandingPage(){
-  stopLandingAnimation();
+  try {
+    stopLandingAnimation();
   landingHeroToken = { active: true };
   const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -1860,8 +1901,8 @@ function initLandingPage(){
     esv.innerHTML = D.map((d, i) => `<path class="ln" pathLength="1" d="${d}" style="transition-delay:${0.3 + i * 0.12}s"/><path class="pl" pathLength="1" d="${d}" style="animation-delay:${1.6 + i * 0.35}s"/>`).join('') +
       '<g class="dots">' + D.map((d, i) => `<circle class="dt" r="1" opacity="0"><animateMotion dur="3s" begin="${i * 0.5}s" repeatCount="indefinite" path="${d}"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="3s" begin="${i * 0.5}s" repeatCount="indefinite"/></circle>`).join('') + '</g>';
 
-    eco.querySelectorAll('.nd').forEach(el => el.remove());
-    eco.insertAdjacentHTML('beforeend', N.map((n, i) => `<div class="nd" style="left:${n[2]}%;top:${n[3]}%;transition-delay:${0.5 + i * 0.12}s"><div class="ni glass" style="animation-delay:${-i * 0.8}s"><em>${n[0]}</em>${n[1]}</div></div>`).join(''));
+    if(typeof eco.querySelectorAll==='function')eco.querySelectorAll('.nd').forEach(el => el.remove());
+    if(typeof eco.insertAdjacentHTML==='function')eco.insertAdjacentHTML('beforeend', N.map((n, i) => `<div class="nd" style="left:${n[2]}%;top:${n[3]}%;transition-delay:${0.5 + i * 0.12}s"><div class="ni glass" style="animation-delay:${-i * 0.8}s"><em>${n[0]}</em>${n[1]}</div></div>`).join(''));
 
     if(window.IntersectionObserver){
       const ecoObs = new IntersectionObserver(entries => {
@@ -1988,6 +2029,7 @@ function initLandingPage(){
       });
     }, { passive: true });
   }
+  } catch(err) { console.warn('Landing init:', err); }
 }
 
 // UniBuddy Claude Artifact Login Page
@@ -2405,7 +2447,8 @@ ${item.item_type==='text_content'?`<label>Full Policy Content</label><textarea i
 
 // Render Engine
 function R(){
-  const a=$('#app'),ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
+  const a=$('#app');if(!a)return;
+  const ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else if(S.scr=='onboard')h=onboard();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
   a.innerHTML=h+(S.modal?modal():'')+(S.toast?`<div class="toast">${S.toast}</div>`:'');
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
@@ -2430,7 +2473,7 @@ function initGoogleAuth(){
   if(S.scr=='login'&&window.google?.accounts?.id){
     try{
       window.google.accounts.id.initialize({
-        client_id:'replace-with-your-client-id.apps.googleusercontent.com',
+        client_id: (window.UB_CONFIG && window.UB_CONFIG.googleClientId) || '675157891879-ufpn2fmb16n6qkq7qjjeclre6eaem085.apps.googleusercontent.com',
         callback:(resp)=>{if(resp?.credential)handleGoogleCredential(resp.credential)}
       });
       const gbtn=$('#google-signin-btn');
@@ -2684,5 +2727,9 @@ try{
   }
 }catch(e){}
 
-R();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => R());
+} else {
+  R();
+}
 </script></body></html>
