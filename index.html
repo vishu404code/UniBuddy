@@ -1492,8 +1492,49 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .sp-app .themes i{width:22px;height:22px;border-radius:50%}
 .sp-app .tw{overflow-x:auto}
 .sp-app table{width:100%;border-collapse:collapse;font-size:14px}
-.sp-app th{text-align:left;font-size:13px;color:var(--mu);padding:10px 12px;background:var(--bg);white-space:nowrap}
-.sp-app td{padding:12px;border-top:1px solid var(--bd)}
+.sp-app th{text-align:left;font-size:12.5px;font-weight:700;color:var(--mu);padding:12px 14px;background:var(--bg);white-space:nowrap;letter-spacing:.02em;text-transform:uppercase}
+.sp-app th:first-child{border-radius:12px 0 0 12px}
+.sp-app th:last-child{border-radius:0 12px 12px 0}
+.sp-app td{padding:13px 14px;border-top:1px solid var(--bd)}
+.sp-app tr.rw{cursor:pointer;transition:background .2s}
+.sp-app tr.rw:hover{background:var(--ice)}
+.sp-app tr.rw.on{background:var(--ice);font-weight:600}
+.sp-app .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0 24px}
+.sp-app .sti{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:18px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:6px;transition:transform .25s,box-shadow .25s}
+.sp-app .sti:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.sp-app .sti b{font-size:26px;font-weight:800;color:var(--dk);line-height:1.1;font-family:'Plus Jakarta Sans',sans-serif}
+.sp-app .sti span{font-size:12px;color:var(--mu);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sp-app .pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--ms);color:var(--dk);border:1px solid var(--bd)}
+.sp-app .pill:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ac)}
+.sp-app .pill.s0{background:#e6effe;color:#1f4fb0;border-color:#adc8f6}.sp-app .pill.s0:before{background:#2f6fe4}
+.sp-app .pill.s1{background:#e6effe;color:#1f4fb0;border-color:#adc8f6}.sp-app .pill.s1:before{background:#2f6fe4}
+.sp-app .pill.s2{background:#fff5cf;color:#7a5600;border-color:#efd77c}.sp-app .pill.s2:before{background:#f2b705}
+.sp-app .pill.s3{background:#e3f6ea;color:#1d7041;border-color:#a3d9b8}.sp-app .pill.s3:before{background:#2ea160}
+.sp-app .pri{font-size:12px;font-weight:700;text-transform:capitalize;display:inline-flex;padding:3px 9px;border-radius:8px}
+.sp-app .pri.high,.sp-app .pri.High{background:#fdeaea;color:#b42328}
+.sp-app .pri.medium,.sp-app .pri.Medium{background:#fff5cf;color:#7a5600}
+.sp-app .pri.low,.sp-app .pri.Low{background:#e3f6ea;color:#1d7041}
+.sp-app .two{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-top:18px}
+.sp-app .tl{padding-left:20px;margin-top:14px}
+.sp-app .tl>div{position:relative;padding-bottom:16px;color:var(--mu);font-size:13.5px}
+.sp-app .tl>div:before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;border:2px solid var(--bd);background:#fff}
+.sp-app .tl>div:after{content:"";position:absolute;left:-16px;top:16px;bottom:-2px;width:2px;background:var(--bd)}
+.sp-app .tl>div:last-child:after{display:none}
+.sp-app .tl>div.d{color:var(--dk);font-weight:600}
+.sp-app .tl>div.d:before{background:var(--ac);border-color:var(--ac);box-shadow:0 0 0 3px var(--ring)}
+.sp-app .stack{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.sp-app .am{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px;box-shadow:var(--sh);transition:transform .25s,box-shadow .25s;cursor:pointer}
+.sp-app .am:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.sp-app .am h3{margin:8px 0 6px;font-size:16.5px;font-weight:700;color:var(--dk)}
+.sp-app .am p{color:var(--mu);font-size:14px;margin:0;line-height:1.5}
+.sp-app .am .cat{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--ac);letter-spacing:.04em}
+.sp-app .am .dt{font-size:12.5px;color:var(--mu)}
+.sp-app .am .imp{display:inline-flex;font-size:11px;font-weight:700;background:#fdeaea;color:#b42328;padding:2px 8px;border-radius:6px;text-transform:uppercase;margin-bottom:6px}
+.sp-app .bars-wrap{display:flex;align-items:flex-end;gap:10px;height:140px;padding:16px 4px 8px;border-bottom:1px solid var(--bd)}
+.sp-app .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:6px}
+.sp-app .bar-fill{width:100%;max-width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--sky),var(--ac));transition:height .4s ease;min-height:6px}
+.sp-app .bar-lbl{font-size:11px;color:var(--mu);font-weight:600}
+.sp-app .formarea{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:24px;box-shadow:var(--sh)}
 .sp-app .emp{text-align:center;color:var(--mu);padding:36px 12px}
 .sp-app dialog#dq{border:1px solid var(--bd);border-radius:22px;padding:24px;background:#fff;color:var(--tx);width:min(480px,92vw)}
 .sp-app dialog#dq::backdrop{background:rgba(24,61,105,.35);backdrop-filter:blur(4px)}
@@ -1583,29 +1624,34 @@ const ACC={
   'student@unibuddy.demo':{role:'student',name:'Aarav Sharma',department:'Computer Science',id:'stu-101'},
   'faculty@unibuddy.demo':{role:'faculty',name:'Dr. Mehta',department:'Computer Science',id:'fac-201'},
   'authority@unibuddy.demo':{role:'authority',name:'Campus Authority',department:'Administration',id:'auth-301'},
-  'management@unibuddy.demo':{role:'management',name:'Management Office',department:'Institutional Operations',id:'mgmt-401'}
+  'management@unibuddy.demo':{role:'management',name:'Management Office',department:'Institutional Operations',id:'mgmt-401'},
+  'admin@unibuddy.demo':{role:'super_admin',name:'Super Admin',department:'Administration',id:'admin-001'}
 };
 const COURSES=['B.Tech CS & AI','B.Tech CS & DS','B.Tech Electrical','MBA Tech'];
 let PR={
   'student@unibuddy.demo':{name:'Aarav Sharma',course:'B.Tech CS & AI'},
   'faculty@unibuddy.demo':{name:'Dr. Mehta',department:'Computer Science'},
   'authority@unibuddy.demo':{name:'Campus Authority',department:'Administration'},
-  'management@unibuddy.demo':{name:'Management Office',department:'Institutional Operations'}
+  'management@unibuddy.demo':{name:'Management Office',department:'Institutional Operations'},
+  'admin@unibuddy.demo':{name:'Super Admin',department:'Administration'}
 };
 try{const saved=JSON.parse(localStorage.getItem('ub-profiles')||'{}');PR={...PR,...saved}}catch(e){}
 const savePR=()=>{try{localStorage.setItem('ub-profiles',JSON.stringify(PR))}catch(e){}};
 const prof=()=>PR[S.user?.email]||{};
 
 function loginAsRole(role){
-  const norm=String(role||'').toLowerCase().trim();
+  let norm=String(role||'').toLowerCase().trim();
+  if(norm==='non-authority'||norm==='non_authority')norm='authority';
   const roleMap={
     student:'student@unibuddy.demo',
     faculty:'faculty@unibuddy.demo',
     authority:'authority@unibuddy.demo',
-    management:'management@unibuddy.demo'
+    management:'management@unibuddy.demo',
+    super_admin:'admin@unibuddy.demo',
+    admin:'admin@unibuddy.demo'
   };
   const email=roleMap[norm]||(ACC[norm]?norm:'student@unibuddy.demo');
-  const a=ACC[email]||{role:norm||'student',name:(norm.charAt(0).toUpperCase()+norm.slice(1))+' User'};
+  const a=ACC[email]||{role:norm==='admin'?'super_admin':norm||'student',name:(norm.charAt(0).toUpperCase()+norm.slice(1))+' User'};
   S.user={
     id:a.id||'demo-'+a.role,
     email:email,
@@ -1617,7 +1663,7 @@ function loginAsRole(role){
   };
   S.role=a.role;
   S.scr='app';
-  S.view=a.role==='student'?'dash':a.role==='faculty'?'tix':a.role==='management'?'x':'x';
+  S.view=a.role==='student'?'dash':a.role==='faculty'?'tix':a.role==='management'?'x':a.role==='super_admin'?'admin':'x';
   try{localStorage.setItem('ub-current-user',email)}catch(e){}
   
   // Seed sensible fallback sample data if backend is offline or unauthenticated
@@ -2997,11 +3043,118 @@ function themeBtns() {
   </div>`;
 }
 
-function studentSidebar(v) {
-  const h = (S.hist || []).slice(0, 4);
-  const an = (S.announcements || []).slice(0, 2);
-  const rd = spRdocs().map(id => (S.docs || []).find(d => d.uuid === id || d.id === id)).filter(Boolean).slice(0, 2);
-  const sec = (t, x) => x ? `<h4>${t}</h4>${x}` : '';
+const UNIFIED_ROLES_CONFIG = {
+  student: {
+    label: 'Student',
+    sub: 'Student Portal',
+    badge: 'k-b',
+    btnAction: 'new',
+    btnLabel: 'New chat',
+    btnIcon: 'plus',
+    nav: [
+      ['dash', 'home', 'Dashboard'],
+      ['chat', 'spark', 'AI Assistant'],
+      ['docs', 'file', 'Documents'],
+      ['ann', 'mega', 'Announcements'],
+      ['queries', 'list', 'My Queries'],
+      ['profile', 'user', 'Profile'],
+      ['settings', 'gear', 'Settings'],
+      ['help', 'help', 'Help & Support']
+    ]
+  },
+  faculty: {
+    label: 'Faculty',
+    sub: 'Faculty Portal',
+    badge: 'k-g',
+    btnAction: 'view',
+    btnParam: 'publish',
+    btnLabel: 'Publish Notice',
+    btnIcon: 'upload',
+    nav: [
+      ['tix', 'inbox', 'Tickets'],
+      ['fdash', 'home', 'Staff Overview'],
+      ['publish', 'upload', 'Publish'],
+      ['docs', 'file', 'Documents'],
+      ['ann', 'mega', 'Announcements'],
+      ['profile', 'user', 'Profile'],
+      ['settings', 'gear', 'Settings'],
+      ['help', 'help', 'Help & Support']
+    ]
+  },
+  authority: {
+    label: 'Authority',
+    sub: 'Authority Portal',
+    badge: 'k-y',
+    btnAction: 'view',
+    btnParam: 'publish',
+    btnLabel: 'University Notice',
+    btnIcon: 'upload',
+    nav: [
+      ['x', 'home', 'Campus Overview'],
+      ['tix', 'inbox', 'Tickets'],
+      ['publish', 'upload', 'Publish'],
+      ['courses', 'list', 'Courses'],
+      ['docs', 'file', 'Documents'],
+      ['ann', 'mega', 'Announcements'],
+      ['profile', 'user', 'Profile'],
+      ['settings', 'gear', 'Settings'],
+      ['help', 'help', 'Help & Support']
+    ]
+  },
+  management: {
+    label: 'Management',
+    sub: 'Management Portal',
+    badge: 'k-r',
+    btnAction: 'view',
+    btnParam: 'x',
+    btnLabel: 'Analytics Overview',
+    btnIcon: 'home',
+    nav: [
+      ['x', 'home', 'Management Stats'],
+      ['tix', 'inbox', 'Tickets'],
+      ['docs', 'file', 'Documents'],
+      ['ann', 'mega', 'Announcements'],
+      ['profile', 'user', 'Profile'],
+      ['settings', 'gear', 'Settings'],
+      ['help', 'help', 'Help & Support']
+    ]
+  },
+  super_admin: {
+    label: 'Super Admin',
+    sub: 'Platform Admin',
+    badge: 'k-r',
+    btnAction: 'view',
+    btnParam: 'admin',
+    btnLabel: 'Account Directory',
+    btnIcon: 'shield',
+    nav: [
+      ['admin', 'shield', 'Account Directory'],
+      ['fdash', 'home', 'System Health'],
+      ['profile', 'user', 'Profile'],
+      ['settings', 'gear', 'Settings']
+    ]
+  }
+};
+
+const UNIFIED_TITLES = {
+  dash: 'Dashboard', dashboard: 'Dashboard',
+  chat: 'AI Assistant',
+  queries: 'My Queries',
+  tix: 'Tickets Queue',
+  fdash: 'Staff Overview',
+  publish: 'Publish',
+  courses: 'Courses',
+  docs: 'Documents', documents: 'Documents',
+  ann: 'Announcements', announcements: 'Announcements',
+  x: 'Overview',
+  admin: 'Account Directory',
+  profile: 'Profile',
+  settings: 'Settings',
+  help: 'Help & Support'
+};
+
+function portalSidebar(role, v) {
+  const cfg = UNIFIED_ROLES_CONFIG[role] || UNIFIED_ROLES_CONFIG.student;
   const sq = (S.spSearch || '').trim().toLowerCase();
   let searchHtml = '';
   if (sq) {
@@ -3009,14 +3162,51 @@ function studentSidebar(v) {
       ...(S.docs || []).map(d => ({ t: d.title, k: 'docs', x: 'Document', text: d.title + ' ' + (d.scope || '') })),
       ...(S.announcements || []).map(a => ({ t: a.t || a.title, k: 'ann', x: 'Announcement', text: (a.t || a.title) + ' ' + (a.b || a.body || '') }))
     ].filter(x => x.text.toLowerCase().includes(sq)).slice(0, 6);
-    searchHtml = `<div class="dd" id="sr">${hits.map(x => `<a data-a="view" data-v="${x.k}" href="#${x.k === 'docs' ? 'documents' : 'announcements'}"><b>${esc(x.t)}</b><br><small>${esc(x.x)}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No results</p>'}</div>`;
+    searchHtml = `<div class="dd" id="sr">${hits.map(x => `<a data-a="view" data-v="${x.k}"><b>${esc(x.t)}</b><br><small>${esc(x.x)}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No results</p>'}</div>`;
   }
+
+  let secondaryHtml = '';
+  if (role === 'student') {
+    const h = (S.hist || []).slice(0, 4);
+    const an = (S.announcements || []).slice(0, 2);
+    const rd = spRdocs().map(id => (S.docs || []).find(d => d.uuid === id || d.id === id)).filter(Boolean).slice(0, 2);
+    const sec = (t, x) => x ? `<h4>${t}</h4>${x}` : '';
+    secondaryHtml = sec('Recent chats', h.map((c, i) => `<div class="hi ${S.conversationId === c.id && v === 'chat' ? 'on' : ''}" data-a="hist" data-v="${i}"><span>${esc(c.title)}</span><button data-a="del-conv" data-v="${esc(c.id)}" aria-label="Delete chat">×</button></div>`).join('')) +
+      sec('Latest announcements', an.map(a => `<a class="hl" data-a="view" data-v="ann">${esc(a.t || a.title)}</a>`).join('')) +
+      sec('Recently opened', rd.map(d => `<a class="hl" data-a="view" data-v="docs">${esc(d.title)}</a>`).join('')) ||
+      '<p style="padding:0 10px;font-size:13px;color:var(--mu);margin:0">Nothing yet</p>';
+  } else if (role === 'faculty') {
+    const assignedTickets = (S.tickets || []).filter(t => t.assigned_faculty_id === S.user?.id || t.fac === 'Assigned' || t.fac === S.user?.name).slice(0, 3);
+    const unreadNotices = (S.announcements || []).slice(0, 2);
+    const sec = (t, x) => x ? `<h4>${t}</h4>${x}` : '';
+    secondaryHtml = sec('Assigned Tickets', assignedTickets.map(t => `<a class="hl" data-a="open" data-v="${esc(t.uuid || t.id)}"><span>${esc(t.id)}: ${esc(t.subj)}</span></a>`).join('')) +
+      sec('Recent Notices', unreadNotices.map(a => `<a class="hl" data-a="view" data-v="ann">${esc(a.t || a.title)}</a>`).join('')) ||
+      '<p style="padding:0 10px;font-size:13px;color:var(--mu);margin:0">No assigned tickets</p>';
+  } else if (role === 'authority') {
+    const pendingTickets = (S.tickets || []).filter(t => t.status === 'submitted').slice(0, 3);
+    const sec = (t, x) => x ? `<h4>${t}</h4>${x}` : '';
+    secondaryHtml = sec('Pending Escalations', pendingTickets.map(t => `<a class="hl" data-a="open" data-v="${esc(t.uuid || t.id)}"><span>${esc(t.id)}: ${esc(t.subj)}</span></a>`).join('')) ||
+      '<p style="padding:0 10px;font-size:13px;color:var(--mu);margin:0">All queues clear</p>';
+  } else if (role === 'management') {
+    const qTotal = S.analytics?.questions_total || 0;
+    const tTotal = S.analytics?.ticket_totals?.total_tickets || (S.tickets || []).length;
+    secondaryHtml = `<h4>Executive Pulse</h4>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--mu)">AI Queries</span><b>${qTotal}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--mu)">Campus Tickets</span><b>${tTotal}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--mu)">Resolution</span><b>${Math.round((S.analytics?.ticket_totals?.resolution_rate || 0.85) * 100)}%</b></div>
+      </div>`;
+  }
+
+  const actionBtn = cfg.btnAction === 'new'
+    ? `<button class="newc" id="nc" data-a="new" title="${cfg.btnLabel}">${spIc(cfg.btnIcon, 16)}<span class="t">${cfg.btnLabel}</span></button>`
+    : `<button class="newc" id="nc" data-a="${cfg.btnAction}" data-v="${cfg.btnParam}" title="${cfg.btnLabel}">${spIc(cfg.btnIcon, 16)}<span class="t">${cfg.btnLabel}</span></button>`;
 
   return `<aside id="sb" class="side ${S.nav ? 'open' : ''}">
     <div class="sbt">
-      <a class="brand" href="#dashboard" data-a="view" data-v="dash">
+      <a class="brand" data-a="view" data-v="${cfg.nav[0][0]}">
         <span class="lg"><img src="logo.png" alt="UniBuddy" onerror="this.onerror=null;this.src=LOGO"></span>
-        <span class="t"><b>UniBuddy</b><small>Student Portal</small></span>
+        <span class="t"><b>UniBuddy</b><small>${cfg.sub}</small></span>
       </a>
       <button class="ib cb" id="col" data-a="sp-col" aria-label="Collapse sidebar">${spIc('chev', 18)}</button>
     </div>
@@ -3025,44 +3215,50 @@ function studentSidebar(v) {
       <input id="gs" placeholder="Search" aria-label="Search" autocomplete="off" value="${esc(S.spSearch || '')}">
       ${searchHtml}
     </div>
-    <button class="newc" id="nc" data-a="new" title="New chat">${spIc('plus', 16)}<span class="t">New chat</span></button>
+    ${actionBtn}
     <nav>
-      ${SP_NAV.map(n => `<button class="${v === n[0] ? 'on' : ''}" data-a="view" data-v="${n[0]}" title="${n[2]}">${spIc(n[1], 19)}<span class="t">${n[2]}</span></button>`).join('')}
+      ${cfg.nav.map(n => `<button class="${v === n[0] ? 'on' : ''}" data-a="view" data-v="${n[0]}" title="${n[2]}">${spIc(n[1], 19)}<span class="t">${n[2]}</span></button>`).join('')}
     </nav>
     <div class="hist">
-      ${sec('Recent chats', h.map((c, i) => `<div class="hi ${S.conversationId === c.id && v === 'chat' ? 'on' : ''}" data-a="hist" data-v="${i}"><span>${esc(c.title)}</span><button data-a="del-conv" data-v="${esc(c.id)}" aria-label="Delete chat">×</button></div>`).join('')) +
-        sec('Latest announcements', an.map(a => `<a class="hl" href="#announcements" data-a="view" data-v="ann">${esc(a.t || a.title)}</a>`).join('')) +
-        sec('Recently opened', rd.map(d => `<a class="hl" href="#documents" data-a="view" data-v="docs">${esc(d.title)}</a>`).join('')) ||
-        '<p>Nothing yet</p>'}
+      ${secondaryHtml}
     </div>
     <div class="usr">
       <span class="av sm" data-a="view" data-v="profile">${stu()}</span>
       <div class="t" style="min-width:0;line-height:1.2;cursor:pointer" data-a="view" data-v="profile">
         <b style="font-size:13.5px;color:var(--dk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${esc(pn())}</b>
-        <small style="color:var(--mu);font-size:12px">Student</small>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+          <small style="color:var(--mu)">${cfg.label}</small>
+          <span class="badge ${cfg.badge}" style="font-size:10px;padding:1px 6px">Active</span>
+        </div>
       </div>
     </div>
   </aside>`;
 }
 
-function studentHeader(v, th) {
+function portalHeader(role, v, th) {
+  const cfg = UNIFIED_ROLES_CONFIG[role] || UNIFIED_ROLES_CONFIG.student;
   const unr = (S.announcements || []).filter(a => !spReadSet().includes(a.id || a.uuid)).length;
   const bellDropdown = S.spBellOpen ? `<div class="dd" id="dd">
-    ${(S.announcements || []).slice(0, 5).map(a => `<a href="#announcements" data-a="view" data-v="ann"><b>${esc(a.t || a.title)}</b><br><small>${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No new announcements</p>'}
+    ${(S.announcements || []).slice(0, 5).map(a => `<a data-a="view" data-v="ann"><b>${esc(a.t || a.title)}</b><br><small>${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No new announcements</p>'}
   </div>` : '';
   const userDropdown = S.spUserOpen ? `<div class="dd" id="um">
-    <div style="padding:10px 10px 4px"><b>${esc(pn())}</b><br><small style="color:var(--mu)">Student${S.user?.email ? ' · ' + esc(S.user.email) : ''}</small></div>
-    <a href="#profile" data-a="view" data-v="profile">Profile</a>
-    <a href="#settings" data-a="view" data-v="settings">Settings</a>
-    <a href="#help" data-a="view" data-v="help">Help &amp; Support</a>
+    <div style="padding:10px 10px 4px"><b>${esc(pn())}</b><br><small style="color:var(--mu)">${cfg.label}${S.user?.email ? ' · ' + esc(S.user.email) : ''}</small></div>
+    <a data-a="view" data-v="profile">Profile</a>
+    <a data-a="view" data-v="settings">Settings</a>
+    <a data-a="view" data-v="help">Help &amp; Support</a>
     <div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:4px">
       <button data-a="logout" style="color:#e5484d;font-weight:600">Sign out</button>
     </div>
   </div>` : '';
 
+  let title = UNIFIED_TITLES[v] || cfg.sub;
+  if (role === 'faculty' && v === 'tix') title = 'Faculty · Tickets';
+  if (role === 'authority' && v === 'x') title = 'Authority Portal';
+  if (role === 'management' && v === 'x') title = 'Management Stats';
+
   return `<header id="tp">
     <button class="ib hm" id="hm" data-a="navo" aria-label="Menu">${spIc('menu')}</button>
-    <h2>${SP_TITLES[v] || 'Student Portal'}</h2>
+    <h2>${title}</h2>
     <span class="sp"></span>
     <button class="ib tm" id="tm" data-a="sp-theme" aria-label="Switch colour theme">
       <span class="sw" style="background:${th === 'ocean' ? SP_GR.aqua : SP_GR.ocean}"></span>
@@ -3080,6 +3276,9 @@ function studentHeader(v, th) {
     </div>
   </header>`;
 }
+
+function studentSidebar(v) { return portalSidebar('student', v); }
+function studentHeader(v, th) { return portalHeader('student', v, th); }
 
 function studentDash() {
   const first = (pn() || 'there').split(' ')[0];
@@ -3532,17 +3731,225 @@ function student() {
 
 
 function faculty(){
-  const v=S.view,t=S.detail?.ticket,d=S.dashboard||{};
-  const table=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td><b>${esc(x.id)}</b></td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets are assigned or visible to this account.</p>'}</div></div>`;
-  return `<div class="app">${side(FN)}<main class="main">${hd(TT[v]||'Faculty Portal')}<div class="page">${v=='profile'?profileView():v=='publish'?publishView():v=='ann'?annView():v=='docs'?docsView():v=='fdash'?`<div class="pg"><h1 class="ed">Staff Overview</h1><p class="sub">Live counts from tickets and documents visible to your account.</p><div class="strip">${[['Open Tickets',d.open_tickets],['Resolved',d.resolved_tickets],['Unassigned Queue',d.unassigned_queue],['Assigned To Me',d.assigned_to_me],['Drafts Visible',d.drafts_visible],['Published Visible',d.published_visible]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${table}</div>`:`<div class="pg">${table}${t?detail(t,true):''}</div>`}</div></main></div>`}
+  const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
+  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
+  const v = S.view || 'tix';
+  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+    <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
+    ${portalSidebar('faculty', v)}
+    <div class="mn">
+      ${portalHeader('faculty', v, th)}
+      <main id="view" data-r="${v}">
+        ${facultyView(v)}
+      </main>
+    </div>
+  </div>`;
+}
+
+function facultyTicketTable() {
+  const f = S.tickets.filter(t => (S.fs === 'All' || humanStatus(t.status) === S.fs) && (t.subj + t.id + t.dept).toLowerCase().includes(S.fq.toLowerCase()));
+  if (!f.length) {
+    return '<p class="emp" style="padding:28px 12px;margin:0">No tickets found in this queue.</p>';
+  }
+  return `<div class="tw">
+    <table>
+      <thead>
+        <tr><th>Ticket ID</th><th>Subject</th><th>Department</th><th>Faculty</th><th>Date</th><th>Priority</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        ${f.map(x => `<tr class="rw ${x.uuid === S.sel || x.id === S.sel ? 'on' : ''}" data-a="open" data-v="${esc(x.uuid || x.id)}">
+          <td><b>${esc(x.id)}</b></td>
+          <td>${esc(x.subj)}</td>
+          <td><span class="badge k-b">${esc(x.dept)}</span></td>
+          <td>${esc(x.fac)}</td>
+          <td>${esc(x.date)}</td>
+          <td><span class="pri ${esc(x.pri)}">${esc(x.pri)}</span></td>
+          <td>${stl(x)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function facultyView(v) {
+  const t = S.detail?.ticket, d = S.dashboard || {};
+  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
+  if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
+  if (v === 'help') return `<div class="wrap big">${helpView()}</div>`;
+  if (v === 'publish') return `<div class="wrap big">${publishView()}</div>`;
+  if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
+  if (v === 'ann') return `<div class="wrap big">${annView()}</div>`;
+  if (v === 'fdash') {
+    return `<div class="wrap big">
+      <div class="hd">
+        <div>
+          <h1 class="ed">Staff Overview</h1>
+          <p class="sub">Live counts from tickets and documents visible to your account.</p>
+        </div>
+      </div>
+      <div class="strip">
+        <div class="sti t3"><b>${d.open_tickets ?? 0}</b><span>Open Tickets</span></div>
+        <div class="sti t3"><b>${d.resolved_tickets ?? 0}</b><span>Resolved Tickets</span></div>
+        <div class="sti t3"><b>${d.unassigned_queue ?? 0}</b><span>Unassigned Queue</span></div>
+        <div class="sti t3"><b>${d.assigned_to_me ?? 0}</b><span>Assigned To Me</span></div>
+        <div class="sti t3"><b>${d.drafts_visible ?? 0}</b><span>Drafts Visible</span></div>
+        <div class="sti t3"><b>${d.published_visible ?? 0}</b><span>Published Visible</span></div>
+      </div>
+      <div class="card t3" style="padding:16px;margin-top:20px">
+        <h3 style="margin:4px 8px 14px">Department Ticket Queue</h3>
+        ${facultyTicketTable()}
+      </div>
+    </div>`;
+  }
+  // Default: v === 'tix' (Tickets Queue)
+  return `<div class="wrap big">
+    <div class="hd">
+      <div>
+        <h1 class="ed">Faculty Tickets</h1>
+        <p class="sub">Review, respond, and resolve verified queries assigned to your academic queue.</p>
+      </div>
+      <div>
+        <input id="qsr" placeholder="Search tickets..." value="${esc(S.fq)}" style="width:220px">
+        <select id="qfl" style="width:auto">
+          ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="card t3" style="padding:16px">
+      ${facultyTicketTable()}
+    </div>
+    ${t ? detail(t, true) : ''}
+  </div>`;
+}
+
+function authorityPortalView(v) {
+  const t = S.detail?.ticket, d = S.dashboard || {};
+  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
+  if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
+  if (v === 'help') return `<div class="wrap big">${helpView()}</div>`;
+  if (v === 'publish') return `<div class="wrap big">${publishView()}</div>`;
+  if (v === 'courses') return `<div class="wrap big">${coursesView()}</div>`;
+  if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
+  if (v === 'ann') return `<div class="wrap big">${annView()}</div>`;
+  if (v === 'tix') {
+    return `<div class="wrap big">
+      <div class="hd">
+        <div>
+          <h1 class="ed">Authority Portal · Tickets</h1>
+          <p class="sub">University-wide ticket oversight and departmental escalations.</p>
+        </div>
+        <div>
+          <input id="qsr" placeholder="Search tickets..." value="${esc(S.fq)}" style="width:220px">
+          <select id="qfl" style="width:auto">
+            ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="card t3" style="padding:16px">
+        ${facultyTicketTable()}
+      </div>
+      ${t ? detail(t, true) : ''}
+    </div>`;
+  }
+  // Default: v === 'x' or 'fdash' (Campus Overview)
+  return `<div class="wrap big">
+    <div class="hd">
+      <div>
+        <h1 class="ed">Authority Portal</h1>
+        <p class="sub">Campus Overview &amp; University-Wide Administrative Governance.</p>
+      </div>
+    </div>
+    <div class="strip">
+      <div class="sti t3"><b>${d.open_tickets ?? (S.tickets.filter(x=>x.status!=='resolved').length || 0)}</b><span>Open Tickets</span></div>
+      <div class="sti t3"><b>${d.resolved_tickets ?? (S.tickets.filter(x=>x.status==='resolved').length || 0)}</b><span>Resolved Tickets</span></div>
+      <div class="sti t3"><b>${d.unassigned_queue ?? (S.tickets.filter(x=>!x.assigned_faculty_id).length || 0)}</b><span>Unassigned Queue</span></div>
+      <div class="sti t3"><b>${d.drafts_visible ?? 0}</b><span>Drafts Visible</span></div>
+      <div class="sti t3"><b>${d.published_visible ?? (S.docs.length || 0)}</b><span>Published Visible</span></div>
+      <div class="sti t3"><b>${(S.courses || []).length || 0}</b><span>Active Courses</span></div>
+    </div>
+    <div class="card t3" style="padding:16px;margin-top:20px">
+      <h3 style="margin:4px 8px 14px">Campus Escalation Queue</h3>
+      ${facultyTicketTable()}
+    </div>
+  </div>`;
+}
+
+function mgmtPortalView(v) {
+  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
+  if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
+  if (v === 'help') return `<div class="wrap big">${helpView()}</div>`;
+  if (v === 'tix') return `<div class="wrap big">${facultyView('tix')}</div>`;
+  if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
+  if (v === 'ann') return `<div class="wrap big">${annView()}</div>`;
+  // Default: v === 'x' (Management Stats)
+  return `<div class="wrap big">${mgmtView()}</div>`;
+}
+
+function superAdminPortalView(v) {
+  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
+  if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
+  if (v === 'fdash') {
+    return `<div class="wrap big">
+      <div class="hd">
+        <div><h1 class="ed">System Health</h1><p class="sub">Platform diagnostic metrics and active service telemetry.</p></div>
+      </div>
+      <div class="strip">
+        <div class="sti t3"><b>Operational</b><span>Backend Status</span></div>
+        <div class="sti t3"><b>Healthy</b><span>Database Connection</span></div>
+        <div class="sti t3"><b>Active</b><span>Gemini AI Engine</span></div>
+        <div class="sti t3"><b>Connected</b><span>Google Identity</span></div>
+      </div>
+    </div>`;
+  }
+  return `<div class="wrap big">
+    <div class="hd">
+      <div>
+        <h1 class="ed">Super Admin · Account Directory</h1>
+        <p class="sub">University account provisioning, role governance, and campus directory oversight.</p>
+      </div>
+    </div>
+    <div class="card t3" style="padding:16px">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th>Account</th><th>Role</th><th>Campus</th><th>Department</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${Object.entries(ACC).map(([email, info]) => `
+              <tr class="rw">
+                <td><b>${esc(info.name || email)}</b><br><small style="color:var(--mu)">${esc(email)}</small></td>
+                <td><span class="badge ${info.role==='student'?'k-b':info.role==='faculty'?'k-g':info.role==='authority'?'k-y':'k-r'}">${esc(info.role)}</span></td>
+                <td>${esc(info.campus || 'Main Campus')}</td>
+                <td>${esc(info.department || 'All')}</td>
+                <td><span class="pill s3">Verified</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
 
 function placeholder(){
-  const r=ROLES[S.role]||ROLES.authority,isAuth=S.role=='authority',items=isAuth?AN:MN;
-  if(S.role==='management'&&!['x','profile'].includes(S.view))S.view='x';
-  const v=S.view;
-  const d=S.dashboard||{},ticketTable=`<div class="card" style="padding:8px"><div class="tw"><table><tr><th>ID</th><th>Subject</th><th>Priority</th><th>Status</th></tr>${S.tickets.map(x=>`<tr class="rw" data-a="open" data-v="${x.uuid}"><td>${esc(x.id)}</td><td>${esc(x.subj)}</td><td>${esc(x.pri)}</td><td>${stl(x)}</td></tr>`).join('')}</table>${S.tickets.length?'':'<p class="mut" style="padding:20px">No tickets visible.</p>'}</div></div>`;
-  if(S.role==='management'&&v=='x')return `<div class="app">${side(items)}<main class="main">${hd('')}<div class="page">${mgmtView()}</div></main></div>`;
-  return `<div class="app">${side(items)}<main class="main">${hd(v=='docs'?'Documents':v=='ann'?'Announcements':v=='profile'?'Profile':v=='tix'?'Tickets':v=='publish'?'Publish':v=='courses'?'Courses':r[1]+' Portal')}<div class="page">${v=='profile'?profileView():v=='publish'?publishView():v=='courses'?coursesView():v=='ann'?annView():v=='docs'?docsView():v=='tix'?`<div class="pg">${ticketTable}${S.detail?.ticket?detail(S.detail.ticket,true):''}</div>`:`<div class="pg"><h1 class="ed">${r[1]} Portal</h1><p class="sub">Live overview from the records your account is allowed to see.</p><div class="strip">${[['Tickets',d.total_tickets??(d.open_tickets!=null?d.open_tickets+d.resolved_tickets:null)],['Resolved',d.resolved_tickets],['Open tickets',d.open_tickets??(d.total_tickets!=null?d.total_tickets-d.resolved_tickets:null)]].map(([label,val])=>`<div class="sti"><div><b>${val??'—'}</b><span>${label}</span></div></div>`).join('')}</div>${ticketTable}</div>`}</div></main></div>`}
+  const role = S.role || 'authority';
+  const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
+  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
+  let v = S.view || 'x';
+  if (role === 'management' && !['x', 'profile', 'settings', 'help', 'docs', 'ann', 'tix'].includes(v)) {
+    v = 'x';
+  }
+  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+    <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
+    ${portalSidebar(role, v)}
+    <div class="mn">
+      ${portalHeader(role, v, th)}
+      <main id="view" data-r="${v}">
+        ${role === 'management' ? mgmtPortalView(v) : role === 'super_admin' ? superAdminPortalView(v) : authorityPortalView(v)}
+      </main>
+    </div>
+  </div>`;
+}
 
 // Management Stats: aggregate counts only. No student names, emails, question text or chat contents.
 // Gemini usage is shown only where it was recorded; nothing is estimated.
@@ -3897,17 +4304,22 @@ document.addEventListener('submit',async e=>{
 
 window.addEventListener('hashchange',()=>{
   const raw=(location.hash.slice(1)||'').trim().toLowerCase();
-  if(['student','faculty','authority','management'].includes(raw)){
+  if(['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].includes(raw)){
     loginAsRole(raw);
     return;
   }
-  if(S.role==='student'&&S.scr==='app'){
+  if(S.scr==='app'){
     const routeMap={
       dashboard:'dash',dash:'dash',
       chat:'chat',
       documents:'docs',docs:'docs',
       announcements:'ann',ann:'ann',
       queries:'queries',
+      tix:'tix',tickets:'tix',
+      fdash:'fdash',overview:'fdash',
+      publish:'publish',
+      courses:'courses',
+      stats:'x',analytics:'x',
       profile:'profile',
       settings:'settings',
       help:'help'
@@ -3943,7 +4355,7 @@ if(typeof fetch === 'function' && UB_API_BASE)fetch(UB_API_BASE+'/health',{cache
 const _urlParams = typeof window!=='undefined'&&window.location?.search ? new URLSearchParams(window.location.search) : null;
 const _queryPortal = _urlParams ? (_urlParams.get('portal') || _urlParams.get('role') || '').toLowerCase() : '';
 const _hashPortal = typeof window!=='undefined'&&window.location?.hash ? (window.location.hash.slice(1)||'').toLowerCase() : '';
-const _targetRole = ['student','faculty','authority','management'].find(r => r === _queryPortal || r === _hashPortal);
+const _targetRole = ['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].find(r => r === _queryPortal || r === _hashPortal);
 
 if(_targetRole){
   loginAsRole(_targetRole);
