@@ -1450,6 +1450,16 @@ async function handleGoogleCredential(id_token){
 
   if(res.ok&&res.data?.access_token){
     localStorage.setItem('ub-token',res.data.access_token);
+    const me=res.data.user;
+    if(me){
+      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
+      S.role=me.role;
+      S.scr='app';S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
+      R();
+      loadViewData(S.view);
+      toast('Signed in as '+(me.full_name||me.email));
+      return;
+    }
     const meRes=await apiCall('/auth/me');
     if(meRes.ok&&meRes.data){
       const me=meRes.data;
