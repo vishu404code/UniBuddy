@@ -132,7 +132,8 @@ class PostgresClient:
                 max_size=pool_size,
                 kwargs={"row_factory": dict_row, "connect_timeout": 10},
                 timeout=8.0,
-                max_idle=300,
+                max_idle=45,
+                check=ConnectionPool.check_connection,
                 open=True,
             )
         self._connect = connect or (lambda url: psycopg.connect(url, row_factory=dict_row))
@@ -155,15 +156,23 @@ class PostgresClient:
 
     def _run_sync(self, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
         try:
-            with self._checkout() as conn:
-                if as_user is None:
-                    conn.execute("set local role service_role")
-                else:
-                    conn.execute("set local role authenticated")
-                    conn.execute("select set_config('app.user_id', %s, true)", (str(as_user),))
-                result = work(conn)
-                conn.commit()
-                return result
+            attempts = 2
+            for attempt in range(attempts):
+                try:
+                    with self._checkout() as conn:
+                        if as_user is None:
+                            conn.execute("set local role service_role")
+                        else:
+                            conn.execute("set local role authenticated")
+                            conn.execute("select set_config('app.user_id', %s, true)", (str(as_user),))
+                        result = work(conn)
+                        conn.commit()
+                        return result
+                except (psycopg.OperationalError, psycopg.errors.ConnectionException) as exc:
+                    if attempt < attempts - 1:
+                        logger.warning("Database connection dropped, retrying operation with fresh connection: %s", exc)
+                        continue
+                    raise DataServiceError(503, "database unavailable") from exc
         except DataServiceError:
             raise
         except psycopg.errors.UniqueViolation as exc:
