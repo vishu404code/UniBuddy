@@ -223,8 +223,6 @@ console.log('✓ Test 2: Login Page loaded with Google button');
   // Test 6: Management Authentication and Portal
   await simulateAuth('management', 'chancellor@unibuddy.edu', 'University Chancellor');
   await evalInCtx("handleGoogleCredential('google_id_token_management')");
-  // The portal opens first; the analytics request finishes a moment later.
-  await new Promise(resolve => setTimeout(resolve, 20));
   assert.strictEqual(evalInCtx('S.role'), 'management', 'Role is management');
   assert.strictEqual(evalInCtx('S.view'), 'x', 'Initial management view is x (Management Stats)');
   assert.ok(mockApp.innerHTML.includes('Management Stats'), 'Management Stats rendered');
