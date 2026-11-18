@@ -1360,6 +1360,9 @@ async function apiCall(endpoint,options={}){
   if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
   const method=String(options.method||'GET').toUpperCase();
   const isAuth=endpoint.startsWith('/auth/');
+  if(!isAuth && window.__authPromise && !localStorage.getItem('ub-token')){
+    try{ await window.__authPromise; }catch(e){}
+  }
   const attempts=options.maxAttempts||(isAuth?14:(method==='GET'||options.idempotent?3:1));
   const started=performance.now();
   const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
@@ -1417,6 +1420,9 @@ const deptLabel=t=>t.department_name||(S.departments||[]).find(d=>d.id===t.depar
 // Central data loader for views
 async function loadViewData(view=S.view){
   if(!S.user)return;
+  if(window.__authPromise && !localStorage.getItem('ub-token')){
+    try{ await window.__authPromise; }catch(e){}
+  }
   S.loading=true;
   const tasks=[];
   if(S.user.id!==S.chatOwner){S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=S.user.id}
@@ -1479,47 +1485,55 @@ async function handleGoogleCredential(id_token){
   }
 
   // Establish backend session & sync in background
-  let res;
-  try{
-    res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true,maxAttempts:10});
-  }catch(err){
-    res={ok:false,status:0,error:err.message};
-  }
-
-  if(res.ok&&res.data?.access_token){
-    localStorage.setItem('ub-token',res.data.access_token);
-    const me=res.data.user;
-    if(me){
-      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
-      S.role=me.role;
-      try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
-      R();
-      loadViewData(S.view);
-      return;
+  window.__authPromise = (async () => {
+    let res;
+    try{
+      res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true,maxAttempts:10});
+    }catch(err){
+      res={ok:false,status:0,error:err.message};
     }
-    const meRes=await apiCall('/auth/me');
-    if(meRes.ok&&meRes.data){
-      const me=meRes.data;
-      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
-      S.role=me.role;
-      try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
-      R();
+
+    if(res.ok&&res.data?.access_token){
+      localStorage.setItem('ub-token',res.data.access_token);
+      const me=res.data.user;
+      if(me){
+        S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
+        S.role=me.role;
+        try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
+        R();
+        loadViewData(S.view);
+        return true;
+      }
+      try{
+        const meRes=await apiCall('/auth/me');
+        if(meRes.ok&&meRes.data){
+          const me=meRes.data;
+          S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
+          S.role=me.role;
+          try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
+          R();
+        }
+      }catch(e){}
       loadViewData(S.view);
-      return;
+      return true;
     }
-    localStorage.removeItem('ub-token');
-  }
 
-  if(res.status===403&&res.error?.code==='no_profile'){
-    S.modal={type:'access-request',id_token,msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'};
-    R();
-    return;
-  }
+    if(res.status===403&&res.error?.code==='no_profile'){
+      S.modal={type:'access-request',id_token,msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'};
+      R();
+      return false;
+    }
 
-  const messages={0:'Cannot reach UniBuddy right now. Check backend connection.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact campus administrator.',503:'UniBuddy sign-in service is currently not configured.'};
-  const msg=(typeof res.error==='object'?(res.error.message||res.error.code):res.error)||messages[res.status]||'Sign-in failed. Please try again.';
-  if(er)er.textContent=msg;
-  toast(msg);
+    const messages={0:'Cannot reach UniBuddy right now. Check backend connection.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact campus administrator.',503:'UniBuddy sign-in service is currently not configured.'};
+    const msg=(typeof res.error==='object'?(res.error.message||res.error.code):res.error)||messages[res.status]||'Sign-in failed. Please try again.';
+    if(er)er.textContent=msg;
+    toast(msg);
+    return false;
+  })();
+
+  try {
+    await window.__authPromise;
+  } catch(e){}
 }
 
 const logo=`<div class="logo" data-a="home"><span class="mark"><img src="logo.png" alt="U" style="width:100%;height:100%;object-fit:contain"></span>UniBuddy</div>`;
@@ -2347,6 +2361,17 @@ async function ask(q){
   S.view='chat';
   R();
   
+  if(window.__authPromise){
+    try{ await window.__authPromise; }catch(e){}
+  }
+  const token=localStorage.getItem('ub-token');
+  if(!token && UB_API_BASE){
+    S.chat.pop();
+    S.chat.push({r:'a',k:'err',t:'Your sign-in session is still connecting to the campus server. Please try asking again in a moment.',time:now(),n:1});
+    R();
+    return;
+  }
+
   // Ask the real backend RAG service; never fabricate a local answer.
   const backendRes=await apiCall('/chat/ask',{
     method:'POST',
@@ -2365,7 +2390,10 @@ async function ask(q){
       S.chat.push({r:'a',k:'nf',t:d.answer,time:now(),n:1,mid:d.assistant_message_id});
     }
   }else{
-    S.chat.push({r:'a',k:'err',t:'The UniBuddy assistant is unavailable right now. Please try again later.',time:now(),n:1});
+    const errText = (backendRes.error && typeof backendRes.error === 'string')
+      ? backendRes.error
+      : 'The UniBuddy assistant is unavailable right now. Please try again later.';
+    S.chat.push({r:'a',k:'err',t:errText,time:now(),n:1});
   }
   R();
   loadConversations().then(R);
@@ -2381,6 +2409,10 @@ const messageView=m=>m.role==='user'
   ?{r:'u',t:m.content,time:fmtTime(m.created_at),n:0,mid:m.id}
   :{r:'a',k:(m.citations||[]).length?'ok':'nf',t:m.content,citations:m.citations||[],time:fmtTime(m.created_at),n:0,mid:m.id};
 async function loadConversations(){
+  if(window.__authPromise){
+    try{ await window.__authPromise; }catch(e){}
+  }
+  if(!localStorage.getItem('ub-token')) return;
   const r=await apiCall('/chat/conversations?limit=30');
   if(r.ok)S.hist=pageItems(r).map(c=>({id:c.id,title:c.title||'Conversation'}));
 }
