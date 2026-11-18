@@ -1287,6 +1287,259 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .side{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%);width:280px;box-shadow:var(--sh2)}.side.open{transform:none}.scrim.open{display:block;position:fixed;inset:0;background:rgba(38,54,83,.3);z-index:35}.menu{display:grid}
 .two,.dgrid,.askp{grid-template-columns:1fr}.strip{flex-wrap:wrap;gap:14px}.sti{flex:1 1 40%;padding:0 10px}.g2{grid-template-columns:1fr}.mag{grid-template-columns:1fr}.am,.am.big,.am:nth-child(4),.am:nth-child(5){grid-column:auto;grid-row:auto}.am.big{min-height:200px}.qr{grid-template-columns:1fr auto}.qr small{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ==================== NEW STUDENT PORTAL (CLAUDE ARTIFACT INTEGRATION) ==================== */
+.sp-app {
+  --bg:#F5FAFF;--ice:#EAF4FF;--sky:#A9D5FF;--ac:#438FE8;--act:#2f78d4;--dk:#183D69;--tx:#183D69;--mu:#5f7691;--bd:#e1eaf5;--ms:#EAF4FF;--ring:rgba(67,143,232,.28);--sh:0 1px 2px rgba(24,61,105,.04),0 14px 34px -20px rgba(24,61,105,.22);--sh2:0 22px 44px -20px rgba(67,143,232,.45);--glow:rgba(67,143,232,.5);--p:var(--act);--p2:var(--ac);--g:var(--dk);
+  color-scheme:light;
+  box-sizing:border-box;
+  font:15px/1.55 'Plus Jakarta Sans',system-ui,sans-serif;
+  color:var(--tx);
+  background:var(--bg);
+  display:flex;
+  height:100vh;
+  height:100dvh;
+  padding:16px;
+  gap:16px;
+  overflow:hidden;
+}
+:root[data-theme="aqua"] .sp-app, .sp-app[data-theme="aqua"] {
+  --bg:#F4FBF9;--ice:#E8F7F4;--sky:#A9E5DB;--ac:#40B9A8;--act:#1f8a7e;--dk:#155E58;--tx:#155E58;--mu:#5b8580;--bd:#dcebe8;--ms:#E8F7F4;--ring:rgba(64,185,168,.3);--sh:0 1px 2px rgba(21,94,88,.04),0 14px 34px -20px rgba(21,94,88,.22);--sh2:0 22px 44px -20px rgba(64,185,168,.5);--glow:rgba(64,185,168,.5);
+}
+.sp-app .k-r{--c:#e5484d;--cs:#fdeaea;--cb:#f4b4b6;--ct:#b42328;--co:#fff}
+.sp-app .k-b{--c:#2f6fe4;--cs:#e6effe;--cb:#adc8f6;--ct:#1f4fb0;--co:#fff}
+.sp-app .k-g{--c:#2ea160;--cs:#e3f6ea;--cb:#a3d9b8;--ct:#1d7041;--co:#fff}
+.sp-app .k-y{--c:#f2b705;--cs:#fff5cf;--cb:#efd77c;--ct:#7a5600;--co:#3d2c00}
+.sp-app .k-n{--c:var(--bd);--cs:var(--ms);--cb:var(--bd);--ct:var(--mu)}
+.sp-app *{box-sizing:border-box}
+.sp-app a{color:inherit;text-decoration:none}
+.sp-app button{font:inherit;cursor:pointer;color:inherit}
+.sp-app aside{width:272px;flex:none;background:#fff;border:1px solid var(--bd);border-radius:26px;box-shadow:var(--sh);display:flex;flex-direction:column;padding:16px 12px;gap:10px;overflow-y:auto;overflow-x:hidden;transition:width .25s}
+.sp-app .sbt{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.sp-app .brand{display:flex;gap:10px;align-items:center;padding:2px 4px;min-width:0;text-decoration:none;color:inherit}
+.sp-app .brand b{display:block;font-size:17px;line-height:1.2;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dk)}
+.sp-app .brand small{color:var(--mu);font-size:12px}
+.sp-app .lg{width:38px;height:38px;background:#fff;border-radius:11px;overflow:hidden;display:inline-block;isolation:isolate;flex:none;border:1px solid var(--bd)}
+.sp-app .lg img{width:100%;height:100%;display:block;object-fit:cover}
+.sp-app .ssrch{position:relative;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--bd);border-radius:14px;padding:0 12px;color:var(--mu)}
+.sp-app .ssrch input{border:0;background:none;box-shadow:none;padding:10px 0;min-width:0;color:var(--tx)}
+.sp-app .ssrch .dd{left:0;right:0;top:46px;width:auto}
+.sp-app .newc{display:flex;gap:8px;align-items:center;justify-content:center;background:var(--dk);color:#fff;border:0;border-radius:14px;padding:10px;font-weight:600;transition:transform .2s;cursor:pointer;width:100%}
+.sp-app .newc:hover{transform:translateY(-1px)}
+.sp-app aside nav{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.sp-app aside nav a,.sp-app aside nav button{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;font-weight:500;color:var(--mu);transition:background .2s,color .2s;text-decoration:none;border:0;background:none;width:100%;text-align:left;cursor:pointer}
+.sp-app aside nav a svg,.sp-app aside nav button svg{color:var(--mu);flex:none}
+.sp-app aside nav a:hover,.sp-app aside nav button:hover{background:var(--bg);color:var(--tx)}
+.sp-app aside nav a.on,.sp-app aside nav button.on{background:var(--ice);color:var(--dk);font-weight:700;box-shadow:inset 3px 0 0 var(--ac)}
+.sp-app aside nav a.on svg,.sp-app aside nav button.on svg{color:var(--ac)}
+.sp-app .hist{flex:1;min-height:40px;margin-top:6px;overflow-y:auto}
+.sp-app .hist h4{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);padding:10px 10px 4px;margin:0}
+.sp-app .hist p{font-size:13px;color:var(--mu);padding:0 10px;margin:0}
+.sp-app .hl{display:block;padding:6px 10px;font-size:13.5px;color:var(--mu);border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;cursor:pointer}
+.sp-app .hl:hover{background:var(--bg);color:var(--tx)}
+.sp-app .hi{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;font-size:13.5px;color:var(--mu);cursor:pointer}
+.sp-app .hi:hover,.sp-app .hi.on{background:var(--bg);color:var(--tx)}
+.sp-app .hi span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-app .hi button{background:none;border:0;opacity:0;font-size:16px;cursor:pointer;color:var(--mu);padding:0 4px}
+.sp-app .hi:hover button{opacity:.6}
+.sp-app .usr{display:flex;gap:10px;align-items:center;padding:12px 4px 0;border-top:1px solid var(--bd)}
+.sp-app .usr small{display:block;color:var(--mu);font-size:12px}
+.sp-app .av{width:38px;height:38px;border-radius:50%;background:var(--ice);flex:none;overflow:hidden;display:block;border:1px solid var(--bd);padding:0;cursor:pointer}
+.sp-app .av svg{width:100%;height:100%;display:block}
+.sp-app .av.sm{width:38px;height:38px}
+.sp-app .av.xl{width:84px;height:84px}
+.sp-app .av.xxl{width:104px;height:104px;border:4px solid #fff;box-shadow:var(--sh)}
+.sp-app .mn{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:28px;box-shadow:var(--sh);overflow:hidden}
+.sp-app header#tp{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid var(--bd);background:#fff}
+.sp-app header h2{font-size:17px;font-weight:700;margin:0;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dk)}
+.sp-app .sp{flex:1}
+.sp-app .hm{display:none}
+.sp-app .ib{background:none;border:0;padding:7px;border-radius:10px;color:var(--mu);display:grid;place-items:center;position:relative;cursor:pointer}
+.sp-app .ib:hover{background:var(--bg)}
+.sp-app .ib i{position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--ac)}
+.sp-app .cb svg{transition:transform .25s}
+.sp-app .tm{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--bd);border-radius:99px;color:var(--tx);background:#fff;cursor:pointer}
+.sp-app .tm .sw{width:16px;height:16px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.08)}
+.sp-app .bw,.sp-app .um{position:relative}
+.sp-app .dd{position:absolute;right:0;top:46px;width:320px;max-width:86vw;background:#fff;border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh2);padding:8px;z-index:30}
+.sp-app .um .dd{width:220px}
+.sp-app .dd a,.sp-app .dd button{display:block;padding:10px;border-radius:10px;text-decoration:none;color:var(--tx);background:none;border:0;width:100%;text-align:left;font:inherit;cursor:pointer}
+.sp-app .dd a:hover,.sp-app .dd button:hover{background:var(--bg)}
+.sp-app .dd small{color:var(--mu)}
+.sp-app #view{flex:1;overflow-y:auto;padding:28px 32px 32px}
+.sp-app #view[data-r=chat]{padding:0;display:flex;overflow:hidden;background:radial-gradient(700px 420px at 50% 24%,var(--ice),transparent 70%)}
+.sp-app #view.fx>*{animation:in .4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes in{from{opacity:0;transform:translateY(12px)}}
+.sp-app .wrap{max-width:860px;margin:auto}
+.sp-app .big{max-width:1060px}
+.sp-app h1{font-size:30px;letter-spacing:-.02em;line-height:1.2;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif}
+.sp-app .mu{color:var(--mu)}
+.sp-app .sub{color:var(--mu);margin:6px 0 22px;font-size:14.5px}
+.sp-app h3{font-size:16px;color:var(--dk);font-weight:700}
+.sp-app .sh{margin:26px 0 10px}
+.sp-app .card{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px;box-shadow:var(--sh);transition:transform .25s,box-shadow .25s;display:block}
+.sp-app .card+.card{margin-top:14px}
+.sp-app .g4>.card,.sp-app .g5>.card,.sp-app .two>.card,.sp-app .dgrid>.card,.sp-app .stack>.card{margin-top:0}
+.sp-app .t3:hover{transform:perspective(900px) rotateX(3deg) translateY(-4px);box-shadow:var(--sh2)}
+.sp-app .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;background:var(--dk);color:#fff;border:0;border-radius:12px;padding:10px 18px;font-weight:600;transition:transform .2s,filter .2s;cursor:pointer;text-decoration:none}
+.sp-app .btn:hover{transform:translateY(-1px);filter:brightness(1.15)}
+.sp-app .btn.o{background:#fff;color:var(--dk);border:1px solid var(--bd)}
+.sp-app .btn.o:hover{background:var(--bg);filter:none}
+.sp-app .btn.s{padding:6px 12px;font-size:13px}
+.sp-app input,.sp-app textarea,.sp-app select{width:100%;font:inherit;color:var(--tx);background:#fff;border:1px solid var(--bd);border-radius:12px;padding:10px 12px;outline:0}
+.sp-app input:focus,.sp-app textarea:focus,.sp-app select:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ring)}
+.sp-app input[readonly]{background:var(--bg)}
+.sp-app textarea{resize:vertical;min-height:90px}
+.sp-app label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px;color:var(--tx)}
+.sp-app .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.sp-app .row>*{flex:1;min-width:140px}
+.sp-app .hd{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.sp-app .hd>div{display:flex;gap:10px}
+.sp-app .hd input,.sp-app .hd select{width:220px}
+.sp-app .chatw{flex:1;display:flex;flex-direction:column;min-width:0;width:100%}
+.sp-app .ms{flex:1;overflow-y:auto;padding:24px;max-width:860px;width:100%;margin:auto}
+.sp-app .hero{text-align:center;min-height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px 0}
+.sp-app .gt{font-size:clamp(26px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-top:34px;color:var(--dk)}
+.sp-app .gt2{font-size:clamp(26px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.2;color:var(--dk)}
+.sp-app .ac{color:var(--act)}
+.sp-app .orb{width:150px;height:150px;border-radius:50%;position:relative;background:radial-gradient(circle at 32% 26%,#fff 0,rgba(255,255,255,.9) 7%,var(--sky) 36%,var(--ac) 72%,var(--dk) 135%);box-shadow:0 34px 60px -22px var(--glow),inset -16px -20px 34px rgba(24,61,105,.22),inset 10px 10px 26px rgba(255,255,255,.75);animation:fl 6s ease-in-out infinite}
+.sp-app .orb:before{content:"";position:absolute;left:20%;top:12%;width:34%;height:20%;border-radius:50%;background:rgba(255,255,255,.75);filter:blur(5px);transform:rotate(-28deg)}
+@keyframes fl{50%{transform:translateY(-12px)}}
+.sp-app .msg{display:flex;gap:12px;margin-bottom:18px}
+.sp-app .msg.u{justify-content:flex-end}
+.sp-app .msg .lg{width:30px;height:30px;border-radius:9px}
+.sp-app .bub{max-width:82%;padding:11px 16px;border-radius:18px;line-height:1.6}
+.sp-app .u .bub{background:var(--ice);color:var(--dk);border-bottom-right-radius:6px}
+.sp-app .b .bub{background:#fff;border:1px solid var(--bd);border-bottom-left-radius:6px;color:var(--tx)}
+.sp-app .src{display:inline-flex;gap:5px;align-items:center;font-size:12px;font-weight:600;background:var(--ice);color:var(--act);padding:4px 9px;border-radius:99px;margin:8px 6px 0 0;text-decoration:none}
+.sp-app .rq{display:block;margin-top:8px;background:none;border:0;color:var(--act);font-weight:600;font-size:13px;padding:0;cursor:pointer}
+.sp-app .ty{display:flex;gap:4px;padding:6px 2px}
+.sp-app .ty s{width:7px;height:7px;border-radius:50%;background:var(--ac);opacity:.35;animation:t 1s infinite}
+.sp-app .ty s:nth-child(2){animation-delay:.15s}
+.sp-app .ty s:nth-child(3){animation-delay:.3s}
+@keyframes t{40%{opacity:1}}
+.sp-app .comp{padding:8px 28px 22px;max-width:900px;width:100%;margin:auto}
+.sp-app .box{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px solid var(--bd);border-radius:26px;padding:16px 16px 16px 26px;min-height:84px;box-shadow:var(--sh);transition:box-shadow .25s,border-color .25s,transform .25s}
+.sp-app .box:focus-within{border-color:var(--ac);box-shadow:0 0 0 4px var(--ring),var(--sh2);transform:translateY(-1px)}
+.sp-app .box textarea{border:0;box-shadow:none;padding:6px 0;min-height:48px;max-height:160px;resize:none;background:none;font-size:15.5px;color:var(--tx)}
+.sp-app .send{width:46px;height:46px;border-radius:50%;border:0;background:var(--dk);color:#fff;display:grid;place-items:center;flex:none;transition:transform .2s;cursor:pointer}
+.sp-app .send:hover{transform:scale(1.06)}
+.sp-app .note{text-align:center;font-size:12px;color:var(--mu);margin-top:10px}
+.sp-app .in{border-radius:24px;padding:26px;background:linear-gradient(180deg,var(--ice),#fff)}
+.sp-app .welc{display:flex;gap:22px;align-items:center;flex-wrap:wrap;border:1px solid var(--bd)}
+.sp-app .ask{flex-wrap:nowrap;margin-top:14px}
+.sp-app .ask>*{min-width:0}
+.sp-app .ask .btn{flex:none}
+.sp-app .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}
+.sp-app .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.sp-app .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.sp-app .stack{display:grid;gap:14px}
+.sp-app .ov{display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit}
+.sp-app .ov b{font-size:30px;line-height:1.1;margin-top:8px;color:var(--dk)}
+.sp-app .ov>span:last-child{color:var(--mu);font-size:13.5px}
+.sp-app .ov .ic{width:42px;height:42px;border-radius:13px;background:var(--ice);color:var(--ac);display:grid;place-items:center}
+.sp-app .qa{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;font-weight:600;font-size:13.5px;text-align:center;color:var(--dk);text-decoration:none}
+.sp-app .qa svg{color:var(--ac)}
+.sp-app .cd{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px;align-items:flex-start}
+.sp-app .cd a{color:var(--act);font-weight:600;font-size:13px;text-decoration:none}
+.sp-app .li{display:block;padding:12px 0;border-top:1px solid var(--bd);text-decoration:none;color:inherit}
+.sp-app .li:first-of-type{border-top:0}
+.sp-app .li small{color:var(--mu)}
+.sp-app .tl{padding:4px 0}
+.sp-app .ti{display:flex;gap:12px;padding:8px 0;position:relative}
+.sp-app .ti:not(:last-child):before{content:"";position:absolute;left:13px;top:36px;bottom:-4px;width:2px;background:var(--bd)}
+.sp-app .td{width:28px;height:28px;border-radius:50%;background:var(--ice);color:var(--ac);display:grid;place-items:center;flex:none}
+.sp-app .ti small{display:block;color:var(--mu)}
+.sp-app .sk{border-radius:20px;background:linear-gradient(90deg,var(--ice),#fff,var(--ice));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.sp-app .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--ice);color:var(--act)}
+.sp-app .pill.n,.sp-app .pill.g{background:var(--dk);color:#fff}
+.sp-app .pill.new{background:var(--ac);color:var(--dk)}
+.sp-app .seg{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.sp-app .seg button{border:1px solid var(--bd);background:#fff;border-radius:99px;padding:8px 14px;font-weight:600;font-size:13.5px;color:var(--mu);cursor:pointer}
+.sp-app .seg button.on{background:var(--dk);color:#fff;border-color:var(--dk)}
+.sp-app .seg i{font-style:normal;opacity:.7;margin-left:4px}
+.sp-app .seg .kd{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px}
+.sp-app .seg button[class*=k-]{background:var(--cs);border-color:var(--cb);color:var(--ct)}
+.sp-app .seg button[class*=k-].on{background:var(--c);color:var(--co);border-color:var(--c)}
+.sp-app .seg button.on .kd{background:var(--co)}
+.sp-app .feed{position:relative;padding-left:24px}
+.sp-app .feed:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--bd)}
+.sp-app .an{position:relative}
+.sp-app .an .dot{position:absolute;left:-24px;top:24px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--bd)}
+.sp-app .an.un .dot{background:var(--ac);border-color:#fff;box-shadow:0 0 0 3px var(--ring)}
+.sp-app .an.imp{border-left:4px solid var(--ac);background:linear-gradient(90deg,var(--ice),#fff 50%)}
+.sp-app .an:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.sp-app .lnk{background:none;border:0;color:var(--act);font-weight:700;padding:0;margin-top:8px;display:block;cursor:pointer}
+.sp-app .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.sp-app .dc{display:flex;gap:14px;border-left:4px solid var(--c);background:linear-gradient(135deg,var(--cs),#fff 75%)}
+.sp-app .dc:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.sp-app .fi{width:46px;height:56px;border-radius:10px;background:var(--cs);color:var(--ct);border:1px solid var(--cb);display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+.sp-app .db{flex:1;min-width:0}
+.sp-app .db p{color:var(--mu);font-size:14px;margin:4px 0}
+.sp-app .meta{font-size:12.5px;color:var(--mu);margin-top:4px}
+.sp-app .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sp-app .badge{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--cs);color:var(--ct);border:1px solid var(--cb);white-space:nowrap;height:fit-content}
+.sp-app .pbanner{padding:0;overflow:hidden}
+.sp-app .pb{height:110px;background:linear-gradient(120deg,var(--sky),var(--ice))}
+.sp-app .ph{display:flex;gap:18px;align-items:flex-end;padding:0 24px 22px;margin-top:-48px;flex-wrap:wrap}
+.sp-app .comp2{margin-left:auto;min-width:190px}
+.sp-app .bar{height:8px;border-radius:99px;background:var(--ice);margin:6px 0}
+.sp-app .bar i{display:block;height:100%;border-radius:99px;background:var(--ac)}
+.sp-app .themes{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.sp-app .themes button{display:flex;gap:10px;align-items:center;padding:10px 16px;border-radius:14px;border:2px solid var(--bd);background:#fff;font-weight:600;cursor:pointer}
+.sp-app .themes button.on{border-color:var(--ac)}
+.sp-app .themes i{width:22px;height:22px;border-radius:50%}
+.sp-app .tw{overflow-x:auto}
+.sp-app table{width:100%;border-collapse:collapse;font-size:14px}
+.sp-app th{text-align:left;font-size:13px;color:var(--mu);padding:10px 12px;background:var(--bg);white-space:nowrap}
+.sp-app td{padding:12px;border-top:1px solid var(--bd)}
+.sp-app .emp{text-align:center;color:var(--mu);padding:36px 12px}
+.sp-app dialog#dq{border:1px solid var(--bd);border-radius:22px;padding:24px;background:#fff;color:var(--tx);width:min(480px,92vw)}
+.sp-app dialog#dq::backdrop{background:rgba(24,61,105,.35);backdrop-filter:blur(4px)}
+.sp-app #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--dk);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:50;display:none;max-width:90vw}
+.sp-app .ov2{display:none}
+.sp-app .dim{font-size:13px;color:var(--mu);margin-top:6px}
+@media(min-width:861px){
+  .sp-app.col aside{width:78px;align-items:center}
+  .sp-app.col .t,.sp-app.col .hist,.sp-app.col .ssrch,.sp-app.col .brand small{display:none}
+  .sp-app.col .sbt{flex-direction:column}
+  .sp-app.col aside nav a,.sp-app.col aside nav button,.sp-app.col .newc{padding:10px;justify-content:center}
+  .sp-app.col .cb svg{transform:rotate(180deg)}
+  .sp-app.col .usr{border:0}
+}
+@media(max-width:1000px){
+  .sp-app .g4{grid-template-columns:1fr 1fr}
+  .sp-app .g5{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:860px){
+  .sp-app{padding:0;gap:0}
+  .sp-app .mn{border-radius:0;border:0}
+  .sp-app aside{position:fixed;z-index:40;inset:8px auto 8px 8px;transform:translateX(-120%);transition:transform .25s;width:280px}
+  .sp-app aside.open{transform:none}
+  .sp-app #ov.open{display:block;position:fixed;inset:0;background:rgba(24,61,105,.35);z-index:35}
+  .sp-app .hm{display:grid}
+  .sp-app header#tp{padding:10px 12px}
+  .sp-app #view{padding:20px 16px}
+  .sp-app .two{grid-template-columns:1fr}
+  .sp-app .ms{padding:16px}
+  .sp-app .comp{padding:8px 14px 14px}
+  .sp-app h1{font-size:25px}
+  .sp-app .hd input,.sp-app .hd select,.sp-app .hd>div{width:100%}
+  .sp-app .tm .t{display:none}
+  .sp-app .tm{padding:7px}
+  .sp-app .comp2{margin-left:0;width:100%}
+  .sp-app .cb{display:none}
+  .sp-app .in{padding:18px}
+  .sp-app .orb{width:120px;height:120px}
+}
+@media(max-width:520px){
+  .sp-app .g5{grid-template-columns:1fr 1fr}
+  .sp-app .g4{grid-template-columns:1fr 1fr}
+  .sp-app .dgrid{grid-template-columns:1fr}
+  .sp-app .ask{flex-wrap:wrap}
+  .sp-app .box{padding:12px 12px 12px 18px;border-radius:22px}
+}
 </style>
 </head>
 <body>
@@ -1323,6 +1576,90 @@ const ROLES={
   management:['bld','Management','University-level analytics & resolution stats.']
 };
 
+// Demo accounts registry — strictly assigned roles for email-based authentication & direct preview
+const DPW='UniBuddy@123';
+const VALID_PWS=['UniBuddy@123','demo123','password','password123'];
+const ACC={
+  'student@unibuddy.demo':{role:'student',name:'Aarav Sharma',department:'Computer Science',id:'stu-101'},
+  'faculty@unibuddy.demo':{role:'faculty',name:'Dr. Mehta',department:'Computer Science',id:'fac-201'},
+  'authority@unibuddy.demo':{role:'authority',name:'Campus Authority',department:'Administration',id:'auth-301'},
+  'management@unibuddy.demo':{role:'management',name:'Management Office',department:'Institutional Operations',id:'mgmt-401'}
+};
+const COURSES=['B.Tech CS & AI','B.Tech CS & DS','B.Tech Electrical','MBA Tech'];
+let PR={
+  'student@unibuddy.demo':{name:'Aarav Sharma',course:'B.Tech CS & AI'},
+  'faculty@unibuddy.demo':{name:'Dr. Mehta',department:'Computer Science'},
+  'authority@unibuddy.demo':{name:'Campus Authority',department:'Administration'},
+  'management@unibuddy.demo':{name:'Management Office',department:'Institutional Operations'}
+};
+try{const saved=JSON.parse(localStorage.getItem('ub-profiles')||'{}');PR={...PR,...saved}}catch(e){}
+const savePR=()=>{try{localStorage.setItem('ub-profiles',JSON.stringify(PR))}catch(e){}};
+const prof=()=>PR[S.user?.email]||{};
+
+function loginAsRole(role){
+  const norm=String(role||'').toLowerCase().trim();
+  const roleMap={
+    student:'student@unibuddy.demo',
+    faculty:'faculty@unibuddy.demo',
+    authority:'authority@unibuddy.demo',
+    management:'management@unibuddy.demo'
+  };
+  const email=roleMap[norm]||(ACC[norm]?norm:'student@unibuddy.demo');
+  const a=ACC[email]||{role:norm||'student',name:(norm.charAt(0).toUpperCase()+norm.slice(1))+' User'};
+  S.user={
+    id:a.id||'demo-'+a.role,
+    email:email,
+    name:a.name,
+    full_name:a.name,
+    role:a.role,
+    campus_id:'campus-demo',
+    department_id:a.role==='faculty'?'dept-cs':null
+  };
+  S.role=a.role;
+  S.scr='app';
+  S.view=a.role==='student'?'dash':a.role==='faculty'?'tix':a.role==='management'?'x':'x';
+  try{localStorage.setItem('ub-current-user',email)}catch(e){}
+  
+  // Seed sensible fallback sample data if backend is offline or unauthenticated
+  if(!S.tickets.length){
+    S.tickets=[
+      {id:'UB-101',uuid:'t-101',subj:'Hostel Wi-Fi Connectivity in Block B',status:'submitted',pri:'high',dept:'IT & Infrastructure',date:today(),q:'Hostel Wi-Fi disconnects frequently.',desc:'Hostel Wi-Fi disconnects frequently.',fac:'Unassigned',reply:''},
+      {id:'UB-102',uuid:'t-102',subj:'Lab Access Request for AI Capstone',status:'in_progress',pri:'medium',dept:'Computer Science',date:today(),q:'Permission to use GPU lab after 6 PM.',desc:'Permission to use GPU lab after 6 PM.',fac:'Dr. Mehta',reply:'Request forwarded to lab in-charge.'},
+      {id:'UB-103',uuid:'t-103',subj:'Grade Sheet Correction for Semester 3',status:'resolved',pri:'low',dept:'Examination Cell',date:today(),q:'Subject code CS302 credits updated.',desc:'Subject code CS302 credits updated.',fac:'Academic Registrar',reply:'Corrected marksheet issued.'}
+    ];
+  }
+  if(!S.announcements.length){
+    S.announcements=[
+      {id:'ann-1',title:'End-Semester Examination Schedule Published',body:'The tentative timetable for odd semester examinations is now available for download.',c:'Exam',d:today(),tone:'blue',big:true,imp:true},
+      {id:'ann-2',title:'Annual Technical Symposium & AI Hackathon',body:'Registrations are now live for the campus-wide 48-hour innovation challenge.',c:'Academic',d:today(),tone:'blue',big:false,imp:false},
+      {id:'ann-3',title:'Library Extended Hours During Finals Week',body:'Central library facilities will remain open 24/7 starting next Monday.',c:'Campus',d:today(),tone:'blue',big:false,imp:false}
+    ];
+  }
+  if(!S.docs.length){
+    S.docs=[
+      {id:'doc-1',uuid:'d-1',title:'Academic Regulations & Curriculum 2026',category:'Academic',status:'ready',publication:'published',date:today()},
+      {id:'doc-2',uuid:'d-2',title:'Examination Code of Conduct & Guidelines',category:'Administrative',status:'ready',publication:'published',date:today()},
+      {id:'doc-3',uuid:'d-3',title:'Hostel Rules and Campus Policy Handbook',category:'Guides',status:'ready',publication:'published',date:today()},
+      {id:'doc-4',uuid:'d-4',title:'Fee Structure & Merit Scholarship Policies',category:'Financial',status:'ready',publication:'published',date:today()}
+    ];
+  }
+  if(!S.dashboard||!Object.keys(S.dashboard).length){
+    S.dashboard={total_tickets:12,resolved_tickets:9,open_tickets:3,urgent_tickets:1};
+  }
+  if(a.role==='management'&&(!S.analytics||!Object.keys(S.analytics).length)){
+    S.analytics={
+      questions_total:342,
+      ticket_totals:{total_tickets:48,resolved_tickets:41,resolution_rate:0.85,avg_first_response_hours:1.8},
+      questions_by_day:[{day:'Mon',cnt:45},{day:'Tue',cnt:62},{day:'Wed',cnt:58},{day:'Thu',cnt:71},{day:'Fri',cnt:66},{day:'Sat',cnt:24},{day:'Sun',cnt:16}],
+      tickets_by_day:[{day:'Mon',cnt:7},{day:'Tue',cnt:11},{day:'Wed',cnt:9},{day:'Thu',cnt:10},{day:'Fri',cnt:8},{day:'Sat',cnt:2},{day:'Sun',cnt:1}],
+      campuses:[{id:'c1',name:'Main Campus',total_students:2400,open_tickets:5},{id:'c2',name:'North Campus',total_students:1200,open_tickets:2}]
+    };
+  }
+
+  R();
+  loadViewData(S.view);
+}
+
 const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
 
 // Application state
@@ -1356,7 +1693,7 @@ async function apiCall(endpoint,options={}){
   const started=performance.now();
   const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
   const token=localStorage.getItem('ub-token');
-  const headers={...(options.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
+  const headers={...((typeof FormData!=='undefined'&&options.body instanceof FormData)?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
   for(let i=0;i<attempts;i++){
     const last=i===attempts-1;
@@ -2563,10 +2900,636 @@ function helpView(){
   const email=supportEmail();
   return `<div class="pg"><div class="card tint" style="max-width:520px"><h2 class="ed">Help & Support</h2><p class="mut">To contact Management about UniBuddy, send an email.</p>${email?`<a class="btn p" href="mailto:${esc(email)}">Email Management</a><p class="mut" style="font-size:13px;margin:10px 0 0">${esc(email)}</p>`:'<p class="mut">The support email address has not been configured yet.</p>'}</div></div>`}
 
-// Role Portals
-function student(){
-  const v=S.view;
-  return `<div class="app">${side(SN)}<main class="main">${hd(TT[v]||'Student Portal',v=='chat')}${v=='chat'?chat():`<div class="page">${v=='dash'?dash():v=='queries'?queries():v=='ann'?annView():v=='docs'?docsView():v=='profile'?profileView():helpView()}</div>`}</main></div>`}
+// Role Portals - New Student Portal (Claude Artifact Integration)
+const SP_P = {
+  spark: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+  home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  mega: 'M3 11v2a1 1 0 0 0 1 1h3l8 4V6L7 10H4a1 1 0 0 0-1 1zM19 9v6',
+  file: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+  help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01',
+  user: 'M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
+  plus: 'M12 5v14M5 12h14',
+  up: 'M12 19V5M5 12l7-7 7 7',
+  menu: 'M3 6h18M3 12h18M3 18h18',
+  check: 'M20 6L9 17l-5-5',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+  gear: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
+  chev: 'M15 18l-6-6 6-6'
+};
+const spIc = (n, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SP_P[n] || ''}"/></svg>`;
+const stu = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M8 64c2-13 11-18 24-18s22 5 24 18z" fill="var(--ac)"/><path d="M26 47l6 8 6-8z" fill="#fff"/><circle cx="32" cy="35" r="10" fill="#f3d2b3"/><path d="M32 9L10 18l22 9 22-9z" fill="var(--dk)"/><path d="M22 22v5c0 3 4.5 5 10 5s10-2 10-5v-5l-10 4z" fill="var(--dk)"/><path d="M51 19v10" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle cx="51" cy="31" r="2.2" fill="var(--ac)"/><circle cx="28" cy="36" r="1.2" fill="#183D69"/><circle cx="36" cy="36" r="1.2" fill="#183D69"/><path d="M29 40c2 1.7 4 1.7 6 0" stroke="#183D69" fill="none" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+
+const SP_GR = { ocean: 'linear-gradient(135deg,#A9D5FF,#438FE8)', aqua: 'linear-gradient(135deg,#A9E5DB,#40B9A8)' };
+function spTheme() { try { return localStorage.getItem('ub_theme3') === 'aqua' ? 'aqua' : 'ocean'; } catch (e) { return 'ocean'; } }
+function spSetTheme(t) { try { localStorage.setItem('ub_theme3', t); document.documentElement.dataset.theme = t; } catch (e) {} R(); }
+
+const SP_NAV = [
+  ['dash', 'home', 'Dashboard'],
+  ['chat', 'spark', 'AI Assistant'],
+  ['docs', 'file', 'Documents'],
+  ['ann', 'mega', 'Announcements'],
+  ['queries', 'list', 'My Queries'],
+  ['profile', 'user', 'Profile'],
+  ['settings', 'gear', 'Settings'],
+  ['help', 'help', 'Help & Support']
+];
+const SP_TITLES = {
+  dash: 'Dashboard', dashboard: 'Dashboard',
+  chat: 'AI Assistant',
+  docs: 'Documents', documents: 'Documents',
+  ann: 'Announcements', announcements: 'Announcements',
+  queries: 'My Queries',
+  profile: 'Profile',
+  settings: 'Settings',
+  help: 'Help & Support'
+};
+
+function spReadSet() { try { return JSON.parse(localStorage.getItem('ub_read') || '[]'); } catch (e) { return []; } }
+function spMarkRead(id) { const r = spReadSet(); if (!r.includes(id)) { r.push(id); try { localStorage.setItem('ub_read', JSON.stringify(r.slice(-300))); } catch (e) {} } }
+function spRdocs() { try { return JSON.parse(localStorage.getItem('ub_rd') || '[]'); } catch (e) { return []; } }
+function spGreet() { const h = new Date().getHours(); return h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening'; }
+
+function spActivity(own) {
+  const it = [];
+  (S.chat || []).forEach(c => { if (c.r === 'u') it.push({ ts: Date.now(), t: 'You asked: ' + (c.t || '').slice(0, 60), i: 'spark' }); });
+  (S.tickets || []).forEach(t => it.push({ ts: new Date(t.created_at || Date.now()).getTime(), t: 'Raised query ' + (t.id || t.ticket_number || '') + ' – ' + (t.subj || t.subject || ''), i: 'list' }));
+  if (!own) {
+    (S.docs || []).forEach(d => it.push({ ts: new Date(d.created_at || Date.now()).getTime(), t: 'New document: ' + (d.title || ''), i: 'file' }));
+    (S.announcements || []).forEach(a => it.push({ ts: new Date(a.created_at || Date.now()).getTime(), t: 'Announcement: ' + (a.t || a.title || ''), i: 'mega' }));
+  }
+  return it.sort((a, b) => b.ts - a.ts).slice(0, 6);
+}
+
+function spTl(a) {
+  return a.length ? `<div class="tl">${a.map(x => `<div class="ti"><span class="td">${spIc(x.i, 14)}</span><div><span>${esc(x.t)}</span><small>${new Date(x.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</small></div></div>`).join('')}</div>` : '<p class="mu" style="margin:0">No activity yet.</p>';
+}
+
+const SP_CATS = [
+  ['rishihood', 'Rishihood Documents', 'r', 'Rishihood'],
+  ['newton', 'Newton Documents', 'b', 'Newton'],
+  ['club', 'Club Documents', 'g', 'Clubs'],
+  ['important', 'Important Documents', 'y', 'Important']
+];
+const spCatOf = d => {
+  const c = ((d.c || d.category || d.title || '') + ' ' + (d.scope || '')).toLowerCase();
+  return SP_CATS.find(k => c.includes(k[0])) || SP_CATS[0];
+};
+const spExt = d => {
+  const m = (d.name || d.original_filename || d.title || '').split(/[?#]/)[0].match(/\.([a-z0-9]{2,5})$/i);
+  return m ? m[1].toUpperCase() : 'PDF';
+};
+
+function spNormView(v) {
+  if (v === 'dashboard' || !v) return 'dash';
+  if (v === 'documents') return 'docs';
+  if (v === 'announcements') return 'ann';
+  return v;
+}
+
+function themeBtns() {
+  const th = spTheme();
+  return `<div class="themes">
+    <button type="button" data-a="sp-set-theme" data-v="ocean" class="${th === 'ocean' ? 'on' : ''}"><i style="background:${SP_GR.ocean}"></i>Pearl &amp; Ocean</button>
+    <button type="button" data-a="sp-set-theme" data-v="aqua" class="${th === 'aqua' ? 'on' : ''}"><i style="background:${SP_GR.aqua}"></i>Pearl &amp; Aqua</button>
+  </div>`;
+}
+
+function studentSidebar(v) {
+  const h = (S.hist || []).slice(0, 4);
+  const an = (S.announcements || []).slice(0, 2);
+  const rd = spRdocs().map(id => (S.docs || []).find(d => d.uuid === id || d.id === id)).filter(Boolean).slice(0, 2);
+  const sec = (t, x) => x ? `<h4>${t}</h4>${x}` : '';
+  const sq = (S.spSearch || '').trim().toLowerCase();
+  let searchHtml = '';
+  if (sq) {
+    const hits = [
+      ...(S.docs || []).map(d => ({ t: d.title, k: 'docs', x: 'Document', text: d.title + ' ' + (d.scope || '') })),
+      ...(S.announcements || []).map(a => ({ t: a.t || a.title, k: 'ann', x: 'Announcement', text: (a.t || a.title) + ' ' + (a.b || a.body || '') }))
+    ].filter(x => x.text.toLowerCase().includes(sq)).slice(0, 6);
+    searchHtml = `<div class="dd" id="sr">${hits.map(x => `<a data-a="view" data-v="${x.k}" href="#${x.k === 'docs' ? 'documents' : 'announcements'}"><b>${esc(x.t)}</b><br><small>${esc(x.x)}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No results</p>'}</div>`;
+  }
+
+  return `<aside id="sb" class="side ${S.nav ? 'open' : ''}">
+    <div class="sbt">
+      <a class="brand" href="#dashboard" data-a="view" data-v="dash">
+        <span class="lg"><img src="logo.png" alt="UniBuddy" onerror="this.onerror=null;this.src=LOGO"></span>
+        <span class="t"><b>UniBuddy</b><small>Student Portal</small></span>
+      </a>
+      <button class="ib cb" id="col" data-a="sp-col" aria-label="Collapse sidebar">${spIc('chev', 18)}</button>
+    </div>
+    <div class="ssrch">
+      ${spIc('search', 16)}
+      <input id="gs" placeholder="Search" aria-label="Search" autocomplete="off" value="${esc(S.spSearch || '')}">
+      ${searchHtml}
+    </div>
+    <button class="newc" id="nc" data-a="new" title="New chat">${spIc('plus', 16)}<span class="t">New chat</span></button>
+    <nav>
+      ${SP_NAV.map(n => `<button class="${v === n[0] ? 'on' : ''}" data-a="view" data-v="${n[0]}" title="${n[2]}">${spIc(n[1], 19)}<span class="t">${n[2]}</span></button>`).join('')}
+    </nav>
+    <div class="hist">
+      ${sec('Recent chats', h.map((c, i) => `<div class="hi ${S.conversationId === c.id && v === 'chat' ? 'on' : ''}" data-a="hist" data-v="${i}"><span>${esc(c.title)}</span><button data-a="del-conv" data-v="${esc(c.id)}" aria-label="Delete chat">×</button></div>`).join('')) +
+        sec('Latest announcements', an.map(a => `<a class="hl" href="#announcements" data-a="view" data-v="ann">${esc(a.t || a.title)}</a>`).join('')) +
+        sec('Recently opened', rd.map(d => `<a class="hl" href="#documents" data-a="view" data-v="docs">${esc(d.title)}</a>`).join('')) ||
+        '<p>Nothing yet</p>'}
+    </div>
+    <div class="usr">
+      <span class="av sm" data-a="view" data-v="profile">${stu()}</span>
+      <div class="t" style="min-width:0;line-height:1.2;cursor:pointer" data-a="view" data-v="profile">
+        <b style="font-size:13.5px;color:var(--dk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${esc(pn())}</b>
+        <small style="color:var(--mu);font-size:12px">Student</small>
+      </div>
+    </div>
+  </aside>`;
+}
+
+function studentHeader(v, th) {
+  const unr = (S.announcements || []).filter(a => !spReadSet().includes(a.id || a.uuid)).length;
+  const bellDropdown = S.spBellOpen ? `<div class="dd" id="dd">
+    ${(S.announcements || []).slice(0, 5).map(a => `<a href="#announcements" data-a="view" data-v="ann"><b>${esc(a.t || a.title)}</b><br><small>${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}</small></a>`).join('') || '<p class="emp" style="padding:12px;margin:0">No new announcements</p>'}
+  </div>` : '';
+  const userDropdown = S.spUserOpen ? `<div class="dd" id="um">
+    <div style="padding:10px 10px 4px"><b>${esc(pn())}</b><br><small style="color:var(--mu)">Student${S.user?.email ? ' · ' + esc(S.user.email) : ''}</small></div>
+    <a href="#profile" data-a="view" data-v="profile">Profile</a>
+    <a href="#settings" data-a="view" data-v="settings">Settings</a>
+    <a href="#help" data-a="view" data-v="help">Help &amp; Support</a>
+    <div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:4px">
+      <button data-a="logout" style="color:#e5484d;font-weight:600">Sign out</button>
+    </div>
+  </div>` : '';
+
+  return `<header id="tp">
+    <button class="ib hm" id="hm" data-a="navo" aria-label="Menu">${spIc('menu')}</button>
+    <h2>${SP_TITLES[v] || 'Student Portal'}</h2>
+    <span class="sp"></span>
+    <button class="ib tm" id="tm" data-a="sp-theme" aria-label="Switch colour theme">
+      <span class="sw" style="background:${th === 'ocean' ? SP_GR.aqua : SP_GR.ocean}"></span>
+      <span class="t">${th === 'ocean' ? 'Pearl &amp; Aqua' : 'Pearl &amp; Ocean'}</span>
+    </button>
+    <div class="bw">
+      <button class="ib" id="bl" data-a="sp-bell" aria-label="Notifications">
+        ${spIc('bell')}${unr ? '<i></i>' : ''}
+      </button>
+      ${bellDropdown}
+    </div>
+    <div class="um">
+      <button class="av sm" id="av" data-a="sp-user" aria-label="User menu">${stu()}</button>
+      ${userDropdown}
+    </div>
+  </header>`;
+}
+
+function studentDash() {
+  const first = (pn() || 'there').split(' ')[0];
+  const ds = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const unr = (S.announcements || []).filter(a => !spReadSet().includes(a.id || a.uuid)).length;
+  const wk = Date.now() - 7 * 24 * 3600 * 1000;
+  const nd = (S.docs || []).filter(d => new Date(d.created_at || d.date || 0).getTime() > wk).length;
+  const openTix = (S.tickets || []).filter(t => (t.status || '').toLowerCase() !== 'resolved').length;
+  const totQ = (S.hist || []).length || (S.chat || []).filter(m => m.r === 'u').length || 0;
+
+  const ov = [
+    ['spark', totQ, 'Questions &amp; discussions', 'chat'],
+    ['mega', unr, 'Unread announcements', 'ann'],
+    ['file', nd, 'New documents this week', 'docs'],
+    ['clock', openTix, 'Pending queries', 'queries']
+  ];
+
+  const qa = [
+    ['spark', 'AI Assistant', 'chat'],
+    ['file', 'Documents', 'docs'],
+    ['mega', 'Announcements', 'ann'],
+    ['list', 'My Queries', 'queries'],
+    ['user', 'Profile', 'profile']
+  ];
+
+  let im = (S.announcements || []).filter(a => a.imp || a.is_important).slice(0, 3);
+  let lbl = 'Important updates';
+  if (!im.length) {
+    im = (S.announcements || []).slice(0, 3);
+    lbl = 'Latest updates';
+  }
+
+  const recentDocs = (S.docs || []).slice(0, 4);
+
+  return `<div class="wrap big">
+    <div class="in welc">
+      <span class="av xl">${stu()}</span>
+      <div style="flex:1;min-width:230px">
+        <small class="mu">${esc(ds)}</small>
+        <h1>${spGreet()}, ${esc(first)}</h1>
+        <p class="mu" style="margin:4px 0 14px">Welcome back to your student workspace. Here’s what’s new on campus.</p>
+        <div class="row ask">
+          <input id="dq_in" placeholder="Ask UniBuddy anything…" aria-label="Ask UniBuddy">
+          <button class="btn" id="dq_go" data-a="sp-ask-dash">Ask UniBuddy</button>
+        </div>
+      </div>
+    </div>
+    <div class="g4">
+      ${ov.map(o => `<a href="#${o[3]}" data-a="view" data-v="${o[3]}" class="card t3 ov"><span class="ic">${spIc(o[0])}</span><b>${o[1]}</b><span>${o[2]}</span></a>`).join('')}
+    </div>
+    <h3 class="sh">Quick navigation</h3>
+    <div class="g5">
+      ${qa.map(q => `<a href="#${q[2]}" data-a="view" data-v="${q[2]}" class="card t3 qa">${spIc(q[0], 22)}<span>${q[1]}</span></a>`).join('')}
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="cd"><h3>${lbl}</h3><a href="#announcements" data-a="view" data-v="ann">View all</a></div>
+        ${im.map(a => `<a href="#announcements" data-a="view" data-v="ann" class="li"><b>${esc(a.t || a.title)}</b><br><small>${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}${a.by ? ' · ' + esc(a.by) : ''}</small></a>`).join('') || '<p class="mu">No announcements yet.</p>'}
+      </div>
+      <div class="card">
+        <div class="cd"><h3>Recent Documents</h3><a href="#documents" data-a="view" data-v="docs">View all</a></div>
+        ${recentDocs.map(d => `<a href="#documents" data-a="view" data-v="docs" class="li"><b>${esc(d.title)}</b><br><small>${esc(d.date || new Date(d.created_at || Date.now()).toLocaleDateString())} · ${esc(d.original_filename || 'PDF')}</small></a>`).join('') || '<p class="mu">No documents uploaded yet.</p>'}
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="cd"><h3>Recent activity</h3></div>
+      ${spTl(spActivity(0))}
+    </div>
+  </div>`;
+}
+
+function studentChat() {
+  const msgs = S.chat || [];
+  const first = (pn() || 'there').split(' ')[0];
+  const isTyping = S.chat.some(m => m.k === 'ty');
+
+  const heroHtml = `<div class="hero">
+    <div class="orb" aria-hidden="true"></div>
+    <div class="gt">${spGreet()}, ${esc(first)}</div>
+    <div class="gt2">How Can I <span class="ac">Assist You</span> Today?</div>
+    <div class="chips" style="margin-top:24px">
+      ${SUG.map(s => `<button class="chip" data-a="sq" data-v="${esc(s[2])}">${spIc(s[0], 16)}${esc(s[1])}</button>`).join('')}
+    </div>
+  </div>`;
+
+  const msgsHtml = msgs.length ? msgs.filter(m => m.k !== 'ty').map((x, i) => {
+    if (x.r === 'u') {
+      return `<div class="msg u"><div class="bub">${esc(x.t)}</div></div>`;
+    }
+    const citations = (x.citations || []).map(s => `<a class="src" href="#documents" data-a="view" data-v="docs">${spIc('file', 14)}${esc(s.title || 'Document')}${s.page ? ` · p. ${s.page}` : ''}</a>`).join('');
+    const rqBtn = `<button class="rq" data-a="rq-dialog" data-v="${i}">Not what you needed? Raise as a query →</button>`;
+    return `<div class="msg b">
+      <span class="lg"><img src="logo.png" alt="UniBuddy" onerror="this.onerror=null;this.src=LOGO"></span>
+      <div class="bub">
+        ${fmtAnswer(x.t)}
+        ${citations}
+        ${rqBtn}
+      </div>
+    </div>`;
+  }).join('') : heroHtml;
+
+  const typingHtml = isTyping ? `<div class="msg b">
+    <span class="lg"><img src="logo.png" alt="UniBuddy" onerror="this.onerror=null;this.src=LOGO"></span>
+    <div class="bub"><div class="ty"><s></s><s></s><s></s></div></div>
+  </div>` : '';
+
+  return `<div class="chatw">
+    <div class="ms" id="msgs">
+      ${msgsHtml}
+      ${typingHtml}
+    </div>
+    <div class="comp">
+      <div class="box">
+        <textarea id="ci" rows="1" placeholder="Ask anything about your academics, university, documents, or student life..." aria-label="Ask UniBuddy"></textarea>
+        <button class="send" id="cs" data-a="send" aria-label="Send">${spIc('up')}</button>
+      </div>
+      <p class="note">Text chat only. Answers come from announcements and documents added by your university.</p>
+    </div>
+  </div>`;
+}
+
+function studentDocs() {
+  const cat = S.spDocCat || 'all';
+  const q = (S.spDocQ || '').toLowerCase();
+  const docs = S.docs || [];
+  const cnt = k => docs.filter(d => { const c = spCatOf(d); return c && c[2] === k; }).length;
+
+  const tabsHtml = `<button data-a="sp-doc-cat" data-v="all" class="${cat === 'all' ? 'on' : ''}">All Documents <i>${docs.length}</i></button>` +
+    SP_CATS.map(c => `<button data-a="sp-doc-cat" data-v="${c[2]}" class="k-${c[2]} ${cat === c[2] ? 'on' : ''}"><span class="kd"></span>${c[3]} <i>${cnt(c[2])}</i></button>`).join('');
+
+  const filtered = docs.filter(d => {
+    const c = spCatOf(d);
+    const matchesCat = (cat === 'all' || (c && c[2] === cat));
+    const text = (d.title + ' ' + (d.scope || '') + ' ' + (d.original_filename || '')).toLowerCase();
+    const matchesQ = !q || text.includes(q);
+    return matchesCat && matchesQ;
+  });
+
+  const cardsHtml = filtered.map(d => {
+    const c = spCatOf(d);
+    const k = c ? c[2] : 'n';
+    return `<div class="card dc k-${k}">
+      <span class="fi">${spExt(d)}</span>
+      <div class="db">
+        <div class="cd">
+          <b>${esc(d.title)}</b>
+          <span class="badge">${c ? c[1] : 'General'}</span>
+        </div>
+        <p>${esc(d.original_filename ? 'File: ' + d.original_filename : 'Official University Document')}</p>
+        <div class="meta">${esc(d.date || new Date(d.created_at || Date.now()).toLocaleDateString())}</div>
+        <div class="acts">
+          <button class="btn s" data-a="view-pdf" data-v="${esc(d.uuid)}">${spIc('file', 14)} Preview</button>
+          <a class="btn o s" href="/api/v1/documents/${esc(d.uuid)}/file" target="_blank" rel="noopener" download="${esc(d.original_filename || d.title)}">Download</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || `<p class="emp" style="grid-column:1/-1">${docs.length ? 'No documents match this category or search.' : 'No documents are visible to this account.'}</p>`;
+
+  return `<div class="wrap big">
+    <div class="hd">
+      <div style="display:block">
+        <h1>Documents</h1>
+        <p class="mu" style="margin-top:6px">Official files from your university, newest first.</p>
+      </div>
+      <input id="ds" value="${esc(S.spDocQ || '')}" placeholder="Search documents" aria-label="Search documents">
+    </div>
+    <div class="seg" id="dtabs">${tabsHtml}</div>
+    <div id="dl" class="dgrid">${cardsHtml}</div>
+  </div>`;
+}
+
+function studentAnn() {
+  const f = S.spAnnFilt || 'all';
+  const rd = spReadSet();
+  const annList = S.announcements || [];
+  const cats = [...new Set(annList.map(a => (a.c || a.category || '').trim()).filter(c => c && !/important/i.test(c)))];
+  const F = [['all', 'All'], ['unread', 'Unread'], ['imp', 'Important'], ...cats.map(c => ['c:' + c, c])];
+
+  const matches = a => {
+    const isUnread = !rd.includes(a.id || a.uuid);
+    const isImp = a.imp || a.is_important;
+    if (f === 'all') return true;
+    if (f === 'unread') return isUnread;
+    if (f === 'imp') return isImp;
+    if (f.startsWith('c:')) return (a.c || a.category) === f.slice(2);
+    return true;
+  };
+
+  const filtered = annList.filter(matches);
+  const openState = S.spAnnOpen || {};
+
+  const feedHtml = filtered.length ? `<div class="feed">
+    ${filtered.map(a => {
+      const id = a.id || a.uuid || a.t;
+      const un = !rd.includes(id);
+      const isImp = a.imp || a.is_important;
+      const isO = !!openState[id];
+      const body = a.b || a.body || '';
+      const sh = body.length > 140 ? body.slice(0, 140) + '…' : body;
+      return `<article class="card an ${isImp ? 'imp' : ''} ${un ? 'un' : ''}">
+        <span class="dot"></span>
+        <div class="cd">
+          <h3>${esc(a.t || a.title)}</h3>
+          <span>
+            ${isImp ? '<span class="pill n">Important</span> ' : ''}
+            ${a.c && !/important/i.test(a.c) ? `<span class="pill">${esc(a.c)}</span> ` : ''}
+            ${un ? '<span class="pill new">New</span>' : ''}
+          </span>
+        </div>
+        <small class="mu">${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}${a.by ? ' · ' + esc(a.by) : ''}</small>
+        <p style="white-space:pre-wrap;margin-top:8px">${esc(isO ? body : sh)}</p>
+        <button class="lnk" data-a="sp-ann-ex" data-v="${esc(id)}">${isO ? 'Show less' : 'Read more'}</button>
+      </article>`;
+    }).join('')}
+  </div>` : `<p class="emp">${annList.length ? 'No announcements match this filter.' : 'No official announcements available.'}</p>`;
+
+  return `<div class="wrap">
+    <h1>Announcements</h1>
+    <p class="sub">Official circulars and notices, newest first.</p>
+    <div class="seg">${F.map(item => `<button data-a="sp-ann-filt" data-v="${esc(item[0])}" class="${f === item[0] ? 'on' : ''}">${esc(item[1])}</button>`).join('')}</div>
+    ${feedHtml}
+  </div>`;
+}
+
+function studentQueries() {
+  const q = (S.fq || '').toLowerCase();
+  const f = S.fs || 'All';
+  const tix = S.tickets || [];
+  const filtered = tix.filter(t => {
+    const statusText = humanStatus(t.status);
+    const matchesStatus = (f === 'All' || statusText === f);
+    const text = ((t.subj || t.subject || '') + ' ' + (t.id || '') + ' ' + (t.dept || '')).toLowerCase();
+    const matchesQ = !q || text.includes(q);
+    return matchesStatus && matchesQ;
+  });
+
+  const rowsHtml = filtered.map(t => `<tr class="rw ${t.id === S.sel ? 'on' : ''}" data-a="open" data-v="${esc(t.uuid || t.id)}" style="cursor:pointer">
+    <td><b>${esc(t.id)}</b></td>
+    <td>${esc(t.subj || t.subject)}</td>
+    <td>${esc(t.dept || 'Department')}</td>
+    <td>${esc(t.fac || 'Unassigned')}</td>
+    <td>${esc(t.date || new Date(t.created_at || Date.now()).toLocaleDateString())}</td>
+    <td><span class="pri ${esc(t.pri || 'medium')}">${esc(t.pri || 'medium')}</span></td>
+    <td>${stl(t)}</td>
+  </tr>`).join('') || `<tr><td colspan="7" class="emp">No tickets found. Ask UniBuddy a question to start one.</td></tr>`;
+
+  const detailHtml = S.detail?.ticket ? detail(S.detail.ticket, false) : '';
+
+  return `<div class="wrap" style="max-width:1000px">
+    <div class="hd">
+      <div style="display:block">
+        <h1 style="font-size:26px">My Queries</h1>
+        <p class="mu" style="margin-top:4px;font-size:14px">Queries you raise from the AI Assistant appear here.</p>
+      </div>
+      <div>
+        <input id="qsr" placeholder="Search tickets" aria-label="Search tickets" value="${esc(S.fq || '')}">
+        <select id="qfl" data-a="sp-qfl" aria-label="Filter status">
+          <option ${f === 'All' ? 'selected' : ''}>All</option>
+          <option ${f === 'Submitted' ? 'selected' : ''}>Submitted</option>
+          <option ${f === 'In Progress' ? 'selected' : ''}>In Progress</option>
+          <option ${f === 'Resolved' ? 'selected' : ''}>Resolved</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" style="padding:8px">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Subject</th>
+              <th>Department</th>
+              <th>Faculty</th>
+              <th>Date</th>
+              <th>Priority</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+    ${detailHtml}
+  </div>`;
+}
+
+function studentProfile() {
+  let prof = {};
+  try { prof = JSON.parse(localStorage.getItem('ub_prof') || '{}'); } catch (e) {}
+  const A = [
+    ['sid', 'Student ID'],
+    ['institute', 'Institute'],
+    ['course', 'Course'],
+    ['branch', 'Branch'],
+    ['year', 'Academic year'],
+    ['sem', 'Semester'],
+    ['batch', 'Batch'],
+    ['section', 'Section']
+  ];
+  const pct = Math.round(A.filter(f => prof[f[0]] || S.user?.[f[0]]).length / A.length * 100);
+
+  return `<div class="wrap big">
+    <div class="card pbanner">
+      <div class="pb"></div>
+      <div class="ph">
+        <span class="av xxl">${stu()}</span>
+        <div>
+          <h1 style="font-size:26px">${esc(pn())}</h1>
+          <p class="mu">Student${S.user?.email ? ' · ' + esc(S.user.email) : ''}</p>
+        </div>
+        <div class="comp2">
+          <small class="mu">Profile completion</small>
+          <div class="bar"><i style="width:${pct}%"></i></div>
+          <b>${pct}%</b>
+        </div>
+      </div>
+    </div>
+    <form id="pf" onsubmit="event.preventDefault();">
+      <div class="two">
+        <div class="card">
+          <h3>Academic information</h3>
+          <p class="mu" style="font-size:13px">Add your details so UniBuddy can personalize answers.</p>
+          ${A.map(f => `<label for="p_${f[0]}">${f[1]}</label><input id="p_${f[0]}" value="${esc(prof[f[0]] || '')}" placeholder="Not added" maxlength="80">`).join('')}
+          <button class="btn" data-a="sp-save-prof" style="margin-top:18px">Save profile</button>
+        </div>
+        <div>
+          <div class="card">
+            <h3>Personal information</h3>
+            <label>Name</label><input value="${esc(pn())}" readonly>
+            <label>University email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
+            <p class="dim">These come from your account and are only visible to you.</p>
+          </div>
+          <div class="card">
+            <h3>Account settings</h3>
+            <p class="mu" style="font-size:13px">Colour theme</p>
+            ${themeBtns()}
+          </div>
+        </div>
+      </div>
+    </form>
+    <div class="card" style="margin-top:14px">
+      <h3>Recent activity</h3>
+      ${spTl(spActivity(1))}
+    </div>
+  </div>`;
+}
+
+function studentSettings() {
+  return `<div class="wrap">
+    <h1>Settings</h1>
+    <p class="sub">Personalise your workspace.</p>
+    <div class="card">
+      <h3>Colour theme</h3>
+      <p class="mu" style="font-size:13px">Switches the whole portal instantly and is remembered on this device.</p>
+      ${themeBtns()}
+    </div>
+    <div class="card">
+      <h3>Account</h3>
+      <label>Name</label><input value="${esc(pn())}" readonly>
+      <label>Email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
+      <label>Role</label><input value="Student" readonly>
+    </div>
+  </div>`;
+}
+
+function studentHelp() {
+  const e = supportEmail();
+  return `<div class="wrap" style="max-width:640px">
+    <div class="card" style="background:var(--ms)">
+      <h1 style="font-size:26px">Help &amp; Support</h1>
+      <p class="mu" style="margin-top:8px">Write to the university authority about UniBuddy, your account or any issue.</p>
+    </div>
+    <div class="card">
+      ${e ? `
+        <p class="mu">Sending to <b style="color:var(--tx)">${esc(e)}</b></p>
+        <label for="hs">Subject</label>
+        <input id="hs" placeholder="What do you need help with?">
+        <label for="hm_">Message</label>
+        <textarea id="hm_" placeholder="Describe your issue…"></textarea>
+        <div class="row" style="margin-top:14px;justify-content:flex-start">
+          <a class="btn" id="mail" style="flex:none" href="mailto:${esc(e)}">Send email</a>
+          <button class="btn o" id="cp" data-a="sp-copy-support" style="flex:none">Copy address</button>
+        </div>
+        <p class="dim">This opens your email app with the message ready to send.</p>
+      ` : `
+        <p class="mut">The support email address has not been configured yet.</p>
+      `}
+    </div>
+  </div>`;
+}
+
+function studentView(v) {
+  if (v === 'dash') return studentDash();
+  if (v === 'chat') return studentChat();
+  if (v === 'docs') return studentDocs();
+  if (v === 'ann') return studentAnn();
+  if (v === 'queries') return studentQueries();
+  if (v === 'profile') return studentProfile();
+  if (v === 'settings') return studentSettings();
+  if (v === 'help') return studentHelp();
+  return studentChat();
+}
+
+function student() {
+  const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
+  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
+  const v = spNormView(S.view || 'chat');
+
+  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+    <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
+    ${studentSidebar(v)}
+    <div class="mn">
+      ${studentHeader(v, th)}
+      <main id="view" data-r="${v === 'dash' ? 'dashboard' : v === 'docs' ? 'documents' : v === 'ann' ? 'announcements' : v}">
+        ${studentView(v)}
+      </main>
+    </div>
+    <dialog id="dq">
+      <form id="qf">
+        <h3 style="margin:0 0 14px;color:var(--dk);font-size:18px">New query</h3>
+        <label for="qs">Subject</label>
+        <input id="qs" required maxlength="120" placeholder="Brief summary of your question">
+        <div class="row">
+          <div>
+            <label for="qd">Department</label>
+            <select id="qd">
+              <option value="">No department (campus queue)</option>
+              ${(S.departments || []).map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label for="qp">Priority</label>
+            <select id="qp">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <label for="qt">Details</label>
+        <textarea id="qt" maxlength="1000" placeholder="Describe your question or issue in detail..."></textarea>
+        <div class="row" style="margin-top:16px;justify-content:flex-end">
+          <button type="button" class="btn o" id="qc" data-a="close-dq" style="flex:none">Cancel</button>
+          <button type="submit" class="btn" style="flex:none">Submit query</button>
+        </div>
+      </form>
+    </dialog>
+  </div>`;
+}
+
 
 function faculty(){
   const v=S.view,t=S.detail?.ticket,d=S.dashboard||{};
@@ -2761,7 +3724,12 @@ document.addEventListener('change',e=>{if(e.target.id==='pa-aud'){S.pubAud=e.tar
 // Global Actions Dispatcher
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-a]');
-  if(!el){if(S.bell&&!e.target.closest('.drop')){S.bell=false;R()}return}
+  if(!el){
+    if(S.bell&&!e.target.closest('.drop')){S.bell=false;R()}
+    if(S.spBellOpen&&!e.target.closest('.bw')){S.spBellOpen=false;R()}
+    if(S.spUserOpen&&!e.target.closest('.um')){S.spUserOpen=false;R()}
+    return
+  }
   const a=el.dataset.a,v=el.dataset.v;
   
   if(a=='home')go(S.user?'app':'landing');
@@ -2775,8 +3743,23 @@ document.addEventListener('click',async e=>{
     }
   }
   else if(a=='forgot'){toast('Password sign-in is not available. Use Google sign-in.')}
-  else if(a=='pw'){const p=$('#pw');p.type=p.type=='password'?'text':'password'}
-  else if(a=='login')doLogin()
+  else if(a=='pw'){const p=$('#pw')||$('#pass');if(p)p.type=p.type=='password'?'text':'password'}
+  else if(a=='login'||a=='login-submit')doLogin()
+  else if(a=='fill-demo'){loginAsRole(v.split('@')[0])}
+  else if(a=='sp-col'){const rt=$('#sp-root');if(rt){rt.classList.toggle('col');try{localStorage.setItem('ub_col',rt.classList.contains('col')?'1':'0')}catch(e){}}}
+  else if(a=='sp-theme'){spSetTheme(spTheme()==='ocean'?'aqua':'ocean')}
+  else if(a=='sp-set-theme'){spSetTheme(v)}
+  else if(a=='sp-bell'){S.spBellOpen=!S.spBellOpen;S.spUserOpen=false;R()}
+  else if(a=='sp-user'){S.spUserOpen=!S.spUserOpen;S.spBellOpen=false;R()}
+  else if(a=='sp-doc-cat'){S.spDocCat=v;R()}
+  else if(a=='sp-ann-filt'){S.spAnnFilt=v;R()}
+  else if(a=='sp-ann-ex'){S.spAnnOpen=S.spAnnOpen||{};spMarkRead(v);S.spAnnOpen[v]=!S.spAnnOpen[v];R()}
+  else if(a=='del-conv'){e.stopPropagation();if(S.conversationId===v){S.chat=[];S.conversationId=null}S.hist=(S.hist||[]).filter(c=>c.id!==v);R();apiCall(`/chat/conversations/${v}`,{method:'DELETE'})}
+  else if(a=='rq-dialog'){const idx=+v,msg=S.chat[idx-1]||S.chat[idx];const q=msg?.t||'';const qs=$('#qs'),qt=$('#qt');if(qs)qs.value=q.slice(0,120);if(qt)qt.value=q;const d=$('#dq');if(d&&typeof d.showModal==='function')d.showModal()}
+  else if(a=='close-dq'){const d=$('#dq');if(d&&typeof d.close==='function')d.close()}
+  else if(a=='sp-ask-dash'){sendDash()}
+  else if(a=='sp-copy-support'){const em=supportEmail();if(em){try{navigator.clipboard.writeText(em);toast('Address copied')}catch(_){toast(em)}}}
+  else if(a=='sp-save-prof'){const fields=['sid','institute','course','branch','year','sem','batch','section'];const obj={};fields.forEach(k=>{const el=$('#p_'+k);if(el)obj[k]=el.value.trim()});try{localStorage.setItem('ub_prof',JSON.stringify(obj))}catch(e){}toast('Profile saved');R()}
   else if(a=='pub-type'){S.pubType=v;R()}
   else if(a=='pub-submit'){submitPublish(el)}
   else if(a=='pub-person-add'){const p=(S.pubResults||[]).find(x=>x.id===v);if(p&&!(S.pubPeople||[]).some(x=>x.id===p.id))S.pubPeople=[...(S.pubPeople||[]),p];S.pubQuery='';S.pubResults=[];const q=$('#pa-q');if(q)q.value='';R()}
@@ -2808,7 +3791,7 @@ document.addEventListener('click',async e=>{
     try{localStorage.removeItem('ub-current-user');localStorage.removeItem('ub-token')}catch(x){}
     S.user=null;S.role=null;S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=null;go('landing');
   }
-  else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R();loadViewData(v)}
+  else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.spBellOpen=false;S.spUserOpen=false;S.nav=false;R();loadViewData(v)}
   else if(a=='navo'){S.nav=true;R()}else if(a=='navx'){S.nav=false;R()}
   else if(a=='new')newChat();
   else if(a=='hist'){const h=S.hist[+v];if(h)openConversation(h.id)}
@@ -2860,15 +3843,80 @@ document.addEventListener('click',async e=>{
 });
 
 document.addEventListener('keydown',e=>{
-  if(e.key=='Enter'&&e.target.id=='ci'){e.preventDefault();sendChat()}
-  if(e.key=='Enter'&&e.target.id=='dq'){e.preventDefault();sendDash()}
+  if(e.key=='Enter'&&e.target.id=='ci'&&!e.shiftKey){e.preventDefault();sendChat()}
+  if(e.key=='Enter'&&(e.target.id=='dq'||e.target.id=='dq_in')){e.preventDefault();sendDash()}
   if(e.key=='Enter'&&(e.target.id=='em'||e.target.id=='pw')){e.preventDefault();doLogin()}
   if(e.key=='Enter'&&['on','oa','oc'].includes(e.target.id)){e.preventDefault();document.querySelector('[data-a=onsave]')?.click()}
 });
-document.addEventListener('input',e=>{if(e.target.id=='gs'){S.fq=e.target.value;R()}});
-// Coming back to the tab refreshes My Queries and the staff ticket list at once, not after the next 15 s tick.
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.user&&['tix','queries'].includes(S.view))refreshOpenTicket()});
-document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value;R()}});
+
+document.addEventListener('input',e=>{
+  if(e.target.id=='ci'){e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'}
+  if(e.target.id=='ds'){S.spDocQ=e.target.value;R()}
+  if(e.target.id=='qsr'){S.fq=e.target.value;R()}
+  if(e.target.id=='gs'){S.spSearch=e.target.value;S.fq=e.target.value;R()}
+  if(e.target.id=='hs'||e.target.id=='hm_'){
+    const ml=$('#mail');
+    if(ml){
+      const em=supportEmail(),s=$('#hs')?.value||'',m=$('#hm_')?.value||'';
+      ml.href=`mailto:${encodeURIComponent(em).replace('%40','@')}?subject=${encodeURIComponent(s)}&body=${encodeURIComponent(m+'\n\n— '+pn()+(S.user?.email?' ('+S.user.email+')':''))}`;
+    }
+  }
+});
+
+document.addEventListener('change',e=>{
+  if(e.target.id=='fs'||e.target.id=='qfl'){S.fs=e.target.value;R()}
+});
+
+document.addEventListener('submit',async e=>{
+  if(e.target.id==='qf'){
+    e.preventDefault();
+    const qs=($('#qs')?.value||'').trim();
+    const qd=$('#qd')?.value||null;
+    const qp=$('#qp')?.value||'medium';
+    const qt=($('#qt')?.value||'').trim();
+    if(!qs)return;
+    const body={
+      subject:qs,
+      question:qs+(qt?'\n\n'+qt:''),
+      department_id:qd||null,
+      priority:qp,
+      description:qt||null
+    };
+    const res=await apiCall('/tickets',{method:'POST',body:JSON.stringify(body)});
+    const dlg=$('#dq');
+    if(dlg&&typeof dlg.close==='function')dlg.close();
+    if(res.ok){
+      toast('Query created: '+(res.data?.ticket_number||res.data?.id||'Submitted'));
+      await reloadTicketList();
+      S.view='queries';R();loadViewData('queries');
+    }else{
+      toast(typeof res.error==='string'?res.error:'Could not submit query. Try again.');
+    }
+  }
+});
+
+window.addEventListener('hashchange',()=>{
+  const raw=(location.hash.slice(1)||'').trim().toLowerCase();
+  if(['student','faculty','authority','management'].includes(raw)){
+    loginAsRole(raw);
+    return;
+  }
+  if(S.role==='student'&&S.scr==='app'){
+    const routeMap={
+      dashboard:'dash',dash:'dash',
+      chat:'chat',
+      documents:'docs',docs:'docs',
+      announcements:'ann',ann:'ann',
+      queries:'queries',
+      profile:'profile',
+      settings:'settings',
+      help:'help'
+    };
+    if(routeMap[raw]&&S.view!==routeMap[raw]){
+      S.view=routeMap[raw];S.nav=false;R();loadViewData(S.view);
+    }
+  }
+});
 
 // Restore the signed-in session from the backend (the server checks the token)
 
@@ -2882,7 +3930,7 @@ async function restoreSession(){
     const me=r.data;
     S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
     S.role=me.role;S.scr='app';
-    S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
+    S.view=me.role=='student'?'dash':me.role=='faculty'?'tix':'x';
     R();await loadViewData(S.view);return;
   }else if(r.status===401||r.status===403){
     try{localStorage.removeItem('ub-token')}catch(e){}
@@ -2891,8 +3939,18 @@ async function restoreSession(){
 }
 
 if(typeof fetch === 'function' && UB_API_BASE)fetch(UB_API_BASE+'/health',{cache:'no-store'}).catch(()=>{});
-if(localStorage.getItem('ub-token')){
+
+const _urlParams = typeof window!=='undefined'&&window.location?.search ? new URLSearchParams(window.location.search) : null;
+const _queryPortal = _urlParams ? (_urlParams.get('portal') || _urlParams.get('role') || '').toLowerCase() : '';
+const _hashPortal = typeof window!=='undefined'&&window.location?.hash ? (window.location.hash.slice(1)||'').toLowerCase() : '';
+const _targetRole = ['student','faculty','authority','management'].find(r => r === _queryPortal || r === _hashPortal);
+
+if(_targetRole){
+  loginAsRole(_targetRole);
+}else if(typeof localStorage!=='undefined' && localStorage.getItem('ub-token')){
   restoreSession();
+}else if(typeof localStorage!=='undefined' && localStorage.getItem('ub-current-user') && ACC[localStorage.getItem('ub-current-user')]){
+  loginAsRole(ACC[localStorage.getItem('ub-current-user')].role);
 }else{
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => R());
