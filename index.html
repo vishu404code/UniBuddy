@@ -1428,7 +1428,7 @@ async function loadViewData(view=S.view){
   if(['faculty','authority'].includes(S.role)&&['publish','courses','docs','ann','x'].includes(view)){tasks.push(apiCall(S.role==='authority'?'/courses?include_inactive=true':'/courses').then(r=>{if(r.ok)S.courses=Array.isArray(r.data)?r.data:[]}));tasks.push(apiCall(S.role==='authority'?'/filter-options?include_inactive=true':'/filter-options').then(r=>{if(r.ok)S.options=Array.isArray(r.data)?r.data:[]}))}
   if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
-  if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
+  if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{S.analyticsAt=Date.now();if(r.ok){S.analytics=r.data;S.analyticsError=null}else{S.analyticsError=typeof r.error==='string'?r.error:'The server did not respond. Try again.'}}));
   if(S.bell&&S.role!=='management')tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
   await Promise.all(tasks);S.tickets.forEach(t=>{t.dept=deptLabel(t)});
   if(S.role==='student'&&!S.restoredChat){S.restoredChat=true;if(S.hist.length&&!S.chat.length&&!S.conversationId)await openConversation(S.hist[0].id,false)}
@@ -1447,38 +1447,39 @@ function parseJwt(token){
 }
 
 // Google Sign-In Credential Handler — instant sub-second sign-in (<50ms)
+// Sign-in. The role a person gets is the one the backend returns from their UniBuddy profile.
+// The browser never works out a role from an email address. While the backend checks a repeat sign-in,
+// the page may show the session the backend confirmed earlier for the same Google email, and nothing else.
+// If the backend cannot confirm the sign-in, the page returns to the login screen: no portal is left showing.
+const SESSION_USER_KEY='ub-session-user';
+function savedSessionUser(){try{const u=JSON.parse(localStorage.getItem(SESSION_USER_KEY)||'null');return u&&u.email&&u.role?u:null}catch(e){return null}}
+function saveSessionUser(u){try{localStorage.setItem(SESSION_USER_KEY,JSON.stringify(u))}catch(e){}}
+function clearSession(){try{localStorage.removeItem('ub-token');localStorage.removeItem(SESSION_USER_KEY);localStorage.removeItem('ub-user')}catch(e){}}
+function defaultView(role){return role==='student'?'chat':role==='faculty'?'tix':'x'}
+// me is the backend's answer (the sign-in response's user, or GET /auth/me). It is the only source of the role.
+function showPortal(me){
+  const user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
+  S.user=user;S.role=user.role;S.scr='app';S.view=defaultView(user.role);
+  saveSessionUser(user);
+  R();
+  loadViewData(S.view);
+}
+function backToLogin(message){
+  clearSession();
+  S.user=null;S.role=null;S.modal=null;
+  go('login');
+  const er=$('#err');if(er)er.textContent=message;
+  toast(message);
+}
 async function handleGoogleCredential(id_token){
   if(!id_token)return;
   const er=$('#err');
   if(er)er.textContent='';
+  const email=String(parseJwt(id_token)?.email||'').trim().toLowerCase();
+  const known=savedSessionUser();
+  if(known&&email&&known.email===email){S.user=known;S.role=known.role;S.scr='app';S.view=defaultView(known.role);R()}
+  else if(er){er.textContent='Verifying with UniBuddy Google Auth…'}
 
-  // Instant sub-second client transition using Google verified identity
-  const payload = parseJwt(id_token);
-  if(payload && payload.email){
-    const email = payload.email.toLowerCase();
-    const isFaculty = email.includes('faculty') || email === 'tarun.s26366@nst.rishihood.edu.in';
-    const isAuthority = email.includes('authority') || email.includes('admin') || email.includes('dean');
-    const isManagement = email.includes('management') || email === 'jaysinghf204@gmail.com';
-    const initialRole = isFaculty ? 'faculty' : isAuthority ? 'authority' : isManagement ? 'management' : 'student';
-
-    S.user = {
-      id: payload.sub || 'google-user',
-      email: payload.email,
-      name: payload.name || payload.email.split('@')[0],
-      full_name: payload.name || payload.email.split('@')[0],
-      role: initialRole,
-      campus_id: null,
-      department_id: null
-    };
-    S.role = initialRole;
-    S.scr = 'app';
-    S.view = initialRole === 'student' ? 'chat' : initialRole === 'faculty' ? 'tix' : 'x';
-    try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
-    R();
-    toast('Signed in as ' + (payload.name || payload.email));
-  }
-
-  // Establish backend session & sync in background
   let res;
   try{
     res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true,maxAttempts:10});
@@ -1488,29 +1489,15 @@ async function handleGoogleCredential(id_token){
 
   if(res.ok&&res.data?.access_token){
     localStorage.setItem('ub-token',res.data.access_token);
-    const me=res.data.user;
-    if(me){
-      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
-      S.role=me.role;
-      try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
-      R();
-      loadViewData(S.view);
-      return;
-    }
-    const meRes=await apiCall('/auth/me');
-    if(meRes.ok&&meRes.data){
-      const me=meRes.data;
-      S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
-      S.role=me.role;
-      try { localStorage.setItem('ub-user', JSON.stringify(S.user)); } catch(e){}
-      R();
-      loadViewData(S.view);
-      return;
-    }
-    localStorage.removeItem('ub-token');
+    let me=res.data.user||null;
+    if(!me){const meRes=await apiCall('/auth/me');if(meRes.ok&&meRes.data)me=meRes.data}
+    if(me&&me.role&&me.email){showPortal(me);toast('Signed in as '+(me.full_name||me.email));return}
+    backToLogin('We could not confirm your account. Try signing in again.');
+    return;
   }
 
   if(res.status===403&&res.error?.code==='no_profile'){
+    clearSession();S.user=null;S.role=null;S.scr='login';
     S.modal={type:'access-request',id_token,msg:'Your Google identity is verified, but no student or staff profile exists for this email yet.'};
     R();
     return;
@@ -1518,8 +1505,7 @@ async function handleGoogleCredential(id_token){
 
   const messages={0:'Cannot reach UniBuddy right now. Check backend connection.',401:'Google could not verify this sign-in. Try again.',409:'This Google account is linked differently. Contact campus administrator.',503:'UniBuddy sign-in service is currently not configured.'};
   const msg=(typeof res.error==='object'?(res.error.message||res.error.code):res.error)||messages[res.status]||'Sign-in failed. Please try again.';
-  if(er)er.textContent=msg;
-  toast(msg);
+  backToLogin(msg);
 }
 
 const logo=`<div class="logo" data-a="home"><span class="mark"><img src="logo.png" alt="U" style="width:100%;height:100%;object-fit:contain"></span>UniBuddy</div>`;
@@ -2656,6 +2642,7 @@ function placeholder(){
 // Gemini usage is shown only where it was recorded; nothing is estimated.
 function mgmtView(){
   const a=S.analytics;
+  if(!a&&S.analyticsError)return `<div class="pg"><h1 class="ed">Management Stats</h1><p class="mut">Aggregate analytics could not be loaded. ${esc(S.analyticsError)}</p><button class="btn p" data-a="retry-analytics">Try again</button></div>`;
   if(!a)return '<div class="pg"><h1 class="ed">Management Stats</h1><p class="mut">Loading aggregate analytics…</p></div>';
   const t=a.ticket_totals||{};
   const pct=x=>x==null?'—':`${Math.round(x*100)}%`;
@@ -2673,7 +2660,7 @@ function mgmtView(){
 <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667);margin-top:6px"><span>${dayText(rows[0].day)}</span><span>${dayText(rows[Math.floor((n-1)/2)].day)}</span><span>${dayText(rows[n-1].day)}</span></div>`;
   };
   const campuses=(t.campuses||[]).map(c=>`<tr><td>${esc(c.name)}</td><td>${c.total_tickets}</td><td>${c.resolved_tickets}</td><td>${pct(c.resolution_rate)}</td><td>${hrs(c.avg_first_response_hours)}</td></tr>`).join('');
-  return `<div class="pg wide"><h1 class="ed">Management Stats</h1><p class="sub">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>
+  return `<div class="pg wide"><h1 class="ed">Management Stats</h1><p class="sub">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>${S.analyticsError?`<p class="mut" style="font-size:13px">Showing the last loaded figures. Refresh failed: ${esc(S.analyticsError)} <button class="lnk" data-a="retry-analytics">Try again</button></p>`:''}
 <div class="strip">${[['Questions asked',a.questions_total],['Tickets',t.total_tickets],['Resolved',t.resolved_tickets],['Resolution rate',pct(t.resolution_rate)],['Avg first response',hrs(t.avg_first_response_hours)]].map(([l,v])=>`<div class="sti"><div><b>${v??'—'}</b><span>${l}</span></div></div>`).join('')}</div>
 <div class="dgrid"><section class="card"><h3>Questions per day</h3>${bars(a.questions_by_day||[],'Questions')}</section><section class="card"><h3>Tickets per day</h3>${bars(a.tickets_by_day||[],'Tickets')}</section></div>
 <section class="card" style="margin-top:16px"><h3>By campus</h3><div class="tw"><table><tr><th>Campus</th><th>Tickets</th><th>Resolved</th><th>Resolution rate</th><th>Avg first response</th></tr>${campuses||'<tr><td colspan="5" class="mut">No campus data.</td></tr>'}</table></div></section>
@@ -2820,6 +2807,9 @@ document.addEventListener('change',e=>{
   if(key==='date'&&e.target.value!=='custom'){f.from='';f.to=''}
   loadViewData(kind==='ann'?'ann':'docs');
 });
+// Management: refresh the aggregate figures when the tab comes back, if they are over a minute old.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.role==='management'&&S.view==='x'&&(!S.analyticsAt||Date.now()-S.analyticsAt>60000))loadViewData('x')});
+
 // Publish form: typing a name searches campus students; choosing an audience shows or hides the targeting fields.
 document.addEventListener('input',e=>{
   if(e.target.id!=='pa-q')return;
@@ -2875,8 +2865,10 @@ document.addEventListener('click',async e=>{
     if(!res.ok){el.disabled=false;toast(typeof res.error==='string'?res.error:'Document update failed.');return}
     S.modal=null;await loadViewData('docs');toast(action==='publish'?'Document published.':'Document archived.');
   }
+  else if(a=='retry-analytics'){S.analyticsError=null;R();loadViewData('x')}
   else if(a=='logout'){
-    try{localStorage.removeItem('ub-current-user');localStorage.removeItem('ub-token');localStorage.removeItem('ub-user')}catch(x){}
+    try{localStorage.removeItem('ub-current-user')}catch(x){}
+    clearSession();
     S.user=null;S.role=null;S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=null;go('landing');
   }
   else if(a=='view'){if(S.view!=v)S.fx='view';S.view=v;S.bell=false;S.nav=false;R();loadViewData(v)}
@@ -2970,34 +2962,15 @@ document.addEventListener('change',e=>{if(e.target.id=='fs'){S.fs=e.target.value
 
 // Restore session from backend on page refresh
 async function restoreSession(){
-  try {
-    const cached = localStorage.getItem('ub-user');
-    if(cached){
-      const u = JSON.parse(cached);
-      if(u && u.email){
-        S.user = u;
-        S.role = u.role;
-        S.scr = 'app';
-        S.view = u.role === 'student' ? 'chat' : u.role === 'faculty' ? 'tix' : 'x';
-        R();
-      }
-    }
-  } catch(e){}
-
-  const token = localStorage.getItem('ub-token');
-  if(!token){ R(); return; }
+  try{localStorage.removeItem('ub-user')}catch(e){}   // a role saved by an older page is never trusted
+  let token=null;try{token=localStorage.getItem('ub-token')}catch(e){}
+  if(!token){clearSession();R();return}              // no session: the login screen, never a stored role without a token
+  const saved=savedSessionUser();
+  if(saved){S.user=saved;S.role=saved.role;S.scr='app';S.view=defaultView(saved.role);R()}
   const r=await apiCall('/auth/me');
-  if(r.ok&&r.data){
-    const me=r.data;
-    S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
-    S.role=me.role;S.scr='app';
-    S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
-    try{localStorage.setItem('ub-user',JSON.stringify(S.user))}catch(e){}
-    R();await loadViewData(S.view);return;
-  }else if(r.status===401||r.status===403){
-    try{localStorage.removeItem('ub-token');localStorage.removeItem('ub-user')}catch(e){}
-  }
-  R();
+  if(r.ok&&r.data&&r.data.role){showPortal(r.data);return}
+  if(r.status===401||r.status===403){backToLogin('Your session has ended. Sign in again.');return}
+  R();                                               // backend unreachable: keep what was shown; the next visit checks again
 }
 
 function prewarmServer(){
@@ -3012,11 +2985,11 @@ window.addEventListener('keydown', prewarmServer, {passive:true});
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     R();
-    if(localStorage.getItem('ub-token') || localStorage.getItem('ub-user')) restoreSession();
+    if(localStorage.getItem('ub-token')) restoreSession();
   });
 } else {
   R();
-  if(localStorage.getItem('ub-token') || localStorage.getItem('ub-user')) restoreSession();
+  if(localStorage.getItem('ub-token')) restoreSession();
 }
 </script>
 </body>
