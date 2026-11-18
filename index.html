@@ -1359,7 +1359,8 @@ window.__ubTimes=window.__ubTimes||[];
 async function apiCall(endpoint,options={}){
   if(!UB_API_BASE)return {ok:false,status:0,error:'Backend URL is not configured for this website.'};
   const method=String(options.method||'GET').toUpperCase();
-  const attempts=(method==='GET'||options.idempotent)?3:1;
+  const isAuth=endpoint.startsWith('/auth/');
+  const attempts=options.maxAttempts||(isAuth?14:(method==='GET'||options.idempotent?3:1));
   const started=performance.now();
   const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
   const token=localStorage.getItem('ub-token');
@@ -1371,7 +1372,10 @@ async function apiCall(endpoint,options={}){
       const res=await fetch(UB_API_BASE+endpoint,{...options,headers});
       window.__ubTimes.push({endpoint:label,status:res.status,ms:Math.round(performance.now()-started)});
       if(!res.ok){
-        if(!last&&[502,503,504].includes(res.status)){await sleepMs(1500*(i+1));continue}
+        if(!last&&[500,502,503,504].includes(res.status)){
+          await sleepMs(Math.min(3000,1000+i*400));
+          continue;
+        }
         let errData=null;
         try{errData=await res.json()}catch(e){}
         const errDetail=errData?.detail||errData?.message||`HTTP ${res.status}`;
@@ -1381,11 +1385,14 @@ async function apiCall(endpoint,options={}){
       const data=await res.json();
       return {ok:true,status:res.status,data};
     }catch(err){
-      if(!last){await sleepMs(1500*(i+1));continue}
+      if(!last){
+        await sleepMs(Math.min(3000,1000+i*400));
+        continue;
+      }
       return {ok:false,status:0,error:err.message||'Network error',data:null};
     }
   }
-  return {ok:false,status:0,error:'Request failed after attempts',data:null};
+  return {ok:false,status:0,error:'UniBuddy server is waking up. Please try again in a moment.',data:null};
 }
 
 function docView(d){return {...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}}
@@ -1436,7 +1443,7 @@ async function handleGoogleCredential(id_token){
   if(er)er.textContent='Signing in...';
   let res;
   try{
-    res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true});
+    res=await apiCall('/auth/google',{method:'POST',body:JSON.stringify({id_token}),idempotent:true,maxAttempts:14});
   }catch(err){
     res={ok:false,status:0,error:err.message};
   }
@@ -2932,7 +2939,15 @@ async function restoreSession(){
   R();
 }
 
-if(typeof fetch === 'function' && UB_API_BASE)fetch(UB_API_BASE+'/health',{cache:'no-store'}).catch(()=>{});
+function prewarmServer(){
+  if(typeof fetch === 'function' && UB_API_BASE){
+    fetch(UB_API_BASE+'/health',{cache:'no-store'}).catch(()=>{});
+  }
+}
+prewarmServer();
+setInterval(prewarmServer, 30000);
+window.addEventListener('pointerdown', prewarmServer, {passive:true});
+window.addEventListener('keydown', prewarmServer, {passive:true});
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     R();
