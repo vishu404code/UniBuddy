@@ -1,8 +1,11 @@
 node_modules/
 .DS_Store
 *.log
+# Local secrets and runtime uploads (never commit)
 .env
-.env.local
+.env*
+.local-data/
+*.save
 
 # Backend (Python)
 backend/venv/
