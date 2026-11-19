@@ -185,8 +185,9 @@ console.log('✓ Test 2: Login Page loaded with Google button');
   assert.ok(mockApp.innerHTML.includes('side'), 'Student sidebar rendered');
   
   // Test Student Portal views
-  evalInCtx("S.view = 'dash'; R();");
-  assert.ok(mockApp.innerHTML.includes('Dashboard') || mockApp.innerHTML.includes('Welcome back'), 'Student Dashboard rendered');
+  assert.ok(!mockApp.innerHTML.includes('Dashboard'), 'Dashboard section is removed from Student Portal navigation');
+  evalInCtx("S.view = 'chat'; R();");
+  assert.ok(mockApp.innerHTML.includes('AI Assistant'), 'Student AI Assistant rendered');
   evalInCtx("S.view = 'queries'; R();");
   assert.ok(mockApp.innerHTML.includes('My Queries'), 'Student Queries rendered');
   evalInCtx("S.view = 'docs'; R();");

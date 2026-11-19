@@ -1663,7 +1663,7 @@ function loginAsRole(role){
   };
   S.role=a.role;
   S.scr='app';
-  S.view=a.role==='student'?'dash':a.role==='faculty'?'tix':a.role==='management'?'x':a.role==='super_admin'?'admin':'x';
+  S.view=a.role==='student'?'chat':a.role==='faculty'?'tix':a.role==='management'?'x':a.role==='super_admin'?'admin':'x';
   try{localStorage.setItem('ub-current-user',email)}catch(e){}
   
   // Seed sensible fallback sample data if backend is offline or unauthenticated
@@ -1682,12 +1682,7 @@ function loginAsRole(role){
     ];
   }
   if(!S.docs.length){
-    S.docs=[
-      {id:'doc-1',uuid:'d-1',title:'Academic Regulations & Curriculum 2026',category:'Academic',status:'ready',publication:'published',date:today()},
-      {id:'doc-2',uuid:'d-2',title:'Examination Code of Conduct & Guidelines',category:'Administrative',status:'ready',publication:'published',date:today()},
-      {id:'doc-3',uuid:'d-3',title:'Hostel Rules and Campus Policy Handbook',category:'Guides',status:'ready',publication:'published',date:today()},
-      {id:'doc-4',uuid:'d-4',title:'Fee Structure & Merit Scholarship Policies',category:'Financial',status:'ready',publication:'published',date:today()}
-    ];
+    S.docs=[...DEMO_DOCUMENTS];
   }
   if(!S.dashboard||!Object.keys(S.dashboard).length){
     S.dashboard={total_tickets:12,resolved_tickets:9,open_tickets:3,urgent_tickets:1};
@@ -1708,11 +1703,261 @@ function loginAsRole(role){
 
 const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
 
+const DEMO_DOCUMENTS = [
+  // 1. Rishihood Documents (Red)
+  {
+    uuid: 'demo-doc-r1',
+    id: 'demo-r1',
+    title: '[DEMO] Sample Academic Calendar 2026-27',
+    category: 'Rishihood Documents',
+    scope: 'rishihood',
+    original_filename: 'Rishihood_Academic_Calendar_2026_27.pdf',
+    date: '15 Nov 2026',
+    created_at: '2026-11-15T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Official semester schedule, teaching days, university holidays, and semester examination milestones for Rishihood University.'
+  },
+  {
+    uuid: 'demo-doc-r2',
+    id: 'demo-r2',
+    title: '[DEMO] Sample University Guidelines & Code of Conduct',
+    category: 'Rishihood Documents',
+    scope: 'rishihood',
+    original_filename: 'Rishihood_University_Guidelines.pdf',
+    date: '10 Nov 2026',
+    created_at: '2026-11-10T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Campus rules, student responsibilities, academic integrity charter, and campus safety and security regulations.'
+  },
+  {
+    uuid: 'demo-doc-r3',
+    id: 'demo-r3',
+    title: '[DEMO] Sample Academic Notice & Attendance Policy',
+    category: 'Rishihood Documents',
+    scope: 'rishihood',
+    original_filename: 'Rishihood_Academic_Notice.pdf',
+    date: '05 Nov 2026',
+    created_at: '2026-11-05T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Detailed regulations regarding mandatory minimum lecture attendance, condonation procedures, and medical leave protocols.'
+  },
+  {
+    uuid: 'demo-doc-r4',
+    id: 'demo-r4',
+    title: '[DEMO] Sample Student Handbook & Campus Resources',
+    category: 'Rishihood Documents',
+    scope: 'rishihood',
+    original_filename: 'Rishihood_Student_Handbook.pdf',
+    date: '28 Oct 2026',
+    created_at: '2026-10-28T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Comprehensive guide covering library access, computing laboratories, sports complexes, dining halls, and student wellness.'
+  },
+
+  // 2. Newton Documents (Blue)
+  {
+    uuid: 'demo-doc-b1',
+    id: 'demo-b1',
+    title: '[DEMO] Sample Newton Academic Schedule',
+    category: 'Newton Documents',
+    scope: 'newton',
+    original_filename: 'Newton_Academic_Schedule.pdf',
+    date: '14 Nov 2026',
+    created_at: '2026-11-14T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Newton School of Technology semester calendar, coding lab sprints, hackathon dates, and project submission deadlines.'
+  },
+  {
+    uuid: 'demo-doc-b2',
+    id: 'demo-b2',
+    title: '[DEMO] Sample Course Information & Syllabus',
+    category: 'Newton Documents',
+    scope: 'newton',
+    original_filename: 'Newton_Course_Information.pdf',
+    date: '08 Nov 2026',
+    created_at: '2026-11-08T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Curriculum syllabus covering Data Structures, Algorithmic Problem Solving, Full-Stack Development, and Applied AI.'
+  },
+  {
+    uuid: 'demo-doc-b3',
+    id: 'demo-b3',
+    title: '[DEMO] Sample Academic Guidelines & Grading Policy',
+    category: 'Newton Documents',
+    scope: 'newton',
+    original_filename: 'Newton_Academic_Guidelines.pdf',
+    date: '02 Nov 2026',
+    created_at: '2026-11-02T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Evaluation framework, continuous assessment weightage, peer code review standards, and GPA calculation criteria.'
+  },
+  {
+    uuid: 'demo-doc-b4',
+    id: 'demo-b4',
+    title: '[DEMO] Sample Semester Information & Capstone Tracks',
+    category: 'Newton Documents',
+    scope: 'newton',
+    original_filename: 'Newton_Semester_Information.pdf',
+    date: '25 Oct 2026',
+    created_at: '2026-10-25T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Overview of upcoming semester electives, industry internship requirements, and faculty mentor allocation.'
+  },
+
+  // 3. Club Documents (Green)
+  {
+    uuid: 'demo-doc-g1',
+    id: 'demo-g1',
+    title: '[DEMO] Sample Club Registration Guidelines',
+    category: 'Club Documents',
+    scope: 'club',
+    original_filename: 'Club_Registration_Guidelines.pdf',
+    date: '12 Nov 2026',
+    created_at: '2026-11-12T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Official procedure for chartering student clubs, constitutional frameworks, leadership elections, and faculty approvals.'
+  },
+  {
+    uuid: 'demo-doc-g2',
+    id: 'demo-g2',
+    title: '[DEMO] Sample Club Activity Report & Budget Template',
+    category: 'Club Documents',
+    scope: 'club',
+    original_filename: 'Club_Activity_Report_Template.pdf',
+    date: '06 Nov 2026',
+    created_at: '2026-11-06T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Standardized templates for post-event activity documentation, student turnout metrics, and itemized budget claims.'
+  },
+  {
+    uuid: 'demo-doc-g3',
+    id: 'demo-g3',
+    title: '[DEMO] Sample Club Membership Information & Directory',
+    category: 'Club Documents',
+    scope: 'club',
+    original_filename: 'Club_Membership_Information.pdf',
+    date: '30 Oct 2026',
+    created_at: '2026-10-30T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Directory of approved technical, cultural, entrepreneurship, and literary clubs with lead coordinators and schedules.'
+  },
+  {
+    uuid: 'demo-doc-g4',
+    id: 'demo-g4',
+    title: '[DEMO] Sample Club Event Guidelines & Auditorium Booking',
+    category: 'Club Documents',
+    scope: 'club',
+    original_filename: 'Club_Event_Guidelines.pdf',
+    date: '22 Oct 2026',
+    created_at: '2026-10-22T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Venue reservation guidelines, AV equipment requisition, safety clearances, and guest speaker invitation protocols.'
+  },
+
+  // 4. Important Documents (Yellow)
+  {
+    uuid: 'demo-doc-y1',
+    id: 'demo-y1',
+    title: '[DEMO] Sample Important Notice – Mid-Term Exam Schedule',
+    category: 'Important Documents',
+    scope: 'important',
+    original_filename: 'Important_Notice_Midterm_Exams.pdf',
+    date: '16 Nov 2026',
+    created_at: '2026-11-16T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Mandatory examination schedule, seating matrix allocations, reporting timings, and hall ticket verification instructions.'
+  },
+  {
+    uuid: 'demo-doc-y2',
+    id: 'demo-y2',
+    title: '[DEMO] Sample Examination Instructions & Prohibited Items',
+    category: 'Important Documents',
+    scope: 'important',
+    original_filename: 'Important_Examination_Instructions.pdf',
+    date: '11 Nov 2026',
+    created_at: '2026-11-11T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Strict guidelines for invigilation halls, permitted stationery, electronic devices bans, and disciplinary actions.'
+  },
+  {
+    uuid: 'demo-doc-y3',
+    id: 'demo-y3',
+    title: '[DEMO] Sample General Guidelines – Emergency Procedures',
+    category: 'Important Documents',
+    scope: 'important',
+    original_filename: 'Important_Emergency_Procedures.pdf',
+    date: '04 Nov 2026',
+    created_at: '2026-11-04T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Campus emergency protocols, medical infirmary contact numbers, fire evacuation blueprints, and 24/7 security helpline.'
+  },
+  {
+    uuid: 'demo-doc-y4',
+    id: 'demo-y4',
+    title: '[DEMO] Sample Student Instructions – Fee Payment & Clearance',
+    category: 'Important Documents',
+    scope: 'important',
+    original_filename: 'Important_Student_Instructions_Fees.pdf',
+    date: '26 Oct 2026',
+    created_at: '2026-10-26T10:00:00Z',
+    status: 'ready',
+    publication: 'published',
+    visibility: 'all',
+    isDemo: true,
+    description: 'Key deadlines for semester fee payments, installment clearances, scholarship disbursements, and no-dues receipts.'
+  }
+];
+
 // Application state
 const S={
   scr:'landing',role:null,user:null,view:'chat',sel:null,modal:null,bell:false,nav:false,
   chat:[],hist:[],fq:'',fs:'All',toast:'',fx:'screen',conversationId:null,
-  tickets:[],notifs:[],docs:[],announcements:[],departments:[],courses:[],options:[],
+  tickets:[],notifs:[],docs:[...DEMO_DOCUMENTS],announcements:[],departments:[],courses:[],options:[],
   dashboard:{},detail:null,loading:false
 };
 
@@ -1791,11 +2036,16 @@ async function loadViewData(view=S.view){
   if(S.user.id!==S.chatOwner){S.chat=[];S.hist=[];S.conversationId=null;S.restoredChat=false;S.chatOwner=S.user.id}
   if(S.role==='student')tasks.push(loadConversations());
   if(['student','faculty','authority'].includes(S.role)&&['chat','queries','tix','fdash','x'].includes(view))tasks.push(apiCall('/tickets?limit=50').then(r=>{if(r.ok)S.tickets=pageItems(r).map(ticketView)}));
-  if((view==='docs'||view==='x')&&S.role!=='management')tasks.push(apiCall(['faculty','authority'].includes(S.role)?'/documents?'+listQuery('doc'):'/documents?limit=50').then(r=>{if(r.ok)S.docTotal=r.data?.total??null;if(r.ok)S.docs=pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()}))}));
-  if((view==='ann'||view==='dash'||view==='x')&&S.role!=='management')tasks.push(apiCall(['faculty','authority'].includes(S.role)?'/announcements?'+listQuery('ann'):'/announcements?limit=20').then(r=>{if(r.ok)S.annTotal=r.data?.total??null;if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
+  if((view==='docs'||view==='x')&&S.role!=='management')tasks.push(apiCall(['faculty','authority'].includes(S.role)?'/documents?'+listQuery('doc'):'/documents?limit=50').then(r=>{
+    const fetched = (r.ok && Array.isArray(r.data?.items || r.data)) ? pageItems(r).map(d=>({...d,id:d.id.slice(0,8),uuid:d.id,status:d.processing_status,publication:d.publication_status,date:new Date(d.created_at).toLocaleDateString()})) : [];
+    const existingUuids = new Set(fetched.map(d => d.uuid));
+    const merged = [...fetched, ...DEMO_DOCUMENTS.filter(d => !existingUuids.has(d.uuid))];
+    S.docs = merged;
+    if(r.ok) S.docTotal = merged.length;
+  }));
+  if((view==='ann'||view==='x')&&S.role!=='management')tasks.push(apiCall(['faculty','authority'].includes(S.role)?'/announcements?'+listQuery('ann'):'/announcements?limit=20').then(r=>{if(r.ok)S.annTotal=r.data?.total??null;if(r.ok)S.announcements=pageItems(r).map(a=>({...a,c:a.category||'Notice',t:a.title,b:a.body,d:new Date(a.created_at).toLocaleDateString(),tone:'blue',big:a.is_important,imp:a.is_important}))}));
   if(['student','faculty','authority'].includes(S.role)&&!S.departments.length)tasks.push(apiCall('/departments').then(r=>{if(r.ok)S.departments=Array.isArray(r.data)?r.data:[]}));
   if(['faculty','authority'].includes(S.role)&&['publish','courses','docs','ann','x'].includes(view)){tasks.push(apiCall(S.role==='authority'?'/courses?include_inactive=true':'/courses').then(r=>{if(r.ok)S.courses=Array.isArray(r.data)?r.data:[]}));tasks.push(apiCall(S.role==='authority'?'/filter-options?include_inactive=true':'/filter-options').then(r=>{if(r.ok)S.options=Array.isArray(r.data)?r.data:[]}))}
-  if(view==='dash')tasks.push(apiCall('/dashboard/student').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='fdash'||(view==='x'&&S.role!=='management'))tasks.push(apiCall(S.role==='management'?'/management/stats':'/dashboard/staff').then(r=>{if(r.ok)S.dashboard=r.data}));
   if(view==='x'&&S.role==='management')tasks.push(apiCall('/management/analytics').then(r=>{if(r.ok)S.analytics=r.data}));
   if(S.bell&&S.role!=='management')tasks.push(apiCall('/notifications?limit=20').then(r=>{if(r.ok)S.notifs=pageItems(r).map(n=>({id:n.id,t:n.text||'Update',u:!n.is_read,tk:n.ticket_id}))}));
@@ -2626,7 +2876,7 @@ ${items.map(i=>`<button class="si ${S.view==i[0]?'on':''}" data-a="view" data-v=
 ${isStu?`<div class="sh">Chat History</div><div class="hist">${S.hist.length?S.hist.map((h,i)=>`<button class="si" data-a="hist" data-v="${i}">${I('chat')}<span>${esc(h.title)}</span></button>`).join(''):'<div class="mut" style="padding:4px 12px;font-size:13px">No previous chats</div>'}</div>`:'<div style="flex:1"></div>'}
 <div class="prof row sp"><div class="row" style="min-width:0;cursor:pointer" data-a="view" data-v="profile" title="View profile"><span class="av">${esc(ini())}</span><div style="line-height:1.3"><div style="font-size:13.5px;font-weight:500">${esc(pn())}</div><div class="mut" style="font-size:12px">${ROLES[S.role]?ROLES[S.role][1]:'User'}</div></div></div><button class="ib" data-a="logout" aria-label="Sign out" title="Sign out">${I('out')}</button></div></aside><div class="scrim ${S.nav?'open':''}" data-a="navx"></div>`}
 
-const SN=[['chat','AI Assistant','spark'],['dash','Dashboard','home'],['queries','My Queries','list'],['ann','Announcements','mega'],['docs','Documents','file'],['help','Help & Support','help'],['profile','Profile','user']];
+const SN=[['chat','AI Assistant','spark'],['queries','My Queries','list'],['ann','Announcements','mega'],['docs','Documents','file'],['help','Help & Support','help'],['profile','Profile','user']];
 const FN=[['tix','Tickets','inbox'],['fdash','Staff Overview','home'],['publish','Publish','upload'],['docs','Documents','file'],['ann','Announcements','mega'],['profile','Profile','user']];
 const AN=[['x','Campus Overview','home'],['tix','Tickets','inbox'],['publish','Publish','upload'],['courses','Courses','list'],['docs','Documents','file'],['ann','Announcements','mega'],['profile','Profile','user']];
 const MN=[['x','Management Stats','home'],['profile','Profile','user']];
@@ -2825,6 +3075,59 @@ ${staff?filterBar('doc'):''}${staff&&total?`<p class="mut" style="font-size:13px
 // temporary local address, which is released when the dialog closes.
 async function openPdf(uuid){
   S.modal={type:'pdf',uuid};S.pdf={state:'loading'};R();
+  const demoDoc = (S.docs || []).find(d => d.uuid === uuid && (d.isDemo || String(d.uuid).startsWith('demo-')));
+  if (demoDoc) {
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${esc(demoDoc.title)}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 40px; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+  .sheet { max-width: 680px; margin: 0 auto; background: #fff; padding: 48px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+  .header { border-bottom: 2px solid #2f6fe4; padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-size: 20px; font-weight: 700; color: #1e3a8a; }
+  .tag { background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+  h1 { font-size: 22px; color: #0f172a; margin: 0 0 12px 0; }
+  .meta { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  .content { font-size: 15px; color: #334155; }
+  .content p { margin-bottom: 16px; }
+  .stamp { margin-top: 36px; padding: 16px; background: #f1f5f9; border-left: 4px solid #2f6fe4; border-radius: 4px; font-size: 13px; color: #475569; }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="header">
+      <div class="brand">UniBuddy University Portal</div>
+      <span class="tag">Official Document</span>
+    </div>
+    <h1>${esc(demoDoc.title)}</h1>
+    <div class="meta">Category: ${esc(demoDoc.category || 'General')} · Date: ${esc(demoDoc.date || 'Current')} · File: ${esc(demoDoc.original_filename || 'document.pdf')}</div>
+    <div class="content">
+      <p><strong>Overview:</strong></p>
+      <p>${esc(demoDoc.description || 'This document contains official guidelines, procedural notices, and administrative reference material for students and faculty of the university.')}</p>
+      <p><strong>Key Highlights:</strong></p>
+      <ul>
+        <li>Official academic and campus regulations published under institutional governance.</li>
+        <li>Applicable to all enrolled students for the current academic session.</li>
+        <li>For any questions or clarification regarding this document, use the AI Assistant or raise a query in the portal.</li>
+      </ul>
+      <div class="stamp">
+        <strong>Document Verification:</strong><br>
+        Status: Verified Official Demonstration Copy<br>
+        System Reference ID: ${esc(demoDoc.uuid)}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    if(S.pdf?.url) URL.revokeObjectURL(S.pdf.url);
+    S.pdf = { state: 'ready', url, isDemo: true };
+    R();
+    return;
+  }
   try{
     const res=await fetch(UB_API_BASE+`/documents/${uuid}/file`,{headers:{Authorization:`Bearer ${localStorage.getItem('ub-token')||''}`}});
     if(!res.ok){
@@ -2969,11 +3272,10 @@ const spIc = (n, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"
 const stu = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M8 64c2-13 11-18 24-18s22 5 24 18z" fill="var(--ac)"/><path d="M26 47l6 8 6-8z" fill="#fff"/><circle cx="32" cy="35" r="10" fill="#f3d2b3"/><path d="M32 9L10 18l22 9 22-9z" fill="var(--dk)"/><path d="M22 22v5c0 3 4.5 5 10 5s10-2 10-5v-5l-10 4z" fill="var(--dk)"/><path d="M51 19v10" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle cx="51" cy="31" r="2.2" fill="var(--ac)"/><circle cx="28" cy="36" r="1.2" fill="#183D69"/><circle cx="36" cy="36" r="1.2" fill="#183D69"/><path d="M29 40c2 1.7 4 1.7 6 0" stroke="#183D69" fill="none" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 
 const SP_GR = { ocean: 'linear-gradient(135deg,#A9D5FF,#438FE8)', aqua: 'linear-gradient(135deg,#A9E5DB,#40B9A8)' };
-function spTheme() { try { return localStorage.getItem('ub_theme3') === 'aqua' ? 'aqua' : 'ocean'; } catch (e) { return 'ocean'; } }
-function spSetTheme(t) { try { localStorage.setItem('ub_theme3', t); document.documentElement.dataset.theme = t; } catch (e) {} R(); }
+function spTheme() { return 'ocean'; }
+function spSetTheme(t) {}
 
 const SP_NAV = [
-  ['dash', 'home', 'Dashboard'],
   ['chat', 'spark', 'AI Assistant'],
   ['docs', 'file', 'Documents'],
   ['ann', 'mega', 'Announcements'],
@@ -2983,7 +3285,6 @@ const SP_NAV = [
   ['help', 'help', 'Help & Support']
 ];
 const SP_TITLES = {
-  dash: 'Dashboard', dashboard: 'Dashboard',
   chat: 'AI Assistant',
   docs: 'Documents', documents: 'Documents',
   ann: 'Announcements', announcements: 'Announcements',
@@ -3029,18 +3330,14 @@ const spExt = d => {
 };
 
 function spNormView(v) {
-  if (v === 'dashboard' || !v) return 'dash';
+  if (v === 'dashboard' || v === 'dash' || !v) return 'chat';
   if (v === 'documents') return 'docs';
   if (v === 'announcements') return 'ann';
   return v;
 }
 
 function themeBtns() {
-  const th = spTheme();
-  return `<div class="themes">
-    <button type="button" data-a="sp-set-theme" data-v="ocean" class="${th === 'ocean' ? 'on' : ''}"><i style="background:${SP_GR.ocean}"></i>Pearl &amp; Ocean</button>
-    <button type="button" data-a="sp-set-theme" data-v="aqua" class="${th === 'aqua' ? 'on' : ''}"><i style="background:${SP_GR.aqua}"></i>Pearl &amp; Aqua</button>
-  </div>`;
+  return '';
 }
 
 const UNIFIED_ROLES_CONFIG = {
@@ -3052,7 +3349,6 @@ const UNIFIED_ROLES_CONFIG = {
     btnLabel: 'New chat',
     btnIcon: 'plus',
     nav: [
-      ['dash', 'home', 'Dashboard'],
       ['chat', 'spark', 'AI Assistant'],
       ['docs', 'file', 'Documents'],
       ['ann', 'mega', 'Announcements'],
@@ -3260,10 +3556,6 @@ function portalHeader(role, v, th) {
     <button class="ib hm" id="hm" data-a="navo" aria-label="Menu">${spIc('menu')}</button>
     <h2>${title}</h2>
     <span class="sp"></span>
-    <button class="ib tm" id="tm" data-a="sp-theme" aria-label="Switch colour theme">
-      <span class="sw" style="background:${th === 'ocean' ? SP_GR.aqua : SP_GR.ocean}"></span>
-      <span class="t">${th === 'ocean' ? 'Pearl &amp; Aqua' : 'Pearl &amp; Ocean'}</span>
-    </button>
     <div class="bw">
       <button class="ib" id="bl" data-a="sp-bell" aria-label="Notifications">
         ${spIc('bell')}${unr ? '<i></i>' : ''}
@@ -3279,76 +3571,6 @@ function portalHeader(role, v, th) {
 
 function studentSidebar(v) { return portalSidebar('student', v); }
 function studentHeader(v, th) { return portalHeader('student', v, th); }
-
-function studentDash() {
-  const first = (pn() || 'there').split(' ')[0];
-  const ds = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const unr = (S.announcements || []).filter(a => !spReadSet().includes(a.id || a.uuid)).length;
-  const wk = Date.now() - 7 * 24 * 3600 * 1000;
-  const nd = (S.docs || []).filter(d => new Date(d.created_at || d.date || 0).getTime() > wk).length;
-  const openTix = (S.tickets || []).filter(t => (t.status || '').toLowerCase() !== 'resolved').length;
-  const totQ = (S.hist || []).length || (S.chat || []).filter(m => m.r === 'u').length || 0;
-
-  const ov = [
-    ['spark', totQ, 'Questions &amp; discussions', 'chat'],
-    ['mega', unr, 'Unread announcements', 'ann'],
-    ['file', nd, 'New documents this week', 'docs'],
-    ['clock', openTix, 'Pending queries', 'queries']
-  ];
-
-  const qa = [
-    ['spark', 'AI Assistant', 'chat'],
-    ['file', 'Documents', 'docs'],
-    ['mega', 'Announcements', 'ann'],
-    ['list', 'My Queries', 'queries'],
-    ['user', 'Profile', 'profile']
-  ];
-
-  let im = (S.announcements || []).filter(a => a.imp || a.is_important).slice(0, 3);
-  let lbl = 'Important updates';
-  if (!im.length) {
-    im = (S.announcements || []).slice(0, 3);
-    lbl = 'Latest updates';
-  }
-
-  const recentDocs = (S.docs || []).slice(0, 4);
-
-  return `<div class="wrap big">
-    <div class="in welc">
-      <span class="av xl">${stu()}</span>
-      <div style="flex:1;min-width:230px">
-        <small class="mu">${esc(ds)}</small>
-        <h1>${spGreet()}, ${esc(first)}</h1>
-        <p class="mu" style="margin:4px 0 14px">Welcome back to your student workspace. Here’s what’s new on campus.</p>
-        <div class="row ask">
-          <input id="dq_in" placeholder="Ask UniBuddy anything…" aria-label="Ask UniBuddy">
-          <button class="btn" id="dq_go" data-a="sp-ask-dash">Ask UniBuddy</button>
-        </div>
-      </div>
-    </div>
-    <div class="g4">
-      ${ov.map(o => `<a href="#${o[3]}" data-a="view" data-v="${o[3]}" class="card t3 ov"><span class="ic">${spIc(o[0])}</span><b>${o[1]}</b><span>${o[2]}</span></a>`).join('')}
-    </div>
-    <h3 class="sh">Quick navigation</h3>
-    <div class="g5">
-      ${qa.map(q => `<a href="#${q[2]}" data-a="view" data-v="${q[2]}" class="card t3 qa">${spIc(q[0], 22)}<span>${q[1]}</span></a>`).join('')}
-    </div>
-    <div class="two">
-      <div class="card">
-        <div class="cd"><h3>${lbl}</h3><a href="#announcements" data-a="view" data-v="ann">View all</a></div>
-        ${im.map(a => `<a href="#announcements" data-a="view" data-v="ann" class="li"><b>${esc(a.t || a.title)}</b><br><small>${esc(a.d || new Date(a.created_at || Date.now()).toLocaleDateString())}${a.by ? ' · ' + esc(a.by) : ''}</small></a>`).join('') || '<p class="mu">No announcements yet.</p>'}
-      </div>
-      <div class="card">
-        <div class="cd"><h3>Recent Documents</h3><a href="#documents" data-a="view" data-v="docs">View all</a></div>
-        ${recentDocs.map(d => `<a href="#documents" data-a="view" data-v="docs" class="li"><b>${esc(d.title)}</b><br><small>${esc(d.date || new Date(d.created_at || Date.now()).toLocaleDateString())} · ${esc(d.original_filename || 'PDF')}</small></a>`).join('') || '<p class="mu">No documents uploaded yet.</p>'}
-      </div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <div class="cd"><h3>Recent activity</h3></div>
-      ${spTl(spActivity(0))}
-    </div>
-  </div>`;
-}
 
 function studentChat() {
   const msgs = S.chat || [];
@@ -3412,7 +3634,7 @@ function studentDocs() {
   const filtered = docs.filter(d => {
     const c = spCatOf(d);
     const matchesCat = (cat === 'all' || (c && c[2] === cat));
-    const text = (d.title + ' ' + (d.scope || '') + ' ' + (d.original_filename || '')).toLowerCase();
+    const text = (d.title + ' ' + (d.scope || '') + ' ' + (d.original_filename || '') + ' ' + (d.description || '') + ' ' + (d.category || '')).toLowerCase();
     const matchesQ = !q || text.includes(q);
     return matchesCat && matchesQ;
   });
@@ -3420,6 +3642,10 @@ function studentDocs() {
   const cardsHtml = filtered.map(d => {
     const c = spCatOf(d);
     const k = c ? c[2] : 'n';
+    const isDemo = d.isDemo || String(d.uuid).startsWith('demo-');
+    const dlAttr = isDemo
+      ? `href="data:text/plain;charset=utf-8,${encodeURIComponent((d.title || '') + '\n\n' + (d.description || 'Official University Demonstration Document') + '\n\nUniBuddy Portal Ref: ' + d.uuid)}" download="${esc(d.original_filename || d.title + '.txt')}"`
+      : `href="/api/v1/documents/${esc(d.uuid)}/file" target="_blank" rel="noopener" download="${esc(d.original_filename || d.title)}"`;
     return `<div class="card dc k-${k}">
       <span class="fi">${spExt(d)}</span>
       <div class="db">
@@ -3427,11 +3653,11 @@ function studentDocs() {
           <b>${esc(d.title)}</b>
           <span class="badge">${c ? c[1] : 'General'}</span>
         </div>
-        <p>${esc(d.original_filename ? 'File: ' + d.original_filename : 'Official University Document')}</p>
+        <p style="overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(d.description || (d.original_filename ? 'File: ' + d.original_filename : 'Official University Document'))}</p>
         <div class="meta">${esc(d.date || new Date(d.created_at || Date.now()).toLocaleDateString())}</div>
         <div class="acts">
           <button class="btn s" data-a="view-pdf" data-v="${esc(d.uuid)}">${spIc('file', 14)} Preview</button>
-          <a class="btn o s" href="/api/v1/documents/${esc(d.uuid)}/file" target="_blank" rel="noopener" download="${esc(d.original_filename || d.title)}">Download</a>
+          <a class="btn o s" ${dlAttr}>Download</a>
         </div>
       </div>
     </div>`;
@@ -3611,11 +3837,6 @@ function studentProfile() {
             <label>University email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
             <p class="dim">These come from your account and are only visible to you.</p>
           </div>
-          <div class="card">
-            <h3>Account settings</h3>
-            <p class="mu" style="font-size:13px">Colour theme</p>
-            ${themeBtns()}
-          </div>
         </div>
       </div>
     </form>
@@ -3630,11 +3851,6 @@ function studentSettings() {
   return `<div class="wrap">
     <h1>Settings</h1>
     <p class="sub">Personalise your workspace.</p>
-    <div class="card">
-      <h3>Colour theme</h3>
-      <p class="mu" style="font-size:13px">Switches the whole portal instantly and is remembered on this device.</p>
-      ${themeBtns()}
-    </div>
     <div class="card">
       <h3>Account</h3>
       <label>Name</label><input value="${esc(pn())}" readonly>
@@ -3671,7 +3887,6 @@ function studentHelp() {
 }
 
 function studentView(v) {
-  if (v === 'dash') return studentDash();
   if (v === 'chat') return studentChat();
   if (v === 'docs') return studentDocs();
   if (v === 'ann') return studentAnn();
@@ -3683,16 +3898,16 @@ function studentView(v) {
 }
 
 function student() {
-  const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
+  const th = 'ocean';
   const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
   const v = spNormView(S.view || 'chat');
 
-  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="ocean" id="sp-root">
     <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
     ${studentSidebar(v)}
     <div class="mn">
       ${studentHeader(v, th)}
-      <main id="view" data-r="${v === 'dash' ? 'dashboard' : v === 'docs' ? 'documents' : v === 'ann' ? 'announcements' : v}">
+      <main id="view" data-r="${v === 'docs' ? 'documents' : v === 'ann' ? 'announcements' : v}">
         ${studentView(v)}
       </main>
     </div>
@@ -4154,8 +4369,6 @@ document.addEventListener('click',async e=>{
   else if(a=='login'||a=='login-submit')doLogin()
   else if(a=='fill-demo'){loginAsRole(v.split('@')[0])}
   else if(a=='sp-col'){const rt=$('#sp-root');if(rt){rt.classList.toggle('col');try{localStorage.setItem('ub_col',rt.classList.contains('col')?'1':'0')}catch(e){}}}
-  else if(a=='sp-theme'){spSetTheme(spTheme()==='ocean'?'aqua':'ocean')}
-  else if(a=='sp-set-theme'){spSetTheme(v)}
   else if(a=='sp-bell'){S.spBellOpen=!S.spBellOpen;S.spUserOpen=false;R()}
   else if(a=='sp-user'){S.spUserOpen=!S.spUserOpen;S.spBellOpen=false;R()}
   else if(a=='sp-doc-cat'){S.spDocCat=v;R()}
@@ -4310,8 +4523,9 @@ window.addEventListener('hashchange',()=>{
   }
   if(S.scr==='app'){
     const routeMap={
-      dashboard:'dash',dash:'dash',
-      chat:'chat',
+      dashboard: S.role==='student' ? 'chat' : 'dash',
+      dash: S.role==='student' ? 'chat' : 'dash',
+      chat:'chat',assistant:'chat',ai:'chat',
       documents:'docs',docs:'docs',
       announcements:'ann',ann:'ann',
       queries:'queries',
@@ -4342,7 +4556,7 @@ async function restoreSession(){
     const me=r.data;
     S.user={id:me.id,email:me.email,name:me.full_name||me.email.split('@')[0],full_name:me.full_name,role:me.role,campus_id:me.campus_id,department_id:me.department_id};
     S.role=me.role;S.scr='app';
-    S.view=me.role=='student'?'dash':me.role=='faculty'?'tix':'x';
+    S.view=me.role=='student'?'chat':me.role=='faculty'?'tix':'x';
     R();await loadViewData(S.view);return;
   }else if(r.status===401||r.status===403){
     try{localStorage.removeItem('ub-token')}catch(e){}
