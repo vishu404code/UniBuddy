@@ -1405,6 +1405,7 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .sp-app .hd{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
 .sp-app .hd>div{display:flex;gap:10px}
 .sp-app .hd input,.sp-app .hd select{width:220px}
+.sp-app .ticket-sticky-bar{position:-webkit-sticky;position:sticky;top:0;z-index:20;background:#ffffff;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}
 .sp-app .chatw{flex:1;display:flex;flex-direction:column;min-width:0;width:100%}
 .sp-app .ms{flex:1;overflow-y:auto;padding:24px;max-width:860px;width:100%;margin:auto}
 .sp-app .hero{text-align:center;min-height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px 0}
@@ -4062,7 +4063,7 @@ function studentQueries() {
   const detailHtml = S.detail?.ticket ? detail(S.detail.ticket, false) : '';
 
   return `<div class="wrap" style="max-width:1000px">
-    <div class="hd">
+    <div class="hd" style="margin-bottom:18px">
       <div style="display:block">
         <h1 style="font-size:26px">My Queries</h1>
         <p class="mu" style="margin-top:4px;font-size:14px">Queries you raise from the AI Assistant appear here.</p>
@@ -4075,7 +4076,6 @@ function studentQueries() {
           <option ${f === 'In Progress' ? 'selected' : ''}>In Progress</option>
           <option ${f === 'Resolved' ? 'selected' : ''}>Resolved</option>
         </select>
-        <button class="btn p sm" data-a="open-new-query" style="white-space:nowrap;padding:7px 12px;font-size:13px">+ Raise query</button>
       </div>
     </div>
     <div class="card" style="padding:8px">
@@ -4329,27 +4329,25 @@ function authorityHelp() {
 }
 
 function studentHelp() {
-  const e = supportEmail();
+  const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=vishnukumawat6674%40gmail.com&su=UniBuddy%20Student%20Portal%20Support%20Request&body=Hello%2C%20I%20need%20assistance%20with%20the%20Student%20Portal.";
+  const mailtoUrl = "mailto:vishnukumawat6674@gmail.com?subject=UniBuddy%20Student%20Portal%20Support%20Request&body=Hello%2C%20I%20need%20assistance%20with%20the%20Student%20Portal.";
   return `<div class="wrap" style="max-width:640px">
     <div class="card" style="background:var(--ms)">
       <h1 style="font-size:26px">Help &amp; Support</h1>
-      <p class="mu" style="margin-top:8px">Write to the university authority about UniBuddy, your account or any issue.</p>
+      <p class="mu" style="margin-top:8px">Get assistance with UniBuddy, your student account, or academic inquiries.</p>
     </div>
     <div class="card">
-      ${e ? `
-        <p class="mu">Sending to <b style="color:var(--tx)">${esc(e)}</b></p>
-        <label for="hs">Subject</label>
-        <input id="hs" placeholder="What do you need help with?">
-        <label for="hm_">Message</label>
-        <textarea id="hm_" placeholder="Describe your issue…"></textarea>
-        <div class="row" style="margin-top:14px;justify-content:flex-start">
-          <a class="btn" id="mail" style="flex:none" href="mailto:${esc(e)}">Send email</a>
-          <button class="btn o" id="cp" data-a="sp-copy-support" style="flex:none">Copy address</button>
-        </div>
-        <p class="dim">This opens your email app with the message ready to send.</p>
-      ` : `
-        <p class="mut">The support email address has not been configured yet.</p>
-      `}
+      <h3>Student Technical Support</h3>
+      <p class="mu" style="margin-top:6px;line-height:1.6">If you need technical assistance with your student account, AI assistant queries, ticket tracking, or portal navigation, our support team is ready to assist you.</p>
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn p" href="${gmailUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px">
+          ${spIc('mail', 16)} Contact Support
+        </a>
+        <a class="btn" href="${mailtoUrl}" style="display:inline-flex;align-items:center;gap:8px">
+          ${spIc('send', 16)} Open Email Client
+        </a>
+      </div>
+      <p class="dim" style="margin-top:14px">Clicking Contact Support opens Gmail with a prefilled support request ready to send.</p>
     </div>
   </div>`;
 }
@@ -4428,7 +4426,27 @@ function faculty(){
 }
 
 function facultyTicketTable() {
-  const f = S.tickets.filter(t => (S.fs === 'All' || humanStatus(t.status) === S.fs) && (t.subj + t.id + t.dept).toLowerCase().includes(S.fq.toLowerCase()));
+  const query = (S.fq || '').trim().toLowerCase();
+  const filter = S.fs || 'All';
+  const f = S.tickets.filter(t => {
+    const matchesStatus = (filter === 'All' || humanStatus(t.status) === filter);
+    if (!matchesStatus) return false;
+    if (!query) return true;
+    const text = [
+      t.subj,
+      t.subject,
+      t.id,
+      t.ticket_number,
+      t.dept,
+      t.department_name,
+      t.student_name,
+      t.creator_name,
+      t.fac,
+      t.q,
+      t.desc
+    ].filter(Boolean).join(' ').toLowerCase();
+    return text.includes(query);
+  });
   if (!f.length) {
     return '<p class="emp" style="padding:28px 12px;margin:0">No tickets found in this queue.</p>';
   }
@@ -4483,17 +4501,22 @@ function facultyView(v) {
     </div>`;
   }
   // Default: v === 'tix' (Tickets Queue)
-  return `<div class="wrap big">
-    <div class="hd">
-      <div>
-        <h1 class="ed">Faculty Tickets</h1>
-        <p class="sub">Review, respond, and resolve verified queries assigned to your academic queue.</p>
-      </div>
-      <div>
-        <input id="qsr" placeholder="Search tickets..." value="${esc(S.fq)}" style="width:220px">
-        <select id="qfl" style="width:auto">
-          ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
-        </select>
+  return `<div class="wrap big ticket-section">
+    <div class="ticket-header" style="margin-bottom:16px">
+      <h1 class="ed" style="font-size:28px;margin:0 0 6px">Faculty Tickets</h1>
+      <p class="sub" style="margin:0">Review, respond, and resolve verified queries assigned to your academic queue.</p>
+    </div>
+    <div class="ticket-sticky-bar">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px;position:relative">
+          <input id="qsr" placeholder="Search by ticket title, ID, or student name..." aria-label="Search tickets" value="${esc(S.fq || '')}" style="width:100%;box-sizing:border-box;padding:9px 14px;border-radius:10px;border:1px solid var(--bd);background:#ffffff;font-size:14px">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <label for="qfl" style="font-size:13px;font-weight:600;color:var(--mu);margin:0;white-space:nowrap">Status:</label>
+          <select id="qfl" aria-label="Filter status" style="width:auto;min-width:130px;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:#ffffff;font-size:14px">
+            ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
       </div>
     </div>
     <div class="card t3" style="padding:16px">
@@ -4513,17 +4536,22 @@ function authorityPortalView(v) {
   if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
   if (v === 'ann') return `<div class="wrap big">${annView()}</div>`;
   if (v === 'tix') {
-    return `<div class="wrap big">
-      <div class="hd">
-        <div>
-          <h1 class="ed">Authority Portal · Tickets</h1>
-          <p class="sub">University-wide ticket oversight and departmental escalations.</p>
-        </div>
-        <div>
-          <input id="qsr" placeholder="Search tickets..." value="${esc(S.fq)}" style="width:220px">
-          <select id="qfl" style="width:auto">
-            ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
-          </select>
+    return `<div class="wrap big ticket-section">
+      <div class="ticket-header" style="margin-bottom:16px">
+        <h1 class="ed" style="font-size:28px;margin:0 0 6px">Authority Portal · Tickets</h1>
+        <p class="sub" style="margin:0">University-wide ticket oversight and departmental escalations.</p>
+      </div>
+      <div class="ticket-sticky-bar">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:240px;position:relative">
+            <input id="qsr" placeholder="Search by ticket title, ID, or student name..." aria-label="Search tickets" value="${esc(S.fq || '')}" style="width:100%;box-sizing:border-box;padding:9px 14px;border-radius:10px;border:1px solid var(--bd);background:#ffffff;font-size:14px">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <label for="qfl" style="font-size:13px;font-weight:600;color:var(--mu);margin:0;white-space:nowrap">Status:</label>
+            <select id="qfl" aria-label="Filter status" style="width:auto;min-width:130px;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:#ffffff;font-size:14px">
+              ${['All', ...STG].map(s => `<option ${S.fs === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </div>
         </div>
       </div>
       <div class="card t3" style="padding:16px">
@@ -5247,8 +5275,9 @@ function modal(){
 function R(){
   const a=$('#app');if(!a)return;
   const ae=document.activeElement?.id,v=ae?document.activeElement.value:'';let h;
-  const prevScroll=$('.page')?.scrollTop||0;
-  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#app .formarea input[id],#app .formarea textarea[id],#app .formarea select[id],#gs')]
+  const viewEl = $('#view') || $('.page');
+  const prevScroll = viewEl ? viewEl.scrollTop : 0;
+  const kept=[...document.querySelectorAll('#app .modal input[id],#app .modal textarea[id],#app .modal select[id],#app .formarea input[id],#app .formarea textarea[id],#app .formarea select[id],#gs,#qsr,#qfl')]
     .filter(el=>el.type!=='file').map(el=>({id:el.id,value:el.value,checked:el.checked}));
 
   if(S.scr=='landing')h=landing();else if(S.scr=='login')h=login();else h=S.role=='student'?student():S.role=='faculty'?faculty():placeholder();
@@ -5259,10 +5288,20 @@ function R(){
     kept.forEach(k=>{const el=document.getElementById(k.id);if(!el)return;if(el.type==='checkbox')el.checked=k.checked;else el.value=k.value});
   }
   const t=S.fx=='screen'?a.firstElementChild:S.fx=='view'?$('.main > :last-child'):null;if(t)t.classList.add('fx');S.fx=0;S.chat.forEach(x=>x.n=0);
-  if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){$('#'+ae).value=v;$('#'+ae).focus()}
+  if(ae&&$('#'+ae)&&ae!=='ci'&&ae!=='dq'){
+    const el=$('#'+ae);
+    el.value=v;
+    el.focus();
+    if(typeof el.setSelectionRange==='function'&&typeof v==='string'){
+      try{ el.setSelectionRange(v.length, v.length); }catch(_){}
+    }
+  }
   const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight;
   if(S.scrollDetail){S.scrollDetail=false;const d=$('#tdetail');if(d)d.scrollIntoView({block:'start'})}
-  else{const pg=$('.page');if(pg)pg.scrollTop=prevScroll}
+  else{
+    const pg=$('#view')||$('.page');
+    if(pg&&prevScroll>0)pg.scrollTop=prevScroll;
+  }
 
   if(S.scr==='login'){
     applyLogos();
@@ -5488,7 +5527,6 @@ document.addEventListener('click',async e=>{
     if(res.ok){S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};S.scrollDetail=true;R()}
     watchOpenTicket();
   }
-  else if(a=='open-new-query'){const d=$('#dq');if(d&&typeof d.showModal==='function')d.showModal()}
   else if(a=='open'){const item=S.tickets.find(t=>t.uuid===v||t.id===v);S.sel=item?.id||v;const uuid=item?.uuid||v;if(item)S.detail={ticket:item,events:item.events||[]};if(S.role=='student'&&S.view!='queries'){S.view='queries';S.fx='view'}else if(S.role=='faculty'&&S.view!='tix'){S.view='tix';S.fx='view'}S.scrollDetail=true;R();const res=await apiCall(`/tickets/${uuid}`);if(res.ok){S.detail={ticket:{...ticketView(res.data.ticket),events:res.data.events||[]},events:res.data.events||[]};S.scrollDetail=true;R()}else if(!item){toast('This ticket could not be opened. Try again.')}watchOpenTicket()}
   else if(a=='dask')sendDash();
   else if(a=='sq')ask(v);
