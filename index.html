@@ -3472,7 +3472,8 @@ const SP_P = {
   upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
   'file-up': 'M14 3v5h5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 12V3m-4 4l4-4 4 4',
   inbox: 'M22 12h-6l-2 3h-4l-2-3H2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7zM5.45 5.11L2 12v0h20l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
-  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  mail: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6'
 };
 const spIc = (n, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SP_P[n] || ''}"/></svg>`;
 const stu = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M8 64c2-13 11-18 24-18s22 5 24 18z" fill="var(--ac)"/><path d="M26 47l6 8 6-8z" fill="#fff"/><circle cx="32" cy="35" r="10" fill="#f3d2b3"/><path d="M32 9L10 18l22 9 22-9z" fill="var(--dk)"/><path d="M22 22v5c0 3 4.5 5 10 5s10-2 10-5v-5l-10 4z" fill="var(--dk)"/><path d="M51 19v10" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle cx="51" cy="31" r="2.2" fill="var(--ac)"/><circle cx="28" cy="36" r="1.2" fill="#183D69"/><circle cx="36" cy="36" r="1.2" fill="#183D69"/><path d="M29 40c2 1.7 4 1.7 6 0" stroke="#183D69" fill="none" stroke-width="1.3" stroke-linecap="round"/></svg>`;
@@ -3481,10 +3482,13 @@ const facAvatar = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx=
 
 const mgmtAvatar = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M9 64c2-14 11-19 23-19s21 5 23 19z" fill="#0f172a"/><path d="M24 45l8 12 8-12z" fill="#ffffff"/><polygon points="30,46 34,46 33,56 32,59 31,56" fill="#e5484d"/><path d="M21 45l11 11 11-11" stroke="#1e293b" stroke-width="1.6" fill="none"/><circle cx="32" cy="30" r="11" fill="#f3d2b3"/><path d="M19 25c0-8 6-13 13-13s13 5 13 13c0 2-2 2.5-4 2-3-1-5-2-9-2s-6 1-9 2.5c-2 .5-3-.5-4-2.5z" fill="#1e293b"/><circle cx="27" cy="31" r="1.3" fill="#0f172a"/><circle cx="37" cy="31" r="1.3" fill="#0f172a"/><path d="M29 36c1.5 1.2 4.5 1.2 6 0" stroke="#0f172a" fill="none" stroke-width="1.3" stroke-linecap="round"/><circle cx="21" cy="53" r="2.2" fill="#f59e0b"/></svg>`;
 
+const authAvatar = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M9 64c2-14 11-19 23-19s21 5 23 19z" fill="#1e3a5f"/><path d="M24 45l8 12 8-12z" fill="#ffffff"/><polygon points="30,46 34,46 33,56 32,59 31,56" fill="#d97706"/><path d="M21 45l11 11 11-11" stroke="#0f2744" stroke-width="1.6" fill="none"/><circle cx="32" cy="30" r="11" fill="#f3d2b3"/><path d="M19 25c0-8 6-13 13-13s13 5 13 13c0 2-2 2.5-4 2-3-1-5-2-9-2s-6 1-9 2.5c-2 .5-3-.5-4-2.5z" fill="#334155"/><circle cx="27" cy="31" r="1.3" fill="#0f172a"/><circle cx="37" cy="31" r="1.3" fill="#0f172a"/><path d="M29 36c1.5 1.2 4.5 1.2 6 0" stroke="#0f172a" fill="none" stroke-width="1.3" stroke-linecap="round"/><circle cx="21" cy="53" r="2.2" fill="#3b82f6"/></svg>`;
+
 function userAvatarFallback(role) {
   const r = String(role || S.role || '').toLowerCase();
   if (r === 'faculty') return facAvatar();
   if (r === 'management' || r === 'super_admin') return mgmtAvatar();
+  if (r === 'authority') return authAvatar();
   return stu();
 }
 
@@ -4255,6 +4259,75 @@ function facultyHelp() {
   </div>`;
 }
 
+function authorityProfile() {
+  const campus = S.user?.campus || 'University Campus';
+  const dept = S.user?.department || (S.departments?.find(d => d.id === S.user?.department_id)?.name) || 'Institutional Governance';
+  return `<div class="wrap big">
+    <div class="card pbanner">
+      <div class="pb" style="background:linear-gradient(135deg,rgba(245,158,11,0.22),rgba(30,41,59,0.32))"></div>
+      <div class="ph">
+        <span class="av xxl" style="width:104px!important;height:104px!important;min-width:104px!important;min-height:104px!important;max-width:104px!important;max-height:104px!important;flex:0 0 104px!important;aspect-ratio:1/1!important;border-radius:50%!important;overflow:hidden!important">${userAvatar('authority', 'xxl')}</span>
+        <div>
+          <h1 style="font-size:26px">${esc(pn())}</h1>
+          <p class="mu">Authority · ${esc(campus)}${S.user?.email ? ' · ' + esc(S.user.email) : ''}</p>
+        </div>
+        <div class="comp2">
+          <small class="mu">Administrative Role</small>
+          <div style="margin-top:6px"><span class="badge k-y">Campus Authority</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>Administrative Assignment</h3>
+        <p class="mu" style="font-size:13px">Official authority jurisdiction, campus governance, and record permissions.</p>
+        <label>Designation</label><input value="Campus Authority Officer / Administrator" readonly>
+        <label>Campus Administration</label><input value="${esc(campus)}" readonly>
+        <label>Department Jurisdiction</label><input value="${esc(dept)}" readonly>
+        <label>Oversight Scope</label><input value="Campus Records &amp; Queue Governance" readonly>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Account Credentials</h3>
+          <label>Full Name</label><input value="${esc(pn())}" readonly>
+          <label>Authority Email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
+          <label>Role</label><input value="Authority" readonly>
+          <p class="dim">Authenticated administrative credentials managed by UniBuddy Access Control.</p>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function authorityHelp() {
+  const email = 'vishnukumawat6674@gmail.com';
+  const subject = encodeURIComponent('UniBuddy Authority Portal Support Request');
+  const body = encodeURIComponent('Hello, I need assistance with the Authority Portal.');
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`;
+  const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+
+  return `<div class="wrap" style="max-width:640px">
+    <div class="card" style="background:var(--ms)">
+      <h1 style="font-size:26px">Help &amp; Support</h1>
+      <p class="mu" style="margin-top:8px">Dedicated support channel for Authority officers, campus governance, and portal administration.</p>
+    </div>
+    <div class="card">
+      <h3>Authority Administrative Support</h3>
+      <p class="mu" style="margin-top:6px;line-height:1.6">If you need technical assistance with campus ticketing, departmental escalations, course management, or permission governance, our administrative support team is available to assist.</p>
+      <p class="mu" style="margin-top:14px">Sending to <b style="color:var(--tx)">${esc(email)}</b></p>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn p" href="${gmailUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px">
+          ${spIc('send', 16)} Contact Support
+        </a>
+        <a class="btn" href="${mailtoUrl}" style="display:inline-flex;align-items:center;gap:8px">
+          ${spIc('mail', 16)} Open Email Client
+        </a>
+      </div>
+      <p class="dim" style="margin-top:14px">Clicking Contact Support opens Gmail with a prefilled support request to ${esc(email)}.</p>
+    </div>
+  </div>`;
+}
+
 function studentHelp() {
   const e = supportEmail();
   return `<div class="wrap" style="max-width:640px">
@@ -4432,9 +4505,9 @@ function facultyView(v) {
 
 function authorityPortalView(v) {
   const t = S.detail?.ticket, d = S.dashboard || {};
-  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
+  if (v === 'profile') return `<div class="wrap big">${authorityProfile()}</div>`;
   if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
-  if (v === 'help') return `<div class="wrap big">${helpView()}</div>`;
+  if (v === 'help') return `<div class="wrap big">${authorityHelp()}</div>`;
   if (v === 'publish') return `<div class="wrap big">${publishView()}</div>`;
   if (v === 'courses') return `<div class="wrap big">${coursesView()}</div>`;
   if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
@@ -4765,316 +4838,212 @@ function getManagementMetrics(){
   };
 }
 
-// Interactive Management Platform Overview & Analytics Dashboard
+// Management Statistics Portal: Five University-Wide Categories + 4 Platform Activity & Analytical Sections
 function mgmtView(){
-  const m = getManagementMetrics();
-  const st = m.students || { breakdown: { batch_year: {}, course: {}, section: {} } };
-  const fa = m.faculty || { by_department: {} };
-  const cl = m.clubs || { active_clubs: [] };
-  const do_ = m.documents || { by_category: {}, by_status: {} };
-  const an = m.announcements || { by_category: {}, by_target: {} };
-  const ti = m.tickets || { by_status: {} };
-  const pl = m.platform || { by_role: {}, recent_events: [] };
+  const a = S.analytics || {};
+  const t = a.ticket_totals || {};
+  const g = a.gemini || {};
+  const data = getManagementMetrics();
 
-  const mf = S.mgmtFilter || { batch: 'all', course: 'all', section: 'all', dept: 'all' };
-  const hasFilter = mf.batch !== 'all' || mf.course !== 'all' || mf.section !== 'all' || mf.dept !== 'all';
+  const pct = x => x == null ? '—' : `${Math.round(x * 100)}%`;
+  const hrs = x => x == null ? '—' : `${x} h`;
 
-  // Filter students if filter is applied
-  let filteredStudents = st.sample || [];
-  if (mf.batch !== 'all') filteredStudents = filteredStudents.filter(s => String(s.batch_year) === mf.batch);
-  if (mf.course !== 'all') filteredStudents = filteredStudents.filter(s => (s.course || '').toLowerCase().includes(mf.course.toLowerCase()));
-  if (mf.section !== 'all') filteredStudents = filteredStudents.filter(s => (s.section || '').toLowerCase().includes(mf.section.toLowerCase()));
+  // SECTION 1: Five University-wide categories from real database counts
+  const studentCount = data.students?.total ?? 0;
+  const facultyCount = data.faculty?.total ?? 0;
+  const clubCount = data.clubs?.total_initiatives ?? 0;
+  const documentCount = data.documents?.total ?? 0;
+  const noticeCount = data.announcements?.total ?? (S.announcements || []).length;
 
-  // Filter faculty if dept filter is applied
-  let filteredFaculty = fa.sample || [];
-  if (mf.dept !== 'all') filteredFaculty = filteredFaculty.filter(f => (f.department || '').toLowerCase().includes(mf.dept.toLowerCase()));
+  // SECTION 2: Platform Activity Summary
+  const questionsAsked = a.questions_total ?? 0;
+  const totalTickets = t.total_tickets ?? (S.tickets || []).length;
+  const resolvedTickets = t.resolved_tickets ?? (S.tickets || []).filter(x => x.status === 'resolved').length;
+  const resolutionRate = t.resolution_rate != null ? pct(t.resolution_rate) : (totalTickets ? Math.round((resolvedTickets / totalTickets) * 100) + '%' : '—');
+  const avgFirstResponse = hrs(t.avg_first_response_hours);
 
-  const syncTime = m.generated_at ? new Date(m.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Live';
+  // SECTION 3: Daily Activity Charts (30 days, UTC)
+  const dayText = s => new Date(s + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const bars = (rows, what) => {
+    const n = rows.length;
+    const total = rows.reduce((s, r) => s + (r.count || 0), 0);
+    const range = n ? `Last ${n} days: ${dayText(rows[0].day)} to ${dayText(rows[n - 1].day)} ${new Date(rows[n - 1].day + 'T00:00:00Z').getUTCFullYear()} (UTC)` : 'Last 30 days (UTC)';
+    if (!n || !total) {
+      return `<p class="mut" style="font-size:13px;margin:0 0 10px">${range}</p>
+        <div style="height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px dashed #d6dbe6;border-radius:10px">
+          <b style="font-size:26px;color:var(--navy)">0</b>
+          <span class="mut" style="font-size:13px">${what} in this period</span>
+        </div>`;
+    }
+    const max = Math.max(1, ...rows.map(r => r.count || 0));
+    const peak = rows.find(r => r.count === max) || rows[0];
+    return `<p class="mut" style="font-size:13px;margin:0 0 4px">${range}</p>
+      <p class="mut" style="font-size:13px;margin:0 0 10px">${total} ${what.toLowerCase()} in total. Highest day: ${max} on ${dayText(peak.day)}.</p>
+      <div style="height:150px;display:flex;align-items:flex-end;gap:3px;border-bottom:1px solid #d6dbe6">
+        ${rows.map(r => `<div title="${dayText(r.day)}: ${r.count || 0} ${what.toLowerCase()}" style="flex:1;height:100%;display:flex;align-items:flex-end;cursor:pointer">
+          <div style="width:100%;border-radius:3px 3px 0 0;${r.count ? `height:${Math.max(4, Math.round((r.count / max) * 100))}%;background:var(--navy)` : 'height:2px;background:#e3e7ef'}"></div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut,#667);margin-top:6px">
+        <span>${dayText(rows[0].day)}</span>
+        <span>${dayText(rows[Math.floor((n - 1) / 2)].day)}</span>
+        <span>${dayText(rows[n - 1].day)}</span>
+      </div>`;
+  };
 
-  // Batch chart data
-  const batchData = st.breakdown?.batch_year || { '2023': 45, '2024': 82, '2025': 68, '2026': 53 };
-  const totalBatchCount = Object.values(batchData).reduce((a, b) => a + b, 0) || 1;
+  // SECTION 4: Campus-wise table
+  const campuses = (t.campuses || a.campuses || []).map(c => `
+    <tr>
+      <td><b>${esc(c.name)}</b></td>
+      <td>${c.total_tickets}</td>
+      <td>${c.resolved_tickets}</td>
+      <td>${pct(c.resolution_rate)}</td>
+      <td>${hrs(c.avg_first_response_hours)}</td>
+    </tr>
+  `).join('');
 
-  // Course chart data
-  const courseData = st.breakdown?.course || { 'CS and AI': 110, 'CS and DS': 74, 'Design': 38, 'BBA': 26 };
-  const totalCourseCount = Object.values(courseData).reduce((a, b) => a + b, 0) || 1;
+  // SECTION 5: Gemini answer usage (three existing usage metrics)
+  const geminiUsageHtml = g.rows_recorded ? `
+    <div class="strip">
+      <div class="sti"><div><b>${g.requests ?? 0}</b><span>Answer calls recorded</span></div></div>
+      <div class="sti"><div><b>${g.input_tokens ?? '—'}</b><span>Input tokens</span></div></div>
+      <div class="sti"><div><b>${g.output_tokens ?? '—'}</b><span>Output tokens</span></div></div>
+    </div>
+    <p class="mut" style="font-size:13px;margin-top:12px">Token totals cover only the calls where Gemini returned counts: input for ${g.rows_with_input_tokens || 0} of ${g.rows_recorded} calls, output for ${g.rows_with_output_tokens || 0} of ${g.rows_recorded}.</p>
+    <p class="mut" style="font-size:13px">Models: ${(g.models || []).map(esc).join(', ') || '—'}. Recording since ${g.first_recorded_at ? esc(new Date(g.first_recorded_at).toLocaleString()) : 'deployment'}.</p>
+    <p class="mut" style="font-size:13px">Usage before this feature was deployed was never recorded, so historical usage is unavailable. Embedding calls for documents and questions are not recorded in this version.</p>
+  ` : `
+    <div class="strip">
+      <div class="sti"><div><b>0</b><span>Answer calls recorded</span></div></div>
+      <div class="sti"><div><b>—</b><span>Input tokens</span></div></div>
+      <div class="sti"><div><b>—</b><span>Output tokens</span></div></div>
+    </div>
+    <p class="mut" style="font-size:13px;margin-top:12px">No Gemini usage has been recorded yet. Usage before this feature was deployed was never recorded.</p>
+  `;
 
-  // Ticket chart data
-  const totalTix = ti.total || 1;
-  const resolvedTix = ti.by_status?.resolved || 0;
-  const inProgressTix = ti.by_status?.in_progress || 0;
-  const submittedTix = (ti.by_status?.submitted || 0) + (ti.by_status?.assigned || 0);
-
-  return `<div class="mgmt-dashboard">
-    <!-- Header Section -->
-    <div class="card" style="padding:22px 24px;margin-bottom:18px;border-left:5px solid var(--ac);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+  return `<div class="pg wide mgmt-stats-page">
+    <div class="hd" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px">
       <div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <h1 style="font-size:24px;font-weight:700;color:var(--dk);margin:0">Management Platform Overview</h1>
-          <span class="badge k-r" style="font-size:11px">Executive Scope</span>
-        </div>
-        <p style="color:var(--mu);margin:6px 0 0;font-size:13.5px">Real-time platform governance, academic targeting oversight, and cross-campus telemetry.</p>
+        <h1 class="ed" style="font-size:28px;margin:0 0 6px">Management Stats</h1>
+        <p class="sub" style="margin:0">Read-only aggregate overview. No student names, emails, question text or chat contents.</p>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:12px;color:var(--mu)">Last Synced: <b style="color:var(--tx)">${esc(syncTime)}</b></span>
-        <button class="btn p" data-a="refresh-mgmt-stats" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600">
-          ${spIc('spark', 15)} Refresh Stats
-        </button>
-      </div>
+      <button class="btn sm" data-a="refresh-mgmt-stats" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px">
+        ${spIc('spark', 15)} Refresh Stats
+      </button>
     </div>
 
-    <!-- Interactive Academic Targeting Filters Bar -->
-    <div class="card" style="padding:16px 20px;margin-bottom:20px;background:var(--bg)">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12.5px;font-weight:700;color:var(--dk);text-transform:uppercase;letter-spacing:0.5px">Filter Platform:</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <!-- Batch Filter -->
-          <div style="display:flex;align-items:center;gap:4px">
-            <small style="color:var(--mu);font-size:12px;font-weight:600">Batch:</small>
-            <div style="display:inline-flex;border:1px solid var(--bd);border-radius:8px;background:#fff;padding:2px">
-              ${['all', '2023', '2024', '2025', '2026'].map(b => `
-                <button class="btn sm" data-a="mgmt-filter-batch" data-v="${b}" style="padding:4px 8px;font-size:11.5px;border:none;border-radius:6px;background:${mf.batch === b ? 'var(--ac);color:#fff' : 'transparent'};font-weight:${mf.batch === b ? '700' : '500'}">${b === 'all' ? 'All Batches' : b}</button>
-              `).join('')}
-            </div>
+    <!-- SECTION 1 — UNIVERSITY OVERVIEW (Five Cards) -->
+    <div style="margin-bottom:26px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--dk);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 14px">University Overview</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px">
+        <!-- Student Body -->
+        <div class="card" style="padding:18px 20px;border-top:4px solid #3b82f6">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.4px">Student Body</span>
+            <span style="color:#3b82f6">${spIc('user', 18)}</span>
           </div>
+          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif;display:block">${studentCount}</b>
+          <small style="color:var(--mu);font-size:12.5px;margin-top:4px;display:block">Total registered students</small>
+        </div>
 
-          <!-- Course Filter -->
-          <div style="display:flex;align-items:center;gap:4px">
-            <small style="color:var(--mu);font-size:12px;font-weight:600">Course:</small>
-            <div style="display:inline-flex;border:1px solid var(--bd);border-radius:8px;background:#fff;padding:2px">
-              ${[['all', 'All Courses'], ['CS and AI', 'CS & AI'], ['CS and DS', 'CS & DS'], ['Design', 'Design'], ['BBA', 'BBA']].map(([c, lbl]) => `
-                <button class="btn sm" data-a="mgmt-filter-course" data-v="${c}" style="padding:4px 8px;font-size:11.5px;border:none;border-radius:6px;background:${mf.course === c ? 'var(--ac);color:#fff' : 'transparent'};font-weight:${mf.course === c ? '700' : '500'}">${lbl}</button>
-              `).join('')}
-            </div>
+        <!-- Faculty Members -->
+        <div class="card" style="padding:18px 20px;border-top:4px solid #10b981">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.4px">Faculty Members</span>
+            <span style="color:#10b981">${spIc('shield', 18)}</span>
           </div>
+          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif;display:block">${facultyCount}</b>
+          <small style="color:var(--mu);font-size:12.5px;margin-top:4px;display:block">Total registered faculty</small>
+        </div>
 
-          <!-- Section Filter -->
-          <div style="display:flex;align-items:center;gap:4px">
-            <small style="color:var(--mu);font-size:12px;font-weight:600">Section:</small>
-            <div style="display:inline-flex;border:1px solid var(--bd);border-radius:8px;background:#fff;padding:2px">
-              ${[['all', 'All'], ['Section A', 'A'], ['Section B', 'B'], ['Section C', 'C'], ['Section D', 'D']].map(([s, lbl]) => `
-                <button class="btn sm" data-a="mgmt-filter-section" data-v="${s}" style="padding:4px 8px;font-size:11.5px;border:none;border-radius:6px;background:${mf.section === s ? 'var(--ac);color:#fff' : 'transparent'};font-weight:${mf.section === s ? '700' : '500'}">${lbl}</button>
-              `).join('')}
-            </div>
+        <!-- Club Initiatives -->
+        <div class="card" style="padding:18px 20px;border-top:4px solid #f59e0b">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.4px">Club Initiatives</span>
+            <span style="color:#f59e0b">${spIc('spark', 18)}</span>
           </div>
+          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif;display:block">${clubCount}</b>
+          <small style="color:var(--mu);font-size:12.5px;margin-top:4px;display:block">Registered clubs &amp; organizations</small>
+        </div>
 
-          ${hasFilter ? `
-            <button class="btn sm" data-a="mgmt-filter-reset" style="padding:4px 10px;font-size:11.5px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;font-weight:600">
-              Reset Filters ✕
-            </button>
-          ` : ''}
+        <!-- Documents -->
+        <div class="card" style="padding:18px 20px;border-top:4px solid #8b5cf6">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.4px">Documents</span>
+            <span style="color:#8b5cf6">${spIc('file', 18)}</span>
+          </div>
+          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif;display:block">${documentCount}</b>
+          <small style="color:var(--mu);font-size:12.5px;margin-top:4px;display:block">Total available documents</small>
         </div>
-      </div>
-    </div>
 
-    <!-- Executive KPI Grid (6 Clickable Cards with Master Design Tokens) -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px">
-      <!-- Students Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="students" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #3b82f6" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Student Body</span>
-          <span class="badge k-b" style="font-size:11px">Directory Active</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${hasFilter ? filteredStudents.length : st.total}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">${hasFilter ? 'matching filter' : 'registered'}</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:12px;color:#10b981;font-weight:600">● ${st.active || st.total} Active</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">View Directory →</span>
-        </div>
-      </div>
-
-      <!-- Faculty Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="faculty" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #10b981" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Faculty Members</span>
-          <span class="badge k-g" style="font-size:11px">Academics</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${fa.total}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">teaching faculty</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:12px;color:var(--mu)">${Object.keys(fa.by_department || {}).length || 4} Departments</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">View Roster →</span>
-        </div>
-      </div>
-
-      <!-- Clubs & Societies Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="clubs" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #f59e0b" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Club Initiatives</span>
-          <span class="badge k-y" style="font-size:11px">Organizations</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${cl.total_initiatives || 8}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">initiatives active</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:11.5px;color:#d97706;font-weight:600">ℹ Schema: Membership pending</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">Registry →</span>
-        </div>
-      </div>
-
-      <!-- Document Repository Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="docs" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #8b5cf6" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Documents</span>
-          <span class="badge" style="font-size:11px;background:#f3e8ff;color:#7c3aed;border:1px solid #ddd6fe">Repository</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${do_.total || 0}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">total uploaded</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:12px;color:var(--mu)">${do_.by_category?.['Rishihood Documents'] || 0} Rishihood · ${do_.by_category?.['Newton Documents'] || 0} Newton</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">Monitor →</span>
-        </div>
-      </div>
-
-      <!-- Announcements Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="ann" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #ec4899" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Broadcast Notices</span>
-          <span class="badge" style="font-size:11px;background:#fce7f3;color:#db2777;border:1px solid #fbcfe8">Announcements</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${an.total || 0}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">published</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:12px;color:var(--mu)">${an.by_target?.['Targeted Academic'] || 0} Targeted academic</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">Monitor →</span>
-        </div>
-      </div>
-
-      <!-- Support Tickets Card -->
-      <div class="card" data-a="open-mgmt-detail" data-v="tickets" style="padding:18px 20px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-top:4px solid #ef4444" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <span style="font-size:12px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.5px">Support Tickets</span>
-          <span class="badge k-r" style="font-size:11px">Helpdesk</span>
-        </div>
-        <div style="margin:12px 0 6px">
-          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif">${ti.total || 0}</b>
-          <span style="font-size:13px;color:var(--mu);margin-left:6px">total filed</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);padding-top:10px;margin-top:10px">
-          <span style="font-size:12px;color:#10b981;font-weight:600">✓ ${Math.round((ti.resolution_rate || 0.85) * 100)}% Resolved</span>
-          <span style="font-size:12px;color:var(--ac);font-weight:600">View Queue →</span>
+        <!-- Broadcast Notices -->
+        <div class="card" style="padding:18px 20px;border-top:4px solid #ec4899">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.4px">Broadcast Notices</span>
+            <span style="color:#ec4899">${spIc('mega', 18)}</span>
+          </div>
+          <b style="font-size:32px;font-weight:800;color:var(--dk);font-family:'Plus Jakarta Sans',sans-serif;display:block">${noticeCount}</b>
+          <small style="color:var(--mu);font-size:12.5px;margin-top:4px;display:block">Published announcements</small>
         </div>
       </div>
     </div>
 
-    <!-- Data Visualizations: Batch Distribution, Course Breakdown & Ticket Resolution Flow -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;margin-bottom:24px">
-      <!-- Batch Distribution Chart -->
-      <div class="card" style="padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h3 style="font-size:16px;font-weight:700;color:var(--dk);margin:0">Batch Year Enrollment</h3>
-          <span style="font-size:12px;color:var(--mu)">Academic Batches</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          ${Object.entries(batchData).map(([b, cnt]) => {
-            const p = Math.round((cnt / totalBatchCount) * 100);
-            return `<div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                <span style="font-weight:600;color:var(--tx)">Batch ${esc(b)}</span>
-                <span style="color:var(--mu);font-weight:600">${cnt} students (${p}%)</span>
-              </div>
-              <div style="height:8px;background:var(--ice);border-radius:99px;overflow:hidden">
-                <div style="height:100%;width:${p}%;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:99px"></div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Course Enrollment Breakdown Chart -->
-      <div class="card" style="padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h3 style="font-size:16px;font-weight:700;color:var(--dk);margin:0">Academic Course Distribution</h3>
-          <span style="font-size:12px;color:var(--mu)">Active Majors</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          ${Object.entries(courseData).map(([c, cnt]) => {
-            const p = Math.round((cnt / totalCourseCount) * 100);
-            const color = c.includes('AI') ? '#3b82f6' : c.includes('DS') ? '#10b981' : c.includes('Design') ? '#ec4899' : '#f59e0b';
-            return `<div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                <span style="font-weight:600;color:var(--tx)">${esc(c)}</span>
-                <span style="color:var(--mu);font-weight:600">${cnt} enrolled (${p}%)</span>
-              </div>
-              <div style="height:8px;background:var(--ice);border-radius:99px;overflow:hidden">
-                <div style="height:100%;width:${p}%;background:${color};border-radius:99px"></div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Ticket Resolution Status Flow Chart -->
-      <div class="card" style="padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h3 style="font-size:16px;font-weight:700;color:var(--dk);margin:0">Ticket Resolution Progress</h3>
-          <span style="font-size:12px;color:var(--mu)">Lifecycle Telemetry</span>
-        </div>
-        <div style="margin-bottom:14px">
-          <div style="height:14px;background:#f1f5f9;border-radius:99px;overflow:hidden;display:flex">
-            <div title="Resolved: ${resolvedTix}" style="height:100%;width:${Math.round((resolvedTix / totalTix) * 100)}%;background:#10b981"></div>
-            <div title="In Progress: ${inProgressTix}" style="height:100%;width:${Math.round((inProgressTix / totalTix) * 100)}%;background:#3b82f6"></div>
-            <div title="Submitted / Open: ${submittedTix}" style="height:100%;width:${Math.round((submittedTix / totalTix) * 100)}%;background:#f59e0b"></div>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--tx)">
-          <span style="display:flex;align-items:center;gap:6px"><i style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:50%"></i> Resolved (${resolvedTix})</span>
-          <span style="display:flex;align-items:center;gap:6px"><i style="display:inline-block;width:10px;height:10px;background:#3b82f6;border-radius:50%"></i> In Progress (${inProgressTix})</span>
-          <span style="display:flex;align-items:center;gap:6px"><i style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:50%"></i> Open (${submittedTix})</span>
-        </div>
-        <div style="margin-top:18px;border-top:1px solid var(--bd);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12.5px;color:var(--mu)">First Response Average:</span>
-          <b style="font-size:13px;color:var(--dk)">~2.4 hours</b>
-        </div>
+    <!-- SECTION 2 — PLATFORM ACTIVITY (Five Metrics) -->
+    <div style="margin-bottom:26px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--dk);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 14px">Platform Activity</h3>
+      <div class="strip">
+        <div class="sti"><div><b>${questionsAsked}</b><span>Questions asked</span></div></div>
+        <div class="sti"><div><b>${totalTickets}</b><span>Tickets</span></div></div>
+        <div class="sti"><div><b>${resolvedTickets}</b><span>Resolved</span></div></div>
+        <div class="sti"><div><b>${resolutionRate}</b><span>Resolution rate</span></div></div>
+        <div class="sti"><div><b>${avgFirstResponse}</b><span>Avg first response</span></div></div>
       </div>
     </div>
 
-    <!-- Platform User Composition & Activity Feed -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px">
-      <!-- Platform User Roles Breakdown -->
-      <div class="card" style="padding:20px 22px">
-        <h3 style="font-size:16px;font-weight:700;color:var(--dk);margin:0 0 14px">Platform Identity Composition</h3>
-        <div class="strip" style="margin-bottom:14px">
-          <div class="sti t3"><b>${pl.by_role?.student || st.total}</b><span>Students</span></div>
-          <div class="sti t3"><b>${pl.by_role?.faculty || fa.total}</b><span>Faculty</span></div>
-          <div class="sti t3"><b>${pl.by_role?.authority || 3}</b><span>Authority</span></div>
-          <div class="sti t3"><b>${pl.by_role?.management || 2}</b><span>Management</span></div>
-          <div class="sti t3"><b>${S.analytics?.questions_total ?? 39}</b><span>Questions asked</span></div>
-        </div>
-        <p style="font-size:12.5px;color:var(--mu);margin:0">Total authenticated platform accounts: <b>${pl.total_users || (st.total + fa.total + 5)} users</b> across university roles.</p>
+    <!-- SECTION 3 — DAILY ACTIVITY (Two Charts) -->
+    <div style="margin-bottom:26px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--dk);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 14px">Daily Activity</h3>
+      <div class="dgrid">
+        <section class="card">
+          <h3 style="margin:0 0 10px;font-size:16px">Questions per day (last 30 days)</h3>
+          ${bars(a.questions_by_day || [], 'Questions')}
+        </section>
+        <section class="card">
+          <h3 style="margin:0 0 10px;font-size:16px">Tickets per day (last 30 days)</h3>
+          ${bars(a.tickets_by_day || [], 'Tickets')}
+        </section>
       </div>
+    </div>
 
-      <!-- Recent Platform Activity Feed -->
-      <div class="card" style="padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <h3 style="font-size:16px;font-weight:700;color:var(--dk);margin:0">Live Platform Event Stream</h3>
-          <span style="font-size:11.5px;color:var(--mu)">Audit Feed</span>
+    <!-- SECTION 4 — CAMPUS-WISE ANALYTICS (Table) -->
+    <div style="margin-bottom:26px">
+      <section class="card">
+        <h3 style="margin:0 0 12px;font-size:16px">By Campus</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Campus</th>
+                <th>Tickets</th>
+                <th>Resolved</th>
+                <th>Resolution rate</th>
+                <th>Avg first response</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${campuses || '<tr><td colspan="5" class="mut" style="padding:16px;text-align:center">No campus data available.</td></tr>'}
+            </tbody>
+          </table>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;max-height:240px;overflow-y:auto;padding-right:4px">
-          ${(pl.recent_events || []).length ? pl.recent_events.slice(0, 7).map(ev => {
-            const timeStr = ev.timestamp ? new Date(ev.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent';
-            const icon = ev.type === 'ticket' ? '🎫' : ev.type === 'announcement' ? '📢' : '📄';
-            return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg)">
-              <span style="font-size:15px">${icon}</span>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;color:var(--dk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.title)}</div>
-                <small style="color:var(--mu);font-size:11.5px">${esc(timeStr)}</small>
-              </div>
-            </div>`;
-          }).join('') : '<p class="emp" style="margin:0;padding:12px;font-size:13px;color:var(--mu)">No recent events recorded</p>'}
-        </div>
-      </div>
+      </section>
+    </div>
+
+    <!-- SECTION 5 — GEMINI ANSWER USAGE (Three Metrics) -->
+    <div style="margin-bottom:20px">
+      <section class="card">
+        <h3 style="margin:0 0 12px;font-size:16px">Gemini answer usage</h3>
+        ${geminiUsageHtml}
+      </section>
     </div>
   </div>`;
 }
