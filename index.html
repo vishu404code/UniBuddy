@@ -1351,11 +1351,11 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .sp-app .hi:hover button{opacity:.6}
 .sp-app .usr{display:flex;gap:10px;align-items:center;padding:12px 4px 0;border-top:1px solid var(--bd)}
 .sp-app .usr small{display:block;color:var(--mu);font-size:12px}
-.sp-app .av{width:38px;height:38px;border-radius:50%;background:var(--ice);flex:none;overflow:hidden;display:block;border:1px solid var(--bd);padding:0;cursor:pointer}
-.sp-app .av svg{width:100%;height:100%;display:block}
-.sp-app .av.sm{width:38px;height:38px}
-.sp-app .av.xl{width:84px;height:84px}
-.sp-app .av.xxl{width:104px;height:104px;border:4px solid #fff;box-shadow:var(--sh)}
+.sp-app .av{width:38px;height:38px;min-width:38px;min-height:38px;max-width:38px;max-height:38px;aspect-ratio:1/1;border-radius:50%;background:var(--ice);flex:0 0 38px;flex-shrink:0;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bd);padding:0;cursor:pointer;box-sizing:border-box}
+.sp-app .av img,.sp-app .av svg{width:100%;height:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:50%;flex-shrink:0}
+.sp-app .av.sm{width:38px;height:38px;min-width:38px;min-height:38px;max-width:38px;max-height:38px;flex:0 0 38px}
+.sp-app .av.xl{width:84px;height:84px;min-width:84px;min-height:84px;max-width:84px;max-height:84px;flex:0 0 84px}
+.sp-app .av.xxl{width:104px;height:104px;min-width:104px;min-height:104px;max-width:104px;max-height:104px;flex:0 0 104px;border:4px solid #fff;box-shadow:var(--sh)}
 .sp-app .mn{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:28px;box-shadow:var(--sh);overflow:hidden}
 .sp-app header#tp{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid var(--bd);background:#fff}
 .sp-app header h2{font-size:17px;font-weight:700;margin:0;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dk)}
@@ -3158,7 +3158,7 @@ function annView(){
   const staff=['authority','faculty'].includes(S.role);
   const rows=(S.announcements||[]).map((a,i)=>({a,i})).sort((x,y)=>newestFirst(x.a,y.a));
   const total=S.annTotal!=null?` Showing ${rows.length} of ${S.annTotal}.`:'';
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Announcements</h1><p class="sub">Official circulars and notices, newest first. Select one to read it in full.</p></div>${staff?`<button class="btn p" data-a="view" data-v="publish">${I('plus')} Publish</button>`:''}</div>
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Announcements</h1><p class="sub">Official circulars and notices, newest first. Select one to read it in full.</p></div></div>
 ${staff?filterBar('ann'):''}${staff&&total?`<p class="mut" style="font-size:13px;margin:10px 0 0">${total.trim()}</p>`:''}
 <div class="stack">${rows.map(({a,i})=>`<article class="am ${a.tone||'blue'} row-link" data-a="ann-open" data-v="${i}"><div class="row sp"><span class="cat">${esc(a.c)}</span><span class="dt">${esc(a.d)}</span></div>${a.imp?'<span class="imp">Important</span>':''}<h3>${esc(a.t)}</h3><p>${esc(briefText(a.b))}</p>${staff?`<small class="mut">${esc(metaText(a))}</small>`:''}</article>`).join('')||`<p class="mut">${staff&&filtersActive('ann')?'No announcements match these filters.':'No official announcements available.'}</p>`}</div></div>`}
 
@@ -3167,7 +3167,7 @@ function docsView(){
   const staff=['authority','faculty'].includes(S.role),canManage=staff;
   const rows=[...(S.docs||[])].sort(newestFirst);
   const total=S.docTotal!=null&&staff?` Showing ${rows.length} of ${S.docTotal}.`:'';
-  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Documents</h1><p class="sub">Official PDFs, newest first. Select one to see its details and open the PDF.</p></div>${canManage?`<button class="btn p" data-a="view" data-v="publish">${I('upload')} Publish</button>`:''}</div>
+  return `<div class="pg wide"><div class="row sp" style="margin-bottom:8px"><div><h1 class="ed">Documents</h1><p class="sub">Official PDFs, newest first. Select one to see its details and open the PDF.</p></div></div>
 ${staff?filterBar('doc'):''}${staff&&total?`<p class="mut" style="font-size:13px;margin:10px 0 0">${total.trim()}</p>`:''}
 <div class="stack">${rows.map(d=>`<article class="am blue row-link" data-a="doc-open" data-v="${esc(d.uuid)}"><div class="row sp"><span class="cat">${esc(d.visibility==='staff_only'?'Staff only':'Students and staff')} · ${esc(d.scope==='university_wide'?'University-wide':'My campus')}</span><span class="dt">${esc(d.date)}</span></div><h3>${esc(d.title)}</h3><p class="mut" style="font-size:13px">${esc(metaText(d))}</p>${canManage?`<small class="mut">${esc(d.publication)} · ${esc(d.status)}</small>`:''}</article>`).join('')||`<p class="mut">${staff&&filtersActive('doc')?'No documents match these filters.':'No documents are visible to this account.'}</p>`}</div></div>`}
 
@@ -3366,10 +3366,31 @@ const SP_P = {
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
   gear: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
-  chev: 'M15 18l-6-6 6-6'
+  chev: 'M15 18l-6-6 6-6',
+  ticket: 'M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2zM13 5v2M13 11v2M13 17v2',
+  'ticket-check': 'M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2zM9 12l2 2 4-4',
+  send: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  'file-up': 'M14 3v5h5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 12V3m-4 4l4-4 4 4',
+  inbox: 'M22 12h-6l-2 3h-4l-2-3H2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7zM5.45 5.11L2 12v0h20l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'
 };
 const spIc = (n, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SP_P[n] || ''}"/></svg>`;
 const stu = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M8 64c2-13 11-18 24-18s22 5 24 18z" fill="var(--ac)"/><path d="M26 47l6 8 6-8z" fill="#fff"/><circle cx="32" cy="35" r="10" fill="#f3d2b3"/><path d="M32 9L10 18l22 9 22-9z" fill="var(--dk)"/><path d="M22 22v5c0 3 4.5 5 10 5s10-2 10-5v-5l-10 4z" fill="var(--dk)"/><path d="M51 19v10" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle cx="51" cy="31" r="2.2" fill="var(--ac)"/><circle cx="28" cy="36" r="1.2" fill="#183D69"/><circle cx="36" cy="36" r="1.2" fill="#183D69"/><path d="M29 40c2 1.7 4 1.7 6 0" stroke="#183D69" fill="none" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+
+const facAvatar = () => `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="var(--ice)"/><path d="M10 64c2-14 11-19 22-19s20 5 22 19z" fill="#183D69"/><path d="M24 45l8 12 8-12z" fill="#fff"/><path d="M29 48l3 10 3-10z" fill="#e5484d"/><circle cx="32" cy="30" r="11" fill="#f3d2b3"/><path d="M20 25c0-8 5-14 12-14s12 6 12 14c0 2-2 3-3 2-2-2-4-3-9-3s-7 1-9 3c-1 1-3 0-3-2z" fill="#2d3748"/><circle cx="27" cy="30" r="4.5" fill="none" stroke="#183D69" stroke-width="1.4"/><circle cx="37" cy="30" r="4.5" fill="none" stroke="#183D69" stroke-width="1.4"/><path d="M31.5 30h1" stroke="#183D69" stroke-width="1.4"/><circle cx="27" cy="30" r="1.2" fill="#183D69"/><circle cx="37" cy="30" r="1.2" fill="#183D69"/><path d="M29 36c1.5 1.2 4.5 1.2 6 0" stroke="#183D69" fill="none" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+
+function userAvatarFallback(role) {
+  return String(role || '').toLowerCase() === 'faculty' ? facAvatar() : stu();
+}
+
+function userAvatar(role = S.role, sz = '') {
+  const photo = S.user?.photo || S.user?.avatar || S.user?.picture;
+  if (photo) {
+    return `<img src="${esc(photo)}" alt="${esc(pn())}" class="av-img" onerror="this.onerror=null;this.parentNode&&(this.parentNode.innerHTML=userAvatarFallback('${esc(role)}'))">`;
+  }
+  return String(role || S.role || '').toLowerCase() === 'faculty' ? facAvatar() : stu();
+}
 
 const SP_GR = { ocean: 'linear-gradient(135deg,#A9D5FF,#438FE8)', aqua: 'linear-gradient(135deg,#A9E5DB,#40B9A8)' };
 function spTheme() { return 'ocean'; }
@@ -3465,11 +3486,11 @@ const UNIFIED_ROLES_CONFIG = {
     btnAction: 'view',
     btnParam: 'publish',
     btnLabel: 'Publish Notice',
-    btnIcon: 'upload',
+    btnIcon: 'send',
     nav: [
-      ['tix', 'inbox', 'Tickets'],
+      ['tix', 'ticket', 'Tickets'],
       ['fdash', 'home', 'Staff Overview'],
-      ['publish', 'upload', 'Publish'],
+      ['publish', 'send', 'Publish'],
       ['docs', 'file', 'Documents'],
       ['ann', 'mega', 'Announcements'],
       ['profile', 'user', 'Profile'],
@@ -3604,7 +3625,6 @@ function portalSidebar(role, v) {
         <span class="lg"><img src="logo.png" alt="UniBuddy" onerror="this.onerror=null;this.src=LOGO"></span>
         <span class="t"><b>UniBuddy</b><small>${cfg.sub}</small></span>
       </a>
-      <button class="ib cb" id="col" data-a="sp-col" aria-label="Collapse sidebar">${spIc('chev', 18)}</button>
     </div>
     <div class="ssrch">
       ${spIc('search', 16)}
@@ -3619,7 +3639,7 @@ function portalSidebar(role, v) {
       ${secondaryHtml}
     </div>
     <div class="usr">
-      <span class="av sm" data-a="view" data-v="profile">${stu()}</span>
+      <span class="av sm" data-a="view" data-v="profile">${userAvatar(role, 'sm')}</span>
       <div class="t" style="min-width:0;line-height:1.2;cursor:pointer" data-a="view" data-v="profile">
         <b style="font-size:13.5px;color:var(--dk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${esc(pn())}</b>
         <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
@@ -3663,7 +3683,7 @@ function portalHeader(role, v, th) {
       ${bellDropdown}
     </div>
     <div class="um">
-      <button class="av sm" id="av" data-a="sp-user" aria-label="User menu">${stu()}</button>
+      <button class="av sm" id="av" data-a="sp-user" aria-label="User menu">${userAvatar(role, 'sm')}</button>
       ${userDropdown}
     </div>
   </header>`;
@@ -3947,7 +3967,17 @@ function studentProfile() {
   </div>`;
 }
 
+function getRoleDisplayLabel(role) {
+  const r = String(role || S.user?.role || S.role || 'student').toLowerCase().trim();
+  if (r === 'faculty') return 'Faculty';
+  if (r === 'authority') return 'Authority';
+  if (r === 'management') return 'Management';
+  if (r === 'super_admin' || r === 'admin') return 'Super Admin';
+  return 'Student';
+}
+
 function studentSettings() {
+  const roleLabel = getRoleDisplayLabel(S.user?.role || S.role);
   return `<div class="wrap">
     <h1>Settings</h1>
     <p class="sub">Personalise your workspace.</p>
@@ -3955,7 +3985,87 @@ function studentSettings() {
       <h3>Account</h3>
       <label>Name</label><input value="${esc(pn())}" readonly>
       <label>Email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
-      <label>Role</label><input value="Student" readonly>
+      <label>Role</label><input value="${esc(roleLabel)}" readonly>
+    </div>
+  </div>`;
+}
+
+function facultyProfile() {
+  const dept = S.user?.department || (S.departments?.find(d => d.id === S.user?.department_id)?.name) || 'Computer Science';
+  const campus = S.user?.campus || 'Main Campus';
+  const fid = S.user?.id || 'FAC-201';
+  return `<div class="wrap big">
+    <div class="card pbanner">
+      <div class="pb"></div>
+      <div class="ph">
+        <span class="av xxl">${userAvatar('faculty', 'xxl')}</span>
+        <div>
+          <h1 style="font-size:26px">${esc(pn())}</h1>
+          <p class="mu">Faculty · ${esc(dept)}${S.user?.email ? ' · ' + esc(S.user.email) : ''}</p>
+        </div>
+        <div class="comp2">
+          <small class="mu">Academic Status</small>
+          <div style="margin-top:6px"><span class="badge k-g">Verified Faculty</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>Faculty Information</h3>
+        <p class="mu" style="font-size:13px">Official academic appointment and department allocation.</p>
+        <label>Faculty ID</label><input value="${esc(fid)}" readonly>
+        <label>Department</label><input value="${esc(dept)}" readonly>
+        <label>Campus</label><input value="${esc(campus)}" readonly>
+        <label>Designation</label><input value="Assistant Professor / Faculty Mentor" readonly>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Account Credentials</h3>
+          <label>Full Name</label><input value="${esc(pn())}" readonly>
+          <label>University Email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
+          <label>Role</label><input value="Faculty" readonly>
+          <p class="dim">Managed by University Authority and IT Services.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Recent Faculty Activity</h3>
+      ${spTl(spActivity(1))}
+    </div>
+  </div>`;
+}
+
+function facultySettings() {
+  const dept = S.user?.department || (S.departments?.find(d => d.id === S.user?.department_id)?.name) || 'Computer Science';
+  return `<div class="wrap">
+    <h1>Settings</h1>
+    <p class="sub">Personalise your faculty workspace.</p>
+    <div class="card">
+      <h3>Account</h3>
+      <label>Name</label><input value="${esc(pn())}" readonly>
+      <label>Email</label><input value="${esc(S.user?.email || 'Not available')}" readonly>
+      <label>Role</label><input value="Faculty" readonly>
+      <label>Department</label><input value="${esc(dept)}" readonly>
+    </div>
+  </div>`;
+}
+
+function facultyHelp() {
+  const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=vishnukumawat6674%40gmail.com&su=Faculty%20Portal%20Support%20Request&body=Hello%2C%20I%20need%20assistance%20with%20the%20Faculty%20Portal.";
+  return `<div class="wrap" style="max-width:640px">
+    <div class="card" style="background:var(--ms)">
+      <h1 style="font-size:26px">Help &amp; Support</h1>
+      <p class="mu" style="margin-top:8px">Dedicated support channel for faculty inquiries, portal assistance, and administrative escalations.</p>
+    </div>
+    <div class="card">
+      <h3>Faculty Technical Support</h3>
+      <p class="mu" style="margin-top:6px;line-height:1.6">If you encounter issues with student queries, course documents, announcement publishing, or account permissions, our support team is ready to assist you directly.</p>
+      <div style="margin-top:20px">
+        <a class="btn p" href="${gmailUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px">
+          ${spIc('send', 16)} Contact Support
+        </a>
+      </div>
+      <p class="dim" style="margin-top:14px">Clicking Contact Support opens Gmail with a pre-addressed support request ready to send.</p>
     </div>
   </div>`;
 }
@@ -3999,10 +4109,9 @@ function studentView(v) {
 
 function student() {
   const th = 'ocean';
-  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
   const v = spNormView(S.view || 'chat');
 
-  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="ocean" id="sp-root">
+  return `<div class="app sp-app" data-theme="ocean" id="sp-root">
     <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
     ${studentSidebar(v)}
     <div class="mn">
@@ -4047,9 +4156,8 @@ function student() {
 
 function faculty(){
   const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
-  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
   const v = S.view || 'tix';
-  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+  return `<div class="app sp-app" data-theme="${th}" id="sp-root">
     <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
     ${portalSidebar('faculty', v)}
     <div class="mn">
@@ -4088,9 +4196,9 @@ function facultyTicketTable() {
 
 function facultyView(v) {
   const t = S.detail?.ticket, d = S.dashboard || {};
-  if (v === 'profile') return `<div class="wrap big">${profileView()}</div>`;
-  if (v === 'settings') return `<div class="wrap big">${studentSettings()}</div>`;
-  if (v === 'help') return `<div class="wrap big">${helpView()}</div>`;
+  if (v === 'profile') return facultyProfile();
+  if (v === 'settings') return facultySettings();
+  if (v === 'help') return facultyHelp();
   if (v === 'publish') return `<div class="wrap big">${publishView()}</div>`;
   if (v === 'docs') return `<div class="wrap big">${docsView()}</div>`;
   if (v === 'ann') return `<div class="wrap big">${annView()}</div>`;
@@ -4249,12 +4357,11 @@ function superAdminPortalView(v) {
 function placeholder(){
   const role = S.role || 'authority';
   const th = (typeof localStorage !== 'undefined' && localStorage.getItem('ub_theme3') === 'aqua') ? 'aqua' : 'ocean';
-  const isCol = typeof localStorage !== 'undefined' && localStorage.getItem('ub_col') === '1';
   let v = S.view || 'x';
   if (role === 'management' && !['x', 'profile', 'settings', 'help', 'docs', 'ann', 'tix'].includes(v)) {
     v = 'x';
   }
-  return `<div class="app sp-app ${isCol ? 'col' : ''}" data-theme="${th}" id="sp-root">
+  return `<div class="app sp-app" data-theme="${th}" id="sp-root">
     <div class="ov2 ${S.nav ? 'open' : ''}" id="ov" data-a="navx"></div>
     ${portalSidebar(role, v)}
     <div class="mn">
@@ -4468,7 +4575,6 @@ document.addEventListener('click',async e=>{
   else if(a=='pw'){const p=$('#pw')||$('#pass');if(p)p.type=p.type=='password'?'text':'password'}
   else if(a=='login'||a=='login-submit')doLogin()
   else if(a=='fill-demo'){loginAsRole(v.split('@')[0])}
-  else if(a=='sp-col'){const rt=$('#sp-root');if(rt){rt.classList.toggle('col');try{localStorage.setItem('ub_col',rt.classList.contains('col')?'1':'0')}catch(e){}}}
   else if(a=='sp-bell'){S.spBellOpen=!S.spBellOpen;S.spUserOpen=false;R()}
   else if(a=='sp-user'){S.spUserOpen=!S.spUserOpen;S.spBellOpen=false;R()}
   else if(a=='sp-doc-cat'){S.spDocCat=v;R()}
