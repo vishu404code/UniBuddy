@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.ai.gemini_client import AIServiceError
+from app.config import settings
 from app.routes.chat import list_conversations, list_messages
 from app.services.chat_retention import (
     BATCH_MESSAGES,
@@ -154,8 +155,9 @@ def test_redaction_removes_credentials_contacts_and_long_tokens():
 
 
 @pytest.mark.asyncio
-async def test_summaries_are_private_to_the_student_who_owns_them():
-    token_by_user = {}
+async def test_summaries_are_private_to_the_student_who_owns_them(monkeypatch):
+    # Reading summaries is a memory read, so it needs the feature flag on. Off, see the flag tests below.
+    monkeypatch.setattr(settings, "chat_memory_context_enabled", True)
 
     def visible(token, table, row):
         # Stands in for the policy chat_summaries_select_owner: a row is visible to its owner only.

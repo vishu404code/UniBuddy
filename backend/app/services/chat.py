@@ -14,6 +14,7 @@ from app.ai.rag import (
     split_question_parts,
 )
 from app.schemas.auth import CurrentUser
+from app.services.chat_memory import get_answer_style, recall_answer
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
 from app.services.postgres_client import PostgresClient
 from app.services.errors import DataServiceError
@@ -92,6 +93,8 @@ async def ask_question(
     conversation_id: UUID | None,
     top_k: int,
     min_similarity: float,
+    memory_enabled: bool = False,
+    recall_own_chats: bool = False,
 ) -> AskResult:
     question = question.strip()
     if not question:
@@ -119,7 +122,9 @@ async def ask_question(
 
     try:
         # The question is saved while its query is embedded, so the two waits overlap.
-        parts = split_question_parts(question)
+        # Recall of the Student's own chats uses no documents and no model: no question is embedded or searched.
+        recall = recall_own_chats and memory_enabled
+        parts = [] if recall else split_question_parts(question)
         embed_task = asyncio.ensure_future(timed("embed_ms", asyncio.gather(*(ai.embed_query(part) for part in parts))))
         try:
             # The save always finishes before the answer is written, so the question is never stored after its reply.
@@ -146,7 +151,18 @@ async def ask_question(
         )))
         per_part = [select_evidence(rows, min_similarity=min_similarity, limit=top_k) for rows in match_rows]
         evidence = per_part[0] if len(per_part) == 1 else merge_part_evidence(per_part, limit=MULTI_PART_EVIDENCE)
-        answer = await timed("answer_ms", answer_question(question, evidence, _UsageRecordingGenerator(ai, sb)))
+        # Personal memory can only supply a presentation style, and only when the feature flag is on. It never
+        # supplies notes, history or facts. With the flag off there is no read at all.
+        style = None
+        if evidence and memory_enabled:
+            style = await get_answer_style(sb=sb, access_token=access_token, user=user)
+        if recall:
+            answer = await timed("answer_ms", recall_answer(sb=sb, access_token=access_token, user=user))
+        else:
+            answer = await timed(
+                "answer_ms",
+                answer_question(question, evidence, _UsageRecordingGenerator(ai, sb), answer_style=style),
+            )
         # Counts and durations only, never the question or the answer.
         logger.info(
             "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s total_ms=%d embed_ms=%d match_ms=%d answer_ms=%d",

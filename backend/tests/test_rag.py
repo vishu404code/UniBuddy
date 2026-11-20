@@ -79,8 +79,10 @@ async def test_answer_without_citation_markers_abstains():
 
 @pytest.mark.asyncio
 async def test_citations_come_from_retrieved_metadata_only():
+    # The sources state what the reply claims. Every sentence must be supported by the sources it cites.
     evidence = select_evidence(
-        [_row(DOC_A, "Fee Policy", 3, 0.8), _row(DOC_B, "Calendar", 1, 0.7)],
+        [_row(DOC_A, "Fee Policy", 3, 0.8, content="Pay in week two."),
+         _row(DOC_B, "Calendar", 1, 0.7, content="The calendar lists exams.")],
         min_similarity=0.3,
         limit=5,
     )

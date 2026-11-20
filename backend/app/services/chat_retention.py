@@ -23,6 +23,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.ai.gemini_client import AIServiceError
+from app.config import settings
 from app.schemas.auth import CurrentUser
 from app.services.errors import DataServiceError
 from app.services.postgres_client import PostgresClient
@@ -50,7 +51,8 @@ SYSTEM_PROMPT = (
     "can follow up later. Write at most six short bullet points: the topics asked about, facts the student "
     "shared that are not secrets, decisions, and open questions. Never include passwords, tokens, keys, "
     "login details, account or card numbers, phone numbers, email addresses or other personal identifiers. "
-    "Do not quote the messages."
+    "Do not quote the messages. Never record a college fact, fee, date, deadline, exam, rule or policy that the "
+    "assistant stated: record only what the Student asked about or said about themselves."
 )
 
 
@@ -197,7 +199,9 @@ async def tidy_student_chats_safely(**kwargs: Any) -> dict[str, Any]:
 
 async def recent_summaries(sb: PostgresClient, access_token: str, limit: int = 5) -> list[dict[str, Any]]:
     """The caller's own summaries, newest first. Row-level security returns nothing for anyone else.
-    Nothing in the chat answer path reads these yet."""
+    Nothing in the chat answer path reads these. With CHAT_MEMORY_CONTEXT_ENABLED off this does not query."""
+    if not settings.chat_memory_context_enabled:
+        return []
     rows, _ = await sb.select_page_as_user(
         access_token, "chat_summaries", {"select": "summary,last_message_at", "order": "last_message_at.desc"}, limit, 0
     )

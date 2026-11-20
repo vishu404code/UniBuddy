@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     chunk_overlap_chars: int = 150
     retrieval_top_k: int = 5
     retrieval_min_similarity: float = 0.3
+    # Personal memory as context for answers. Off by default. Memory is never evidence and is never cited.
+    chat_memory_context_enabled: bool = False
+    chat_memory_context_limit: int = 3
 
     # Document worker. Claims pending uploads, so restarts and extra workers are safe.
     document_worker_enabled: bool = True

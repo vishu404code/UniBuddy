@@ -19,11 +19,27 @@ from app.schemas.chat import (
 from app.schemas.common import Page
 from app.services.chat import ask_question, forward_message_to_faculty
 from app.services.chat_retention import cutoff_for, tidy_student_chats_safely
+from app.services.chat_memory import (
+    correct_memory,
+    delete_memory,
+    list_memories,
+    memory_enabled,
+    prune_student_memories,
+    set_answer_style,
+)
+from app.schemas.chat import AnswerStyleIn, MemoryOut, MemoryPatch
+from fastapi import Response
 from app.services.providers import get_ai_client, get_data_client
 from app.services.postgres_client import PostgresClient
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 STUDENT_ONLY = ("student",)
+
+
+def _memory_or_404() -> None:
+    """With CHAT_MEMORY_CONTEXT_ENABLED off, the memory endpoints do not exist and touch no memory rows."""
+    if not memory_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -42,6 +58,8 @@ async def ask(
         conversation_id=body.conversation_id,
         top_k=settings.retrieval_top_k,
         min_similarity=settings.retrieval_min_similarity,
+        memory_enabled=memory_enabled(),
+        recall_own_chats=body.recall_own_chats,
     )
     answer = result.answer
     return AskResponse(
@@ -69,6 +87,8 @@ async def list_conversations(
     except HTTPException:
         ai = None  # AI not configured: old chats wait for a visit that can summarize them
     await tidy_student_chats_safely(sb=sb, ai=ai, user=session.user)
+    if memory_enabled():
+        await prune_student_memories(sb=sb, user=session.user)
     cutoff = cutoff_for(datetime.now(timezone.utc))
     recent = await sb.select_as_user(
         session.access_token,
@@ -126,3 +146,48 @@ async def forward(
         description=body.description,
     )
     return ForwardResponse(ticket_id=ticket["id"], ticket_number=ticket["ticket_number"], status=ticket["status"])
+
+
+@router.get("/memories", response_model=list[MemoryOut])
+async def my_memories(
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Your own private memories, under your own access. Nothing from another Student is returned."""
+    _memory_or_404()
+    return await list_memories(sb=sb, access_token=session.access_token)
+
+
+@router.patch("/memories/{memory_id}", response_model=MemoryOut)
+async def correct_my_memory(
+    memory_id: UUID,
+    body: MemoryPatch,
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    _memory_or_404()
+    row = await correct_memory(sb=sb, user=session.user, memory_id=memory_id, text=body.text, importance=body.importance)
+    return MemoryOut(**row)
+
+
+@router.delete("/memories/{memory_id}", status_code=204)
+async def delete_my_memory(
+    memory_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    _memory_or_404()
+    await delete_memory(sb=sb, user=session.user, memory_id=memory_id)
+    return Response(status_code=204)
+
+
+@router.put("/answer-style")
+async def choose_answer_style(
+    body: AnswerStyleIn,
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Presentation only: how answers are written. It never changes what an answer may state."""
+    _memory_or_404()
+    style = await set_answer_style(sb=sb, user=session.user, style=body.style)
+    return {"style": style}
