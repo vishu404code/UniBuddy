@@ -79,6 +79,10 @@ async def _store_and_queue(
     effective_date: str | None = None,
     expiry_date: str | None = None,
     tags: list[str] | None = None,
+    batch_year: int | None = None,
+    course: str | None = None,
+    course_id: str | None = None,
+    section: str | None = None,
 ) -> dict[str, Any]:
     require_university_wide_permission(uploader, scope)
     detected_mime = validate_upload(data, content_type, title, max_bytes, filename)
@@ -113,6 +117,10 @@ async def _store_and_queue(
         "effective_date": effective_date,
         "expiry_date": expiry_date,
         "tags": tags or [],
+        "batch_year": batch_year,
+        "course": course,
+        "course_id": course_id or course,
+        "section": section,
         "replaces_document_id": str(replaces_document_id) if replaces_document_id else None,
     }
     try:
@@ -150,6 +158,10 @@ async def upload_document(
     effective_date: str | None = None,
     expiry_date: str | None = None,
     tags: list[str] | None = None,
+    batch_year: int | None = None,
+    course: str | None = None,
+    course_id: str | None = None,
+    section: str | None = None,
 ) -> dict[str, Any]:
     return await _store_and_queue(
         sb=sb,
@@ -169,6 +181,10 @@ async def upload_document(
         effective_date=effective_date,
         expiry_date=expiry_date,
         tags=tags,
+        batch_year=batch_year,
+        course=course,
+        course_id=course_id,
+        section=section,
     )
 
 

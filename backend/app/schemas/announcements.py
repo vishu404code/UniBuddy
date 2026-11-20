@@ -12,6 +12,10 @@ class AnnouncementCreate(BaseModel):
     is_important: bool = False
     audience: Literal["all_students", "staff_only"] = "all_students"
     scope: Literal["campus", "university_wide"] = "campus"
+    batch_year: int | None = None
+    course: str | None = None
+    course_id: str | None = None
+    section: str | None = None
 
 
 class AnnouncementOut(BaseModel):
@@ -23,4 +27,8 @@ class AnnouncementOut(BaseModel):
     audience: Literal["all_students", "staff_only"]
     scope: Literal["campus", "university_wide"]
     campus_id: UUID | None
+    batch_year: int | None = None
+    course: str | None = None
+    course_id: str | None = None
+    section: str | None = None
     created_at: datetime

@@ -52,6 +52,32 @@ def _check_form(visibility: str, scope: str) -> None:
         raise HTTPException(422, "scope must be campus or university_wide")
 
 
+def _matches_student_target(row: dict, user_meta: dict) -> bool:
+    target_batch = row.get("batch_year")
+    target_course = (row.get("course") or row.get("course_id") or "").strip().lower()
+    target_section = (row.get("section") or "").strip().lower()
+
+    if target_batch is not None and str(target_batch).strip() != "":
+        student_batch = str(user_meta.get("batch_year") or user_meta.get("batch") or "").strip()
+        if student_batch and student_batch != str(target_batch).strip():
+            return False
+
+    if target_course and target_course != "all":
+        student_course = str(user_meta.get("course") or user_meta.get("course_id") or "").strip().lower()
+        if student_course:
+            sc = student_course.replace("b.tech ", "").replace("&", "and").strip()
+            tc = target_course.replace("b.tech ", "").replace("&", "and").strip()
+            if tc != sc and tc not in sc and sc not in tc:
+                return False
+
+    if target_section and target_section != "all":
+        student_section = str(user_meta.get("section") or "").strip().lower()
+        if student_section and student_section != target_section:
+            return False
+
+    return True
+
+
 @router.get("/stats/overview", response_model=KnowledgeStatsOut)
 async def knowledge_stats(
     session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
@@ -75,6 +101,10 @@ async def upload(
     department_id: Annotated[UUID | None, Form()] = None,
     effective_date: Annotated[str | None, Form()] = None,
     expiry_date: Annotated[str | None, Form()] = None,
+    batch_year: Annotated[int | None, Form()] = None,
+    course: Annotated[str | None, Form()] = None,
+    course_id: Annotated[str | None, Form()] = None,
+    section: Annotated[str | None, Form()] = None,
     sb: PostgresClient = Depends(get_data_client),
 ):
     """Stores the document file and queues it for processing. Supports PDF, DOCX, TXT."""
@@ -97,6 +127,10 @@ async def upload(
         storage_bucket=settings.r2_bucket,
         effective_date=effective_date,
         expiry_date=expiry_date,
+        batch_year=batch_year,
+        course=course,
+        course_id=course_id,
+        section=section,
     )
     response.headers["Location"] = f"{settings.api_v1_prefix}/documents/{row['id']}"
     return _to_out(row)
@@ -334,6 +368,13 @@ async def list_documents(
     rows, total = await sb.select_page_as_user(
         session.access_token, "documents", {"select": "*", **filters}, limit, offset
     )
+    if session.user.role == "student":
+        user_meta = dict(getattr(session.user, "metadata", None) or {})
+        if user_meta:
+            before_len = len(rows)
+            rows = [r for r in rows if _matches_student_target(r, user_meta)]
+            if len(rows) < before_len:
+                total = max(0, total - (before_len - len(rows)))
     if search:
         s = search.lower()
         rows = [

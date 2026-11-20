@@ -23,6 +23,10 @@ async def create_announcement(*, sb: PostgresClient, user: CurrentUser, body: An
         "title": body.title.strip(),
         "body": body.body.strip(),
         "is_important": body.is_important,
+        "batch_year": body.batch_year,
+        "course": body.course,
+        "course_id": body.course_id or body.course,
+        "section": body.section,
         "published_by": str(user.id),
     }
     await sb.insert_service("announcements", [row])

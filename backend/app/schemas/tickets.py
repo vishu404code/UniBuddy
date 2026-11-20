@@ -5,6 +5,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
+class TicketCreate(BaseModel):
+    subject: str = Field(min_length=1, max_length=120)
+    question: str = Field(min_length=1, max_length=5000)
+    department_id: UUID | None = None
+    priority: Literal["low", "medium", "high"] = "medium"
+    description: str | None = Field(default=None, max_length=2000)
+
+
 class TicketOut(BaseModel):
     id: UUID
     ticket_number: str

@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, Query
 
 from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.common import Page
-from app.schemas.tickets import TicketDetailOut, TicketOut, TicketUpdateRequest
+from app.schemas.tickets import TicketCreate, TicketDetailOut, TicketOut, TicketUpdateRequest
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
-from app.services.tickets import get_ticket_detail, update_ticket
+from app.services.tickets import create_ticket, get_ticket_detail, update_ticket
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 ANY_SIGNED_IN = ("student", "faculty", "authority", "management")
@@ -43,6 +43,24 @@ async def list_tickets(
         filters["assigned_faculty_id"] = "is.null"
     rows, total = await sb.select_page_as_user(session.access_token, "tickets", {"select": "*", **filters}, limit, offset)
     return Page[TicketOut](items=rows, total=total, limit=limit, offset=offset)
+
+
+@router.post("", response_model=TicketDetailOut, status_code=201)
+async def post_ticket(
+    body: TicketCreate,
+    session: Annotated[CurrentSession, Depends(session_with_roles("student", "faculty", "authority"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    return await create_ticket(
+        sb=sb,
+        user=session.user,
+        access_token=session.access_token,
+        subject=body.subject,
+        question=body.question,
+        department_id=body.department_id,
+        priority=body.priority,
+        description=body.description,
+    )
 
 
 @router.get("/{ticket_id}", response_model=TicketDetailOut)

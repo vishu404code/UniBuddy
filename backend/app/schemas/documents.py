@@ -30,6 +30,10 @@ class DocumentOut(BaseModel):
     effective_date: str | None = None
     expiry_date: str | None = None
     tags: list[str] = Field(default_factory=list)
+    batch_year: int | None = None
+    course: str | None = None
+    course_id: str | None = None
+    section: str | None = None
     replaces_document_id: UUID | None = None
     created_at: datetime
 
@@ -60,6 +64,10 @@ class TextContentUpdateIn(BaseModel):
     effective_date: str | None = None
     expiry_date: str | None = None
     tags: list[str] | None = None
+    batch_year: int | None = None
+    course: str | None = None
+    course_id: str | None = None
+    section: str | None = None
 
 
 class DocumentUpdateIn(BaseModel):
@@ -73,6 +81,10 @@ class DocumentUpdateIn(BaseModel):
     effective_date: str | None = None
     expiry_date: str | None = None
     tags: list[str] | None = None
+    batch_year: int | None = None
+    course: str | None = None
+    course_id: str | None = None
+    section: str | None = None
 
 
 class KnowledgeStatsOut(BaseModel):
