@@ -84,3 +84,70 @@ class ManagementAnalytics(BaseModel):
     gemini: GeminiUsage
     ticket_totals: ManagementStats
     generated_at: datetime
+
+
+class StudentBreakdown(BaseModel):
+    batch_year: dict[str, int]
+    course: dict[str, int]
+    section: dict[str, int]
+
+
+class StudentOverview(BaseModel):
+    total: int
+    active: int
+    inactive: int
+    breakdown: StudentBreakdown
+    sample: list[dict[str, Any]] = []
+
+
+class FacultyOverview(BaseModel):
+    total: int
+    active: int
+    by_department: dict[str, int]
+    sample: list[dict[str, Any]] = []
+
+
+class ClubOverview(BaseModel):
+    total_initiatives: int
+    active_clubs: list[str]
+    notes: str
+    initiatives: list[dict[str, Any]] = []
+
+
+class DocumentOverview(BaseModel):
+    total: int
+    by_category: dict[str, int]
+    by_status: dict[str, int]
+    recent: list[dict[str, Any]] = []
+
+
+class AnnouncementOverview(BaseModel):
+    total: int
+    published: int
+    by_category: dict[str, int]
+    by_target: dict[str, int]
+    recent: list[dict[str, Any]] = []
+
+
+class TicketOverview(BaseModel):
+    total: int
+    by_status: dict[str, int]
+    resolution_rate: float | None
+    recent: list[dict[str, Any]] = []
+
+
+class PlatformActivityOverview(BaseModel):
+    total_users: int
+    by_role: dict[str, int]
+    recent_events: list[dict[str, Any]] = []
+
+
+class ManagementPlatformOverview(BaseModel):
+    students: StudentOverview
+    faculty: FacultyOverview
+    clubs: ClubOverview
+    documents: DocumentOverview
+    announcements: AnnouncementOverview
+    tickets: TicketOverview
+    platform: PlatformActivityOverview
+    generated_at: datetime

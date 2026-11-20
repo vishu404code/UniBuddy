@@ -93,6 +93,46 @@ def test_only_management_can_read_analytics(client, role):
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize("role", ["student", "faculty", "authority"])
+def test_only_management_can_read_platform_overview(client, role):
+    test_client, _ = client
+    response = test_client.get(f"{API}/management/overview", headers=_auth(IDS[role]))
+    assert response.status_code == 403
+
+
+def test_management_gets_platform_overview(client):
+    test_client, sb = client
+    sb.tables["profiles"] = [
+        {"id": str(uuid4()), "role": "student", "full_name": "A", "email": "a@s.com", "metadata": {"batch_year": 2024, "course": "CS and AI", "section": "A"}},
+        {"id": str(uuid4()), "role": "faculty", "full_name": "Prof B", "email": "b@f.com", "department_id": None},
+        {"id": str(uuid4()), "role": "management", "full_name": "Director C", "email": "c@m.com"},
+    ]
+    sb.tables["departments"] = [{"id": str(uuid4()), "name": "Computer Science & Engineering"}]
+    sb.tables["documents"] = [
+        {"id": str(uuid4()), "title": "Syllabus", "category": "Rishihood Documents", "publication_status": "published", "scope": "campus", "batch_year": 2024, "course": "CS and AI", "section": "A"},
+        {"id": str(uuid4()), "title": "Coding Club Guidelines", "category": "Club Documents", "publication_status": "published", "scope": "campus"},
+    ]
+    sb.tables["announcements"] = [
+        {"id": str(uuid4()), "title": "Campus Notice", "category": "General", "audience": "all_students", "scope": "campus", "is_important": False},
+    ]
+    sb.tables["tickets"] = [
+        {"id": str(uuid4()), "ticket_number": "UB-0001", "subject": "Exam query", "question": "When?", "priority": "medium", "status": "resolved"},
+    ]
+
+    response = test_client.get(f"{API}/management/overview", headers=_auth(IDS["management"]))
+    assert response.status_code == 200
+    data = response.json()
+    assert data["students"]["total"] == 1
+    assert data["students"]["breakdown"]["batch_year"]["2024"] == 1
+    assert data["faculty"]["total"] == 1
+    assert data["clubs"]["total_initiatives"] >= 1
+    assert "Direct student club membership table is not yet provisioned" in data["clubs"]["notes"]
+    assert data["documents"]["total"] == 2
+    assert data["announcements"]["total"] == 1
+    assert data["tickets"]["total"] == 1
+    assert data["platform"]["total_users"] == 3
+
+
 def test_anonymous_request_is_refused(client):
     test_client, _ = client
     assert test_client.get(f"{API}/management/analytics").status_code in (401, 403)
