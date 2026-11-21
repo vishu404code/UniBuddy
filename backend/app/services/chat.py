@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
 from uuid import UUID, uuid4
@@ -26,6 +27,31 @@ UNAVAILABLE_MESSAGE = (
     "or send this question to faculty."
 )
 logger = logging.getLogger("unibuddy.chat")
+
+# Bounds. A model call that stalls becomes the visible "could not check" reply after this long, and
+# a whole answer that stalls on the database is reported as an error after the deadline.
+MODEL_CALL_TIMEOUT_SECONDS = 15.0
+ASK_DEADLINE_SECONDS = 30.0
+
+# Answered without searching or calling the model. Greetings and thanks are checked first, so "hello" never waits.
+GREETING_MESSAGE = (
+    "Hello! Ask me about your courses, university documents, announcements, or student life. "
+    "I answer only from approved university documents and show the page I used."
+)
+THANKS_MESSAGE = "You're welcome. Ask another question any time."
+NO_DOCUMENTS_MESSAGE = (
+    "No approved university documents are available for your account yet, so I can't answer this from them. "
+    "You can send this question to the relevant faculty."
+)
+GREETINGS = frozenset({
+    "hi", "hello", "hey", "hiya", "yo", "hi there", "hello there", "hey there",
+    "good morning", "good afternoon", "good evening", "namaste",
+})
+THANKS = frozenset({"thanks", "thank you", "thanks a lot", "thank you so much", "thx", "ty"})
+
+
+class AskTimedOut(Exception):
+    """The answer did not finish within ASK_DEADLINE_SECONDS. Nothing was answered; the student should retry."""
 
 
 @dataclass(frozen=True)
@@ -82,6 +108,114 @@ async def _conversation_for_user(sb: PostgresClient, user: CurrentUser, conversa
     return rows[0]
 
 
+def _normalized_words(question: str) -> str:
+    return " ".join(re.findall(r"[a-z]+", question.lower()))
+
+
+async def _quick_answer(sb: PostgresClient, access_token: str, question: str) -> Answer | None:
+    """Answers that need no search and no model call. Returns None when the question must be searched.
+
+    A greeting or thanks is answered directly. If the student cannot see any published, ready document,
+    there is nothing to search, so the reply says so at once instead of embedding the question."""
+    phrase = _normalized_words(question)
+    if phrase and len(phrase.split()) <= 4:
+        if phrase in GREETINGS:
+            return Answer(text=GREETING_MESSAGE, citations=[], abstained=False)
+        if phrase in THANKS:
+            return Answer(text=THANKS_MESSAGE, citations=[], abstained=False)
+    # Row-level security applies: only documents this student may read are returned.
+    visible = await sb.select_as_user(
+        access_token,
+        "documents",
+        {"select": "id", "publication_status": "eq.published", "processing_status": "eq.ready", "limit": "1"},
+    )
+    if not visible:
+        return Answer(text=NO_DOCUMENTS_MESSAGE, citations=[], abstained=True)
+    return None
+
+
+async def _timed(timings: dict[str, float], name: str, awaitable):
+    begin = time.perf_counter()
+    try:
+        return await awaitable
+    finally:
+        timings[name] = (time.perf_counter() - begin) * 1000
+
+
+async def _model_call(label: str, awaitable):
+    """Bounds one model call. A stalled call is reported as an AI failure, which gets the visible reply."""
+    try:
+        return await asyncio.wait_for(awaitable, timeout=MODEL_CALL_TIMEOUT_SECONDS)
+    except TimeoutError as exc:
+        raise AIServiceError(f"Gemini {label} timed out after {MODEL_CALL_TIMEOUT_SECONDS:.0f}s") from exc
+
+
+async def _answer(
+    *,
+    sb: PostgresClient,
+    ai: GeminiClient,
+    user: CurrentUser,
+    access_token: str,
+    question: str,
+    conversation_id: UUID,
+    user_message_id: UUID,
+    top_k: int,
+    min_similarity: float,
+    timings: dict[str, float],
+    started: float,
+) -> Answer:
+    quick = await _quick_answer(sb, access_token, question)
+    if quick is not None:
+        await sb.insert_service(
+            "messages",
+            [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
+        )
+        logger.info("answer: quick=true abstained=%s total_ms=%d", quick.abstained, (time.perf_counter() - started) * 1000)
+        return quick
+
+    # The question is saved while its query is embedded, so the two waits overlap.
+    parts = split_question_parts(question)
+    embed_task = asyncio.ensure_future(_timed(timings, "embed_ms", _model_call(
+        "embedding", asyncio.gather(*(ai.embed_query(part) for part in parts)),
+    )))
+    try:
+        # The save always finishes before the answer is written, so the question is never stored after its reply.
+        await sb.insert_service(
+            "messages",
+            [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
+        )
+        vectors = await embed_task
+    except BaseException:
+        embed_task.cancel()
+        raise
+    # Each part of a multi-part question is searched on its own, under the same access rules (RLS).
+    match_rows = await _timed(timings, "match_ms", asyncio.gather(*(
+        sb.rpc_as_user(
+            access_token,
+            "match_document_chunks",
+            {
+                "query_embedding": _vector_literal(vector),
+                "match_count": top_k,
+                "min_similarity": min_similarity,
+            },
+        )
+        for vector in vectors
+    )))
+    per_part = [select_evidence(rows, min_similarity=min_similarity, limit=top_k) for rows in match_rows]
+    evidence = per_part[0] if len(per_part) == 1 else merge_part_evidence(per_part, limit=MULTI_PART_EVIDENCE)
+    answer = await _timed(timings, "answer_ms", _model_call(
+        "answer", answer_question(question, evidence, _UsageRecordingGenerator(ai, sb)),
+    ))
+    # Counts and durations only, never the question or the answer.
+    logger.info(
+        "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s total_ms=%d embed_ms=%d match_ms=%d answer_ms=%d",
+        user.campus_id is not None, len(evidence), len(answer.citations), answer.abstained,
+        (time.perf_counter() - started) * 1000, timings.get("embed_ms", 0), timings.get("match_ms", 0),
+        timings.get("answer_ms", 0),
+    )
+    return answer
+
+
 async def ask_question(
     *,
     sb: PostgresClient,
@@ -110,53 +244,20 @@ async def ask_question(
     timings: dict[str, float] = {}
     started = time.perf_counter()
 
-    async def timed(name, awaitable):
-        begin = time.perf_counter()
-        try:
-            return await awaitable
-        finally:
-            timings[name] = (time.perf_counter() - begin) * 1000
-
     try:
-        # The question is saved while its query is embedded, so the two waits overlap.
-        parts = split_question_parts(question)
-        embed_task = asyncio.ensure_future(timed("embed_ms", asyncio.gather(*(ai.embed_query(part) for part in parts))))
-        try:
-            # The save always finishes before the answer is written, so the question is never stored after its reply.
-            await sb.insert_service(
-                "messages",
-                [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
-            )
-            vectors = await embed_task
-        except BaseException:
-            embed_task.cancel()
-            raise
-        # Each part of a multi-part question is searched on its own, under the same access rules (RLS).
-        match_rows = await timed("match_ms", asyncio.gather(*(
-            sb.rpc_as_user(
-                access_token,
-                "match_document_chunks",
-                {
-                    "query_embedding": _vector_literal(vector),
-                    "match_count": top_k,
-                    "min_similarity": min_similarity,
-                },
-            )
-            for vector in vectors
-        )))
-        per_part = [select_evidence(rows, min_similarity=min_similarity, limit=top_k) for rows in match_rows]
-        evidence = per_part[0] if len(per_part) == 1 else merge_part_evidence(per_part, limit=MULTI_PART_EVIDENCE)
-        answer = await timed("answer_ms", answer_question(question, evidence, _UsageRecordingGenerator(ai, sb)))
-        # Counts and durations only, never the question or the answer.
-        logger.info(
-            "answer: campus_assigned=%s evidence=%d citations=%d abstained=%s total_ms=%d embed_ms=%d match_ms=%d answer_ms=%d",
-            user.campus_id is not None, len(evidence), len(answer.citations), answer.abstained,
-            (time.perf_counter() - started) * 1000, timings.get("embed_ms", 0), timings.get("match_ms", 0),
-            timings.get("answer_ms", 0),
-        )
-    except AIServiceError as exc:
-        logger.warning("Question %s could not be answered: %s", user_message_id, exc)
-        answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)
+        async with asyncio.timeout(ASK_DEADLINE_SECONDS):
+            try:
+                answer = await _answer(
+                    sb=sb, ai=ai, user=user, access_token=access_token, question=question,
+                    conversation_id=conversation_id, user_message_id=user_message_id,
+                    top_k=top_k, min_similarity=min_similarity, timings=timings, started=started,
+                )
+            except AIServiceError as exc:
+                logger.warning("Question %s could not be answered: %s", user_message_id, exc)
+                answer = Answer(text=UNAVAILABLE_MESSAGE, citations=[], abstained=True)
+    except TimeoutError as exc:
+        logger.warning("Question %s passed the %.0fs answer deadline", user_message_id, ASK_DEADLINE_SECONDS)
+        raise AskTimedOut("The answer took too long. Please try again.") from exc
 
     assistant_message_id = uuid4()
     await sb.insert_service(

@@ -6,7 +6,7 @@ from app.ai.rag import ABSTAIN_MESSAGE
 from app.schemas.auth import CurrentUser
 from app.services.chat import ask_question, forward_message_to_faculty
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
-from tests.fakes import FakeAI, FakeDataClient
+from tests.fakes import FakeAI, FakeDataClient, add_ready_document
 
 CAMPUS = uuid4()
 DEPT = uuid4()
@@ -33,6 +33,7 @@ async def _ask(sb, ai, student, question="When is the fee due?", conversation_id
 @pytest.mark.asyncio
 async def test_grounded_answer_is_saved_with_citations_and_retrieval_runs_as_the_user():
     sb = FakeDataClient()
+    add_ready_document(sb)
     sb.rpc_rows = [_row(0.8)]
     ai = FakeAI(reply="Pay in week two [1].")
     student = _student()
@@ -52,6 +53,7 @@ async def test_grounded_answer_is_saved_with_citations_and_retrieval_runs_as_the
 @pytest.mark.asyncio
 async def test_weak_retrieval_abstains_and_does_not_call_the_model():
     sb = FakeDataClient()
+    add_ready_document(sb)
     sb.rpc_rows = [_row(0.1)]
     ai = FakeAI(reply="should not be used")
 

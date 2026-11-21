@@ -9,7 +9,7 @@ import pytest
 from app.ai.gemini_client import ANSWER_MAX_OUTPUT_TOKENS, GeminiClient
 from app.ai.rag import select_evidence
 from app.services.chat import ask_question
-from tests.fakes import FakeAI, FakeDataClient
+from tests.fakes import FakeAI, FakeDataClient, add_ready_document
 
 DOC_A, DOC_B = str(uuid4()), str(uuid4())
 
@@ -57,6 +57,7 @@ async def test_answers_are_capped_in_length():
 @pytest.mark.asyncio
 async def test_question_is_saved_before_the_reply_and_timings_are_logged(caplog):
     sb = FakeDataClient()
+    add_ready_document(sb)
     student = uuid4()
     sb.rpc_responses["match_document_chunks"] = [
         _row(DOC_A, "Fee Policy", 2, "Hostel fees are waived for the LOA semester.", 0.8),

@@ -347,6 +347,16 @@ class FakeAI:
         return self.reply
 
 
+def add_ready_document(sb, title="Policy"):
+    """A published, ready document in the fake database: what a student chat needs before any search runs."""
+    row = {
+        "id": str(uuid4()), "title": title, "publication_status": "published", "processing_status": "ready",
+        "visibility": "public_students", "scope": "campus",
+    }
+    sb.tables["documents"].append(row)
+    return row
+
+
 class FakeAccountDirectory:
     """Records invitations instead of sending them. Never contacts any service."""
 

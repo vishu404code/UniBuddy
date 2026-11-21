@@ -17,7 +17,7 @@ from app.schemas.chat import (
     MessageOut,
 )
 from app.schemas.common import Page
-from app.services.chat import ask_question, forward_message_to_faculty
+from app.services.chat import AskTimedOut, ask_question, forward_message_to_faculty
 from app.services.chat_retention import cutoff_for, tidy_student_chats_safely
 from app.services.providers import get_ai_client, get_data_client
 from app.services.postgres_client import PostgresClient
@@ -33,16 +33,20 @@ async def ask(
     sb: PostgresClient = Depends(get_data_client),
     ai: GeminiClient = Depends(get_ai_client),
 ):
-    result = await ask_question(
-        sb=sb,
-        ai=ai,
-        user=session.user,
-        access_token=session.access_token,
-        question=body.question,
-        conversation_id=body.conversation_id,
-        top_k=settings.retrieval_top_k,
-        min_similarity=settings.retrieval_min_similarity,
-    )
+    try:
+        result = await ask_question(
+            sb=sb,
+            ai=ai,
+            user=session.user,
+            access_token=session.access_token,
+            question=body.question,
+            conversation_id=body.conversation_id,
+            top_k=settings.retrieval_top_k,
+            min_similarity=settings.retrieval_min_similarity,
+        )
+    except AskTimedOut as exc:
+        # A visible, retryable error: the UI shows it instead of waiting.
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     answer = result.answer
     return AskResponse(
         conversation_id=result.conversation_id,

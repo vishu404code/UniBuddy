@@ -11,7 +11,7 @@ from app.middleware.auth import get_token_verifier, get_profile_repository
 from app.services.providers import get_ai_client, get_data_client
 from app.services.errors import DataServiceError
 from tests.conftest import FakeProfileRepository, make_profile
-from tests.fakes import FakeAI, FakeDataClient
+from tests.fakes import FakeAI, FakeDataClient, add_ready_document
 
 API = settings.api_v1_prefix
 CAMPUS = str(uuid4())
@@ -179,6 +179,7 @@ def test_non_pdf_upload_returns_400_with_message(harness):
 
 def test_student_chat_returns_answer_with_citation(harness):
     client, sb, _ = harness
+    add_ready_document(sb)
     sb.rpc_rows = [{"chunk_id": str(uuid4()), "document_id": str(uuid4()), "title": "Fee Policy",
                     "page_number": 3, "content": "Pay in week two.", "similarity": 0.8}]
 
@@ -194,6 +195,7 @@ def test_student_chat_returns_answer_with_citation(harness):
 
 def test_chat_abstains_and_offers_escalation_when_no_evidence(harness):
     client, sb, _ = harness
+    add_ready_document(sb)
     sb.rpc_rows = []
 
     response = client.post(f"{API}/chat/ask", headers=_auth(STUDENT_ID), json={"question": "Ghost policy?"})
@@ -320,3 +322,23 @@ def test_upload_is_refused_before_the_app_storage_budget_is_passed(harness, monk
     assert response.status_code == 507
     assert "Nothing was uploaded" in response.json()["detail"]
     assert sb.tables["documents"] == []
+
+
+def test_ask_past_the_deadline_returns_a_visible_503(harness, monkeypatch):
+    import asyncio
+
+    from app.services import chat as chat_service
+
+    client, sb, _ = harness
+    add_ready_document(sb)
+    monkeypatch.setattr(chat_service, "ASK_DEADLINE_SECONDS", 0.05)
+
+    class StalledEmbeddingAI(FakeAI):
+        async def embed_query(self, text):
+            await asyncio.sleep(3600)
+
+    app.dependency_overrides[get_ai_client] = lambda: StalledEmbeddingAI()
+    response = client.post(f"{API}/chat/ask", headers=_auth(STUDENT_ID), json={"question": "When is the fee due?"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "The answer took too long. Please try again."}

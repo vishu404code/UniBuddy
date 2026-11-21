@@ -19,6 +19,8 @@ DOCUMENT_TASK = "RETRIEVAL_DOCUMENT"
 QUERY_TASK = "RETRIEVAL_QUERY"
 # A short, cited answer. Longer answers were slow to read and often ran past the sources.
 ANSWER_MAX_OUTPUT_TOKENS = 450
+# Every model request is bounded, so a stalled connection cannot hold a student's chat open indefinitely.
+MODEL_HTTP_TIMEOUT_MS = 15_000
 
 
 class AIServiceError(Exception):
@@ -49,7 +51,10 @@ class GeminiClient:
         self._embedding_model = embedding_model
         self._chat_model = chat_model
         # `client` lets tests inject a fake; production builds the SDK client from the key.
-        self._client = client if client is not None else genai.Client(api_key=api_key)
+        self._client = client if client is not None else genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=MODEL_HTTP_TIMEOUT_MS),
+        )
 
     async def _call(self, label: str, request) -> Any:
         try:
