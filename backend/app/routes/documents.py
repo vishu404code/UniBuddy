@@ -38,6 +38,8 @@ from app.services.providers import get_data_client
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 STAFF_ROLES = ("faculty", "authority", "management", "super_admin")
+# Creating PDFs: Faculty and Authority only, the policy the deployed line runs. Management reads; it does not upload.
+UPLOAD_ROLES = ("faculty", "authority")
 KNOWLEDGE_MANAGERS = ("authority", "management", "super_admin")
 ALL_SIGNED_IN = ("student", "faculty", "authority", "management", "super_admin")
 
@@ -99,7 +101,7 @@ logger = logging.getLogger("unibuddy.documents")
 @router.post("", response_model=DocumentOut, status_code=202)
 async def upload(
     response: Response,
-    session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
+    session: Annotated[CurrentSession, Depends(session_with_roles(*UPLOAD_ROLES))],
     title: Annotated[str, Form()],
     file: Annotated[UploadFile, File()],
     visibility: Annotated[str, Form()] = "public_students",
@@ -234,7 +236,7 @@ async def update_metadata(
 async def replace(
     document_id: UUID,
     response: Response,
-    session: Annotated[CurrentSession, Depends(session_with_roles(*STAFF_ROLES))],
+    session: Annotated[CurrentSession, Depends(session_with_roles(*UPLOAD_ROLES))],
     file: Annotated[UploadFile, File()],
     title: Annotated[str | None, Form()] = None,
     sb: PostgresClient = Depends(get_data_client),

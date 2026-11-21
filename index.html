@@ -2790,7 +2790,7 @@ async function ask(q){
   const token=localStorage.getItem('ub-token');
   if(!token && UB_API_BASE){
     S.chat.pop();
-    S.chat.push({r:'a',k:'err',t:'Your sign-in session is still connecting to the campus server. Please try asking again in a moment.',time:now(),n:1});
+    S.chat.push({r:'a',k:'err',t:'Your sign-in did not finish, so this question was not sent. Please sign in again.',time:now(),n:1});
     R();
     return;
   }
@@ -3041,7 +3041,8 @@ function getSectionsForCourse(courseName) {
 
 const pubField=(label,control)=>`<div><label>${label}</label>${control}</div>`;
 const courseOptions=()=>'<option value="">Select Course</option>'+UB_COURSES.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-const scopeOptions=()=>['authority','faculty'].includes(S.role)?'<option value="university_wide" selected>University-wide</option><option value="campus">My campus</option>':'<option value="campus" selected>My campus</option>';
+const scopeOptions=()=>S.role==='authority'?'<option value="university_wide" selected>University-wide</option><option value="campus">My campus</option>':'<option value="campus" selected>My campus</option>';
+// Faculty publish to their own campus by default; the backend refuses university-wide for Faculty.
 // Announcements default to the campus; only Authority can choose university-wide.
 const annScopeOptions=()=>S.role==='authority'?'<option value="campus" selected>My campus</option><option value="university_wide">University-wide</option>':'<option value="campus" selected>My campus</option>';
 const optionTags=kind=>activeOptions(kind).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
