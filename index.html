@@ -2795,12 +2795,17 @@ async function ask(q){
     return;
   }
 
-  // Ask the real backend RAG service; never fabricate a local answer.
-  const backendRes=await apiCall('/chat/ask',{
-    method:'POST',
-    body:JSON.stringify({question:cleanQ,conversation_id:S.conversationId||null})
-  });
-  
+  // Ask the real backend RAG service; never fabricate a local answer. The wait is bounded: a stalled request
+  // shows a visible, retryable error instead of typing dots that never end.
+  const ASK_WAIT_MS=45000;
+  const backendRes=await Promise.race([
+    apiCall('/chat/ask',{
+      method:'POST',
+      body:JSON.stringify({question:cleanQ,conversation_id:S.conversationId||null})
+    }),
+    new Promise(resolve=>setTimeout(()=>resolve({ok:false,status:0,data:null,error:'UniBuddy took too long to answer. Please try again.'}),ASK_WAIT_MS))
+  ]);
+
   S.chat.pop(); // Remove typing indicator
   
   if(backendRes.ok&&backendRes.data){
