@@ -122,3 +122,89 @@ async def update_ticket(
             ],
         )
     return await get_ticket_detail(sb, access_token, ticket_id)
+
+
+async def create_ticket(
+    *,
+    sb: PostgresClient,
+    user: CurrentUser,
+    access_token: str,
+    subject: str,
+    question: str,
+    department_id: UUID | None = None,
+    priority: str = "medium",
+    description: str | None = None,
+) -> dict[str, Any]:
+    ticket_id = uuid4()
+    if department_id is not None and user.campus_id is not None:
+        department = await sb.select_service(
+            "departments",
+            {"select": "id", "id": f"eq.{department_id}", "campus_id": f"eq.{user.campus_id}"},
+        )
+        if not department:
+            raise DocumentError("Department does not belong to your campus")
+
+    campus_id = user.campus_id or uuid4()
+    row = {
+        "id": str(ticket_id),
+        "student_id": str(user.id),
+        "campus_id": str(campus_id),
+        "department_id": str(department_id) if department_id is not None else None,
+        "subject": subject[:120].strip(),
+        "question": question.strip(),
+        "description": description.strip() if description else None,
+        "priority": priority,
+        "status": "submitted",
+    }
+    await sb.insert_service("tickets", [row])
+
+    tickets = await sb.select_service("tickets", {"select": "*", "id": f"eq.{ticket_id}"})
+    ticket = tickets[0] if tickets else row
+    ticket_num = ticket.get("ticket_number") or str(ticket_id)[:8]
+
+    try:
+        await sb.insert_service(
+            "ticket_events",
+            [
+                {
+                    "id": str(uuid4()),
+                    "ticket_id": str(ticket_id),
+                    "actor_id": str(user.id),
+                    "event_type": "submission",
+                    "note": "Query submitted by student",
+                }
+            ],
+        )
+    except Exception:
+        pass
+
+    try:
+        notifs = [
+            {
+                "id": str(uuid4()),
+                "user_id": str(user.id),
+                "text": f"Your ticket {ticket_num} was created.",
+                "ticket_id": str(ticket_id),
+            }
+        ]
+        faculty_filters = {"role": "eq.faculty"}
+        if department_id is not None:
+            faculty_filters["department_id"] = f"eq.{department_id}"
+        elif user.campus_id is not None:
+            faculty_filters["campus_id"] = f"eq.{user.campus_id}"
+
+        faculty_rows = await sb.select_service("profiles", {"select": "id", **faculty_filters})
+        for fac in faculty_rows:
+            notifs.append(
+                {
+                    "id": str(uuid4()),
+                    "user_id": str(fac["id"]),
+                    "text": f"New student query {ticket_num}: {subject[:60]}",
+                    "ticket_id": str(ticket_id),
+                }
+            )
+        await sb.insert_service("notifications", notifs)
+    except Exception:
+        pass
+
+    return {"ticket": ticket, "events": []}

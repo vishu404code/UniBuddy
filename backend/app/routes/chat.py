@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.ai.gemini_client import GeminiClient
 from app.config import settings
@@ -84,6 +84,22 @@ async def list_conversations(
         {"select": "id,title,created_at", "id": f"in.({','.join(ids)})", "order": "created_at.desc"},
     )
     return Page[ConversationOut](items=rows[offset : offset + limit], total=len(rows), limit=limit, offset=offset)
+
+
+@router.delete("/conversations/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles(*STUDENT_ONLY))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Deletes one of the caller's own conversations and its messages. Other Students' chats are not found."""
+    owned = await sb.select_service(
+        "conversations", {"select": "id", "id": f"eq.{conversation_id}", "user_id": f"eq.{session.user.id}"}
+    )
+    if not owned:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    await sb.delete_service("conversations", {"id": f"eq.{conversation_id}", "user_id": f"eq.{session.user.id}"})
+    return Response(status_code=204)
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=Page[MessageOut])
