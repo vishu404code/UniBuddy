@@ -1,3 +1,5 @@
+import logging
+import re
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -14,6 +16,9 @@ from app.schemas.documents import (
     TextContentUpdateIn,
 )
 from app.services.documents import (
+    DocumentNotFound,
+    check_pdf_access,
+    read_pdf,
     archive_document,
     create_text_content,
     delete_document,
@@ -86,6 +91,9 @@ async def knowledge_stats(
     """Returns overview statistics of knowledge base documents and text content."""
     stats = await get_knowledge_stats(sb, session.access_token)
     return KnowledgeStatsOut(**stats)
+
+
+logger = logging.getLogger("unibuddy.documents")
 
 
 @router.post("", response_model=DocumentOut, status_code=202)
@@ -328,6 +336,40 @@ async def get_document(
     if not rows:
         raise HTTPException(404, "Document not found")
     return _to_out(rows[0])
+
+
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: UUID,
+    session: Annotated[CurrentSession, Depends(session_with_roles("student", "faculty", "authority"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """The PDF itself. Visibility is checked against the caller's own access (RLS) and again here, so
+    students never receive drafts, archived documents or documents outside their audience and scope.
+    The storage bucket stays private: the server reads the file and streams it back."""
+    rows = await sb.select_as_user(session.access_token, "documents", {"select": "*", "id": f"eq.{document_id}"})
+    if not rows:
+        raise DocumentNotFound("This document is not available to your account.")
+    document = rows[0]
+    check_pdf_access(session.user, document)
+    data = await read_pdf(sb, settings.r2_bucket, document)
+    logger.info("pdf opened: role=%s document=%s", session.user.role, document_id)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{_safe_filename(document)}"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+def _safe_filename(document: dict) -> str:
+    base = document.get("original_filename") or document.get("title") or "document"
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", str(base)).strip("._") or "document"
+    cleaned = cleaned[:100]
+    return cleaned if cleaned.lower().endswith(".pdf") else f"{cleaned}.pdf"
 
 
 @router.get("", response_model=Page[DocumentOut])

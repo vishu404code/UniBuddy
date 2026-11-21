@@ -655,3 +655,55 @@ async def set_document_scope(
     if not updated:
         raise DocumentConflict("Document changed; reload and try again")
     return updated[0]
+
+
+class DocumentUnavailable(DocumentError):
+    status_code = 503
+
+def _staff_can_open(user: CurrentUser, document: dict[str, Any]) -> bool:
+    """Mirrors can_read_document() in the database: the uploader always; published documents for their
+    campus or university-wide; drafts and archived documents only for Authority on their campus."""
+    same_campus_or_univ = document["scope"] == "university_wide" or str(document.get("campus_id")) == str(user.campus_id)
+    if str(document["uploaded_by"]) == str(user.id):
+        return True
+    if document["publication_status"] == "published":
+        return same_campus_or_univ
+    return user.role == "authority" and same_campus_or_univ
+
+
+PROCESSING_MESSAGES = {
+    "pending": "This PDF is waiting to be processed. It can be opened when processing is complete.",
+    "processing": "This PDF is still being processed. It can be opened when processing is complete.",
+    "failed": "This PDF could not be processed, so it cannot be opened. Upload it again.",
+}
+
+def check_pdf_access(user: CurrentUser, document: dict[str, Any]) -> None:
+    """Students get published, public, ready documents for their campus or university-wide only.
+    Anything else is reported as not available, so drafts and other audiences are not revealed."""
+    if user.role == "student":
+        allowed = (
+            document["publication_status"] == "published"
+            and document["visibility"] == "public_students"
+            and document["processing_status"] == "ready"
+            and (document["scope"] == "university_wide" or str(document.get("campus_id")) == str(user.campus_id))
+        )
+        if not allowed:
+            raise DocumentNotFound("This document is not available to your account.")
+    elif user.role in ("faculty", "authority"):
+        if not _staff_can_open(user, document):
+            raise DocumentNotFound("This document is not available to your account.")
+    else:
+        raise DocumentForbidden("Your role cannot open documents")
+    status = document["processing_status"]
+    if status != "ready":
+        raise DocumentConflict(PROCESSING_MESSAGES.get(status, "This PDF cannot be opened right now."))
+
+async def read_pdf(sb: PostgresClient, bucket: str, document: dict[str, Any]) -> bytes:
+    """Reads the file with the server's storage access. The bucket stays private; the client never
+    receives a storage key or a storage URL."""
+    try:
+        return await sb.download_object(bucket, document["storage_path"])
+    except DataServiceError as exc:
+        if exc.status_code == 404:
+            raise DocumentNotFound("The PDF file is missing from storage. Ask Authority to upload it again.") from exc
+        raise DocumentUnavailable("File storage is unavailable right now. Try again in a few minutes.") from exc

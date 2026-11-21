@@ -91,7 +91,15 @@ def _int(value: str | None, default: int | None) -> int | None:
     return int(value)
 
 
-def _adapt(value: Any) -> Any:
+# Columns declared as Postgres text[] (not json). A Python list must go to these as a native array; everywhere
+# else a list is JSON (for example messages.citations, which is jsonb). Sending JSON to a text[] column fails with
+# "column is of type text[] but expression is of type json", which blocked every document upload.
+TEXT_ARRAY_COLUMNS = frozenset({("documents", "tags")})
+
+
+def _adapt(value: Any, table: str | None = None, column: str | None = None) -> Any:
+    if isinstance(value, list) and (table, column) in TEXT_ARRAY_COLUMNS:
+        return value
     if isinstance(value, (dict, list)):
         return Json(value)
     return value
@@ -295,7 +303,7 @@ class PostgresClient:
             raise DataServiceError(400, "all rows must have the same columns")
         column_sql = ", ".join(_ident(c) for c in columns)
         placeholders = ", ".join("(" + ", ".join("%s" for _ in columns) + ")" for _ in rows)
-        values = [_adapt(row[c]) for row in rows for c in columns]
+        values = [_adapt(row[c], table, c) for row in rows for c in columns]
         sql = f"insert into {_ident(table)} ({column_sql}) values {placeholders}"
         await self._run(None, lambda c: c.execute(sql, values))
 
@@ -309,7 +317,7 @@ class PostgresClient:
             raise DataServiceError(400, "update needs filters and values")
         assignments = ", ".join(f"{_ident(c)} = %s" for c in values)
         sql = f"update {_ident(table)} set {assignments} where {where} returning *"
-        params = [_adapt(v) for v in values.values()] + where_values
+        params = [_adapt(v, table, c) for c, v in values.items()] + where_values
         return await self._run(None, lambda c: c.execute(sql, params).fetchall())
 
     async def delete_service(self, table: str, filters: dict[str, str]) -> int:
