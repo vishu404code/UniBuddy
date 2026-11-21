@@ -1676,29 +1676,9 @@ function loginAsRole(role){
   S.view=a.role==='student'?'chat':a.role==='faculty'?'tix':a.role==='management'?'x':a.role==='super_admin'?'admin':'x';
   try{localStorage.setItem('ub-current-user',email)}catch(e){}
   
-  // Seed sensible fallback sample data if backend is offline or unauthenticated
-  if(!S.tickets.length){
-    S.tickets=[
-      {id:'UB-101',uuid:'t-101',subj:'Hostel Wi-Fi Connectivity in Block B',status:'submitted',pri:'high',dept:'IT & Infrastructure',date:today(),q:'Hostel Wi-Fi disconnects frequently.',desc:'Hostel Wi-Fi disconnects frequently.',fac:'Unassigned',reply:''},
-      {id:'UB-102',uuid:'t-102',subj:'Lab Access Request for AI Capstone',status:'in_progress',pri:'medium',dept:'Computer Science',date:today(),q:'Permission to use GPU lab after 6 PM.',desc:'Permission to use GPU lab after 6 PM.',fac:'Dr. Mehta',reply:'Request forwarded to lab in-charge.'},
-      {id:'UB-103',uuid:'t-103',subj:'Grade Sheet Correction for Semester 3',status:'resolved',pri:'low',dept:'Examination Cell',date:today(),q:'Subject code CS302 credits updated.',desc:'Subject code CS302 credits updated.',fac:'Academic Registrar',reply:'Corrected marksheet issued.'}
-    ];
-  }
+  // Only real backend data is shown here; no sample rows are seeded.
   S.tickets = mergeSharedTickets(S.tickets);
   if(a.role==='faculty') watchOpenTicket();
-  if(!S.announcements.length){
-    S.announcements=[
-      {id:'ann-1',title:'End-Semester Examination Schedule Published',body:'The tentative timetable for odd semester examinations is now available for download.',c:'Exam',d:today(),tone:'blue',big:true,imp:true},
-      {id:'ann-2',title:'Annual Technical Symposium & AI Hackathon',body:'Registrations are now live for the campus-wide 48-hour innovation challenge.',c:'Academic',d:today(),tone:'blue',big:false,imp:false},
-      {id:'ann-3',title:'Library Extended Hours During Finals Week',body:'Central library facilities will remain open 24/7 starting next Monday.',c:'Campus',d:today(),tone:'blue',big:false,imp:false}
-    ];
-  }
-  if(!S.docs.length){
-    S.docs=[...DEMO_DOCUMENTS];
-  }
-  if(!S.dashboard||!Object.keys(S.dashboard).length){
-    S.dashboard={total_tickets:12,resolved_tickets:9,open_tickets:3,urgent_tickets:1};
-  }
   if(a.role==='management'&&(!S.analytics||!Object.keys(S.analytics).length)){
     S.analytics={
       questions_total:342,
@@ -1715,255 +1695,7 @@ function loginAsRole(role){
 
 const SUG=[['cal','Academic Timetable','Where can I find the academic timetable?'],['edit','Examination Information','When is the next internal examination?'],['cap','Scholarships','How can I apply for a scholarship?'],['bld','Campus Facilities','What are the library hours and campus facilities?']];
 
-const DEMO_DOCUMENTS = [
-  // 1. Rishihood Documents (Red)
-  {
-    uuid: 'demo-doc-r1',
-    id: 'demo-r1',
-    title: '[DEMO] Sample Academic Calendar 2026-27',
-    category: 'Rishihood Documents',
-    scope: 'rishihood',
-    original_filename: 'Rishihood_Academic_Calendar_2026_27.pdf',
-    date: '15 Nov 2026',
-    created_at: '2026-11-15T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Official semester schedule, teaching days, university holidays, and semester examination milestones for Rishihood University.'
-  },
-  {
-    uuid: 'demo-doc-r2',
-    id: 'demo-r2',
-    title: '[DEMO] Sample University Guidelines & Code of Conduct',
-    category: 'Rishihood Documents',
-    scope: 'rishihood',
-    original_filename: 'Rishihood_University_Guidelines.pdf',
-    date: '10 Nov 2026',
-    created_at: '2026-11-10T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Campus rules, student responsibilities, academic integrity charter, and campus safety and security regulations.'
-  },
-  {
-    uuid: 'demo-doc-r3',
-    id: 'demo-r3',
-    title: '[DEMO] Sample Academic Notice & Attendance Policy',
-    category: 'Rishihood Documents',
-    scope: 'rishihood',
-    original_filename: 'Rishihood_Academic_Notice.pdf',
-    date: '05 Nov 2026',
-    created_at: '2026-11-05T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Detailed regulations regarding mandatory minimum lecture attendance, condonation procedures, and medical leave protocols.'
-  },
-  {
-    uuid: 'demo-doc-r4',
-    id: 'demo-r4',
-    title: '[DEMO] Sample Student Handbook & Campus Resources',
-    category: 'Rishihood Documents',
-    scope: 'rishihood',
-    original_filename: 'Rishihood_Student_Handbook.pdf',
-    date: '28 Oct 2026',
-    created_at: '2026-10-28T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Comprehensive guide covering library access, computing laboratories, sports complexes, dining halls, and student wellness.'
-  },
-
-  // 2. Newton Documents (Blue)
-  {
-    uuid: 'demo-doc-b1',
-    id: 'demo-b1',
-    title: '[DEMO] Sample Newton Academic Schedule',
-    category: 'Newton Documents',
-    scope: 'newton',
-    original_filename: 'Newton_Academic_Schedule.pdf',
-    date: '14 Nov 2026',
-    created_at: '2026-11-14T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Newton School of Technology semester calendar, coding lab sprints, hackathon dates, and project submission deadlines.'
-  },
-  {
-    uuid: 'demo-doc-b2',
-    id: 'demo-b2',
-    title: '[DEMO] Sample Course Information & Syllabus',
-    category: 'Newton Documents',
-    scope: 'newton',
-    original_filename: 'Newton_Course_Information.pdf',
-    date: '08 Nov 2026',
-    created_at: '2026-11-08T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Curriculum syllabus covering Data Structures, Algorithmic Problem Solving, Full-Stack Development, and Applied AI.'
-  },
-  {
-    uuid: 'demo-doc-b3',
-    id: 'demo-b3',
-    title: '[DEMO] Sample Academic Guidelines & Grading Policy',
-    category: 'Newton Documents',
-    scope: 'newton',
-    original_filename: 'Newton_Academic_Guidelines.pdf',
-    date: '02 Nov 2026',
-    created_at: '2026-11-02T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Evaluation framework, continuous assessment weightage, peer code review standards, and GPA calculation criteria.'
-  },
-  {
-    uuid: 'demo-doc-b4',
-    id: 'demo-b4',
-    title: '[DEMO] Sample Semester Information & Capstone Tracks',
-    category: 'Newton Documents',
-    scope: 'newton',
-    original_filename: 'Newton_Semester_Information.pdf',
-    date: '25 Oct 2026',
-    created_at: '2026-10-25T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Overview of upcoming semester electives, industry internship requirements, and faculty mentor allocation.'
-  },
-
-  // 3. Club Documents (Green)
-  {
-    uuid: 'demo-doc-g1',
-    id: 'demo-g1',
-    title: '[DEMO] Sample Club Registration Guidelines',
-    category: 'Club Documents',
-    scope: 'club',
-    original_filename: 'Club_Registration_Guidelines.pdf',
-    date: '12 Nov 2026',
-    created_at: '2026-11-12T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Official procedure for chartering student clubs, constitutional frameworks, leadership elections, and faculty approvals.'
-  },
-  {
-    uuid: 'demo-doc-g2',
-    id: 'demo-g2',
-    title: '[DEMO] Sample Club Activity Report & Budget Template',
-    category: 'Club Documents',
-    scope: 'club',
-    original_filename: 'Club_Activity_Report_Template.pdf',
-    date: '06 Nov 2026',
-    created_at: '2026-11-06T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Standardized templates for post-event activity documentation, student turnout metrics, and itemized budget claims.'
-  },
-  {
-    uuid: 'demo-doc-g3',
-    id: 'demo-g3',
-    title: '[DEMO] Sample Club Membership Information & Directory',
-    category: 'Club Documents',
-    scope: 'club',
-    original_filename: 'Club_Membership_Information.pdf',
-    date: '30 Oct 2026',
-    created_at: '2026-10-30T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Directory of approved technical, cultural, entrepreneurship, and literary clubs with lead coordinators and schedules.'
-  },
-  {
-    uuid: 'demo-doc-g4',
-    id: 'demo-g4',
-    title: '[DEMO] Sample Club Event Guidelines & Auditorium Booking',
-    category: 'Club Documents',
-    scope: 'club',
-    original_filename: 'Club_Event_Guidelines.pdf',
-    date: '22 Oct 2026',
-    created_at: '2026-10-22T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Venue reservation guidelines, AV equipment requisition, safety clearances, and guest speaker invitation protocols.'
-  },
-
-  // 4. Important Documents (Yellow)
-  {
-    uuid: 'demo-doc-y1',
-    id: 'demo-y1',
-    title: '[DEMO] Sample Important Notice – Mid-Term Exam Schedule',
-    category: 'Important Documents',
-    scope: 'important',
-    original_filename: 'Important_Notice_Midterm_Exams.pdf',
-    date: '16 Nov 2026',
-    created_at: '2026-11-16T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Mandatory examination schedule, seating matrix allocations, reporting timings, and hall ticket verification instructions.'
-  },
-  {
-    uuid: 'demo-doc-y2',
-    id: 'demo-y2',
-    title: '[DEMO] Sample Examination Instructions & Prohibited Items',
-    category: 'Important Documents',
-    scope: 'important',
-    original_filename: 'Important_Examination_Instructions.pdf',
-    date: '11 Nov 2026',
-    created_at: '2026-11-11T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Strict guidelines for invigilation halls, permitted stationery, electronic devices bans, and disciplinary actions.'
-  },
-  {
-    uuid: 'demo-doc-y3',
-    id: 'demo-y3',
-    title: '[DEMO] Sample General Guidelines – Emergency Procedures',
-    category: 'Important Documents',
-    scope: 'important',
-    original_filename: 'Important_Emergency_Procedures.pdf',
-    date: '04 Nov 2026',
-    created_at: '2026-11-04T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Campus emergency protocols, medical infirmary contact numbers, fire evacuation blueprints, and 24/7 security helpline.'
-  },
-  {
-    uuid: 'demo-doc-y4',
-    id: 'demo-y4',
-    title: '[DEMO] Sample Student Instructions – Fee Payment & Clearance',
-    category: 'Important Documents',
-    scope: 'important',
-    original_filename: 'Important_Student_Instructions_Fees.pdf',
-    date: '26 Oct 2026',
-    created_at: '2026-10-26T10:00:00Z',
-    status: 'ready',
-    publication: 'published',
-    visibility: 'all',
-    isDemo: true,
-    description: 'Key deadlines for semester fee payments, installment clearances, scholarship disbursements, and no-dues receipts.'
-  }
-];
+const DEMO_DOCUMENTS = []; // Sample rows removed: the UI shows only real backend documents.
 
 // Application state
 const S={
@@ -2000,6 +1732,9 @@ async function apiCall(endpoint,options={}){
   const started=performance.now();
   const label=endpoint.split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g,':id');
   const token=localStorage.getItem('ub-token');
+  if(!isAuth && !token && S.user){
+    return {ok:false,status:401,error:'Your sign-in session has ended. Sign in again to continue.',data:null};
+  }
   const headers={...((typeof FormData!=='undefined'&&options.body instanceof FormData)?{}:{'Content-Type':'application/json'}),...(options.headers||{})};
   if(token)headers['Authorization']=`Bearer ${token}`;
   for(let i=0;i<attempts;i++){
@@ -3398,7 +3133,7 @@ async function submitPublish(button){
     const createdDoc=res.data?docView(res.data):{uuid:'doc-'+Date.now(),title,batch_year:Number(batch),course,course_id:course,section,visibility:$('#pd-vis')?.value||'public_students',scope:$('#pd-scope')?.value||'university_wide',status:'completed',publication:'published',date:today()};
     createdDoc.batch_year=Number(batch);createdDoc.course=course;createdDoc.course_id=course;createdDoc.section=section;
     S.docs=[createdDoc,...(S.docs||[]).filter(d=>d.uuid!==createdDoc.uuid)];
-    clearPublishForm();R();toast('PDF uploaded and published successfully.');watchDocProcessing();
+    clearPublishForm();R();toast('PDF uploaded as a draft. Publish it from Documents so students can see it.');watchDocProcessing();
     return;
   }
   const title=val('pa-title'),text=val('pa-body');
@@ -5612,13 +5347,15 @@ document.addEventListener('submit',async e=>{
       description:qt||null
     };
     const res=await apiCall('/tickets',{method:'POST',body:JSON.stringify(body)});
-    const dlg=$('#dq');
-    if(dlg&&typeof dlg.close==='function')dlg.close();
     if(res.ok){
-      toast('Query created: '+(res.data?.ticket_number||res.data?.id||'Submitted'));
+      const dlg=$('#dq');
+      if(dlg&&typeof dlg.close==='function')dlg.close();
+      // POST /tickets answers with { ticket: {...} }; read the saved ticket from there.
+      const created=res.data?.ticket||res.data||{};
+      toast('Query created: '+(created.ticket_number||created.id||'Submitted'));
       const newT=ticketView({
-        ...res.data,
-        id:res.data.ticket_number||res.data.id||('UB-'+Math.floor(100+Math.random()*900)),
+        ...created,
+        id:created.ticket_number||created.id||('UB-'+Math.floor(100+Math.random()*900)),
         subject:qs,
         question:qs+(qt?'\n\n'+qt:''),
         description:qt||qs,
@@ -5632,35 +5369,15 @@ document.addEventListener('submit',async e=>{
       await reloadTicketList();
       S.view='queries';R();loadViewData('queries');
     }else{
-      const mockId='UB-'+Math.floor(100+Math.random()*900);
-      const newT={
-        id:mockId,
-        uuid:'t-'+Date.now(),
-        subj:qs,
-        q:qs+(qt?'\n\n'+qt:''),
-        desc:qt||qs,
-        student_name:pn(),
-        creator_name:pn(),
-        pri:qp,
-        status:'submitted',
-        date:today(),
-        created_at:new Date().toISOString(),
-        dept:(S.departments||[]).find(d=>d.id===qd)?.name||'General Query',
-        fac:'Unassigned',
-        reply:'',
-        events:[]
-      };
-      syncSharedTicket(newT);
-      S.tickets.unshift(newT);
-      toast('Query created: '+mockId);
-      S.view='queries';R();
+      // No local stand-in ticket: the query was not saved, so say so and keep the text for another try.
+      toast('Your query was not sent: '+(typeof res.error==='string'?res.error:'please try again.'));
     }
   }
 });
 
 window.addEventListener('hashchange',()=>{
   const raw=(location.hash.slice(1)||'').trim().toLowerCase();
-  if(['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].includes(raw)){
+  if(_isLocal && ['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].includes(raw)){
     loginAsRole(raw);
     return;
   }
@@ -5692,6 +5409,13 @@ window.addEventListener('hashchange',()=>{
 
 // Restore session from backend on page refresh
 async function restoreSession(){
+  // A cached profile is only trusted together with the backend session token. Without it every request would go
+  // out with no Authorization header and fail as "Not authenticated", so the stale profile is dropped.
+  if(!localStorage.getItem('ub-token')){
+    try{localStorage.removeItem('ub-user')}catch(e){}
+    R();
+    return;
+  }
   try {
     const cached = localStorage.getItem('ub-user');
     if(cached){
@@ -5735,13 +5459,13 @@ window.addEventListener('keydown', prewarmServer, {passive:true});
 const _urlParams = typeof window!=='undefined'&&window.location?.search ? new URLSearchParams(window.location.search) : null;
 const _queryPortal = _urlParams ? (_urlParams.get('portal') || _urlParams.get('role') || '').toLowerCase() : '';
 const _hashPortal = typeof window!=='undefined'&&window.location?.hash ? (window.location.hash.slice(1)||'').toLowerCase() : '';
-const _targetRole = ['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].find(r => r === _queryPortal || r === _hashPortal);
+const _targetRole = !_isLocal ? undefined : ['student','faculty','authority','management','super_admin','admin','non-authority','non_authority'].find(r => r === _queryPortal || r === _hashPortal);
 
 if(_targetRole){
   loginAsRole(_targetRole);
 }else if(typeof localStorage!=='undefined' && localStorage.getItem('ub-token')){
   restoreSession();
-}else if(typeof localStorage!=='undefined' && localStorage.getItem('ub-current-user') && ACC[localStorage.getItem('ub-current-user')]){
+}else if(_isLocal && typeof localStorage!=='undefined' && localStorage.getItem('ub-current-user') && ACC[localStorage.getItem('ub-current-user')]){
   loginAsRole(ACC[localStorage.getItem('ub-current-user')].role);
 }else{
   if (document.readyState === "loading") {

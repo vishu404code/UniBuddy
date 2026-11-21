@@ -22,7 +22,7 @@ class TicketOut(BaseModel):
     priority: Literal["low", "medium", "high"]
     status: Literal["submitted", "assigned", "in_progress", "resolved"]
     campus_id: UUID
-    department_id: UUID
+    department_id: UUID | None
     student_id: UUID
     assigned_faculty_id: UUID | None
     source_message_id: UUID | None
