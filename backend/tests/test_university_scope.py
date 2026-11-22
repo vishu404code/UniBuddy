@@ -53,7 +53,7 @@ def _seed(sb, uploader, scope, status="ready", publication="draft"):
 async def _upload(sb, user, scope):
     return await upload_document(sb=sb, uploader=user, title="Notice", visibility="public_students", scope=scope,
                                  department_id=None, filename="n.pdf", content_type="application/pdf",
-                                 data=_pdf(), max_bytes=1024 * 1024, storage_bucket=BUCKET)
+                                 data=_pdf(), max_bytes=1024 * 1024, storage_bucket=BUCKET, audience="all_students")
 
 
 @pytest.mark.asyncio
@@ -114,7 +114,7 @@ def test_faculty_upload_route_accepts_university_wide_scope():
         response = TestClient(app).post(
             f"{settings.api_v1_prefix}/documents",
             headers={"Authorization": f"Bearer {verifier_user.id}"},
-            data={"title": "Notice", "scope": "university_wide"},
+            data={"audience": "all_students", "title": "Notice", "scope": "university_wide"},
             files={"file": ("n.pdf", _pdf(), "application/pdf")},
         )
     finally:

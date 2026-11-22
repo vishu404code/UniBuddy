@@ -12,6 +12,7 @@ from app.schemas.common import Page
 from app.schemas.documents import DocumentOut
 from app.services.documents import (
     clean_metadata,
+    require_audience,
     DocumentNotFound,
     check_pdf_access,
     read_pdf,
@@ -65,15 +66,18 @@ async def upload(
     section: Annotated[str | None, Form()] = None,
     course_id: Annotated[UUID | None, Form()] = None,
     source_person: Annotated[str | None, Form()] = None,
+    audience: Annotated[str | None, Form()] = None,
     sb: PostgresClient = Depends(get_data_client),
 ):
-    """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}."""
+    """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}.
+    `audience` is required: 'all_students' or 'targeted' (with a batch, course or section)."""
     _check_form(visibility, scope)
     require_university_wide_permission(session.user, scope)
     metadata = clean_metadata(
         academic_year=academic_year, batch_year=batch_year, section=section,
         course_id=course_id, source_person=source_person,
     )
+    require_audience(audience, metadata)  # refused before the file is read or compared
     data = await file.read(settings.max_upload_bytes + 1)
     # Same file name and size already in the library: refuse instead of storing a second copy.
     # Use Replace on the existing document (or archive it) for a new version.
@@ -116,6 +120,7 @@ async def upload(
         data=data,
         max_bytes=settings.max_upload_bytes,
         storage_bucket=settings.r2_bucket,
+        audience=audience,
         metadata=metadata,
     )
     response.headers["Location"] = f"{settings.api_v1_prefix}/documents/{row['id']}"

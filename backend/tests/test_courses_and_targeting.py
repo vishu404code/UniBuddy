@@ -61,10 +61,13 @@ def _options(sb, campus_id, *, years=("2026-27",), batches=("2026",), sections=(
 
 
 async def _upload(sb, user, **overrides):
+    metadata = overrides.get("metadata")
+    targeted = bool(metadata and (metadata.academic_year or metadata.batch_year is not None or metadata.section
+                                  or metadata.course_id is not None))
     options = dict(
         sb=sb, uploader=user, title="LOA policy", visibility="public_students", scope="campus",
         department_id=None, filename="loa.pdf", content_type="application/pdf", data=PDF,
-        max_bytes=10_000_000, storage_bucket=BUCKET,
+        max_bytes=10_000_000, storage_bucket=BUCKET, audience="targeted" if targeted else "all_students",
     )
     options.update(overrides)
     return await upload_document(**options)

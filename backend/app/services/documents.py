@@ -76,7 +76,8 @@ async def _check_course(sb: PostgresClient, course_id: UUID, campus_id: UUID) ->
 
 @dataclass(frozen=True)
 class AcademicMetadata:
-    """Optional browsing fields. They help people find a document; they never change who can read it."""
+    """Audience fields. A document with any of them is targeted: only students whose profile matches each set
+    field can read it (enforced in the database, migration 20261122100000). Staff are not filtered by them."""
 
     academic_year: str | None = None
     batch_year: int | None = None
@@ -184,6 +185,21 @@ async def _best_effort_remove_object(sb: PostgresClient, bucket: str, path: str)
         pass
 
 
+AUDIENCES = ("all_students", "targeted")
+
+
+def require_audience(audience: str | None, metadata: AcademicMetadata | None) -> None:
+    """Every new upload states its audience. Nothing is targeted or published silently."""
+    if audience not in AUDIENCES:
+        raise DocumentError("Choose who can see this document: All students, or a selected batch, course or section.")
+    targeted = bool(metadata and (metadata.academic_year or metadata.batch_year is not None or metadata.section
+                                  or metadata.course_id is not None))
+    if audience == "all_students" and targeted:
+        raise DocumentError("A document for all students cannot also have a batch, course or section.")
+    if audience == "targeted" and not targeted:
+        raise DocumentError("Choose at least one batch, course or section for a targeted document.")
+
+
 async def upload_document(
     *,
     sb: PostgresClient,
@@ -197,8 +213,10 @@ async def upload_document(
     data: bytes,
     max_bytes: int,
     storage_bucket: str,
+    audience: str | None,
     metadata: AcademicMetadata | None = None,
 ) -> dict[str, Any]:
+    require_audience(audience, metadata)
     return await _store_and_queue(
         sb=sb, uploader=uploader, title=title, visibility=visibility, scope=scope,
         department_id=department_id, filename=filename, data=data, max_bytes=max_bytes,

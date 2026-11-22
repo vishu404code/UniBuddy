@@ -330,3 +330,57 @@ def _seed_student_on_campus(campus_id):
     _owner("insert into public.profiles (id, email, role, campus_id) values (%s, %s, 'student', %s)",
            (user_id, email, campus_id))
     return user_id
+
+
+# --- Authority assigns academic values; the database then decides who may see targeted documents ---------
+
+
+def _seed_faculty_on_campus(campus_id):
+    user_id = uuid4()
+    email = f"{user_id.hex}@example.test"
+    _owner("insert into public.account_identities (id, email, google_subject) values (%s, %s, %s)",
+           (user_id, email, f"sub-{user_id.hex}"))
+    _owner("insert into public.profiles (id, email, role, campus_id) values (%s, %s, 'faculty', %s)",
+           (user_id, email, campus_id))
+    return user_id
+
+
+def test_authority_assignment_opens_a_targeted_document_only_for_the_assigned_student(client):
+    campus, student, authority = _seed_campus_with_users()
+    other = _seed_student_on_campus(campus)
+    faculty = _seed_faculty_on_campus(campus)
+    _owner("insert into public.filter_options (campus_id, kind, value) values (%s, 'batch', '2026')", (campus,))
+    _owner("insert into public.filter_options (campus_id, kind, value) values (%s, 'section', 'A')", (campus,))
+    course = _seed_course(campus, f"Assign course {uuid4().hex[:6]}")
+    doc = _seed_targeted_document(campus, authority, "E2E assign target", batch=2026, section="A", course_id=course)
+    assert "E2E assign target" not in _titles(client, student)
+
+    body = {"batch_year": 2026, "section": "A", "course_id": str(course)}
+    assigned = client.patch(f"{API}/people/students/{student}/academics", headers=_auth(authority), json=body)
+
+    assert assigned.status_code == 200
+    assert assigned.json() == {"batch_year": 2026, "section": "A", "course_id": str(course)}
+    assert "E2E assign target" in _titles(client, student)
+    assert "E2E assign target" not in _titles(client, other)
+    assert client.get(f"{API}/documents/{doc}/file", headers=_auth(other)).status_code == 404
+
+
+def test_only_authority_can_assign_and_students_cannot_assign_themselves(client):
+    campus, student, authority = _seed_campus_with_users()
+    faculty = _seed_faculty_on_campus(campus)
+    body = {"batch_year": 2026, "section": None, "course_id": None}
+
+    assert client.patch(f"{API}/people/students/{student}/academics", headers=_auth(student), json=body).status_code == 403
+    assert client.patch(f"{API}/people/students/{student}/academics", headers=_auth(faculty), json=body).status_code == 403
+
+
+def test_faculty_can_view_academic_values_of_campus_students(client):
+    campus, student, _authority = _seed_campus_with_users()
+    faculty = _seed_faculty_on_campus(campus)
+    _owner("update public.profiles set batch_year = 2026, section = 'A' where id = %s", (student,))
+
+    response = client.get(f"{API}/people/students?q=", headers=_auth(faculty))
+
+    assert response.status_code == 200
+    row = next(r for r in response.json() if r["id"] == str(student))
+    assert (row["batch_year"], row["section"]) == (2026, "A")

@@ -43,7 +43,8 @@ def _visible_to_uploader(token, table, row):
 async def _upload(sb, uploader, data=None, **overrides):
     params = dict(sb=sb, uploader=uploader, title="Fee Policy", visibility="public_students", scope="campus",
                   department_id=None, filename="fee.pdf", content_type="application/pdf",
-                  data=data if data is not None else _pdf(), max_bytes=1024 * 1024, storage_bucket=BUCKET)
+                  data=data if data is not None else _pdf(), max_bytes=1024 * 1024, storage_bucket=BUCKET,
+                  audience="all_students")
     params.update(overrides)
     return await upload_document(**params)
 

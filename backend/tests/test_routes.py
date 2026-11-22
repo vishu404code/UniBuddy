@@ -62,14 +62,14 @@ def _auth(user_id):
 
 def test_upload_requires_a_signed_in_user(harness):
     client, _, _ = harness
-    response = client.post(f"{API}/documents", data={"title": "x"},
+    response = client.post(f"{API}/documents", data={"audience": "all_students", "title": "x"},
                            files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
     assert response.status_code == 401
 
 
 def test_students_cannot_upload_documents(harness):
     client, sb, _ = harness
-    response = client.post(f"{API}/documents", headers=_auth(STUDENT_ID), data={"title": "x"},
+    response = client.post(f"{API}/documents", headers=_auth(STUDENT_ID), data={"audience": "all_students", "title": "x"},
                            files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
     assert response.status_code == 403
     assert sb.tables["documents"] == []
@@ -78,7 +78,7 @@ def test_students_cannot_upload_documents(harness):
 def test_faculty_upload_is_accepted_and_queued(harness):
     client, sb, _ = harness
     response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                           data={"title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
+                           data={"audience": "all_students", "title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
                            files={"file": ("fee.pdf", _pdf_bytes(), "application/pdf")})
 
     assert response.status_code == 202
@@ -93,7 +93,7 @@ def test_faculty_upload_is_accepted_and_queued(harness):
 def test_queued_upload_reports_that_ai_processing_waits_for_the_key(harness, monkeypatch):
     client, _, _ = harness
     monkeypatch.setattr(settings, "gemini_api_key", None)
-    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"title": "x"},
+    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"audience": "all_students", "title": "x"},
                            files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
 
     assert response.status_code == 202
@@ -164,14 +164,14 @@ def test_staff_dashboard_is_limited_to_faculty_and_authority(harness):
 def test_upload_rejects_unknown_visibility(harness):
     client, _, _ = harness
     response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                           data={"title": "x", "visibility": "everyone"},
+                           data={"audience": "all_students", "title": "x", "visibility": "everyone"},
                            files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
     assert response.status_code == 422
 
 
 def test_non_pdf_upload_returns_400_with_message(harness):
     client, _, _ = harness
-    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"title": "x"},
+    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"audience": "all_students", "title": "x"},
                            files={"file": ("a.txt", b"hello", "text/plain")})
     assert response.status_code == 400
     assert response.json() == {"detail": "Only PDF uploads are supported"}
@@ -285,10 +285,10 @@ def test_same_file_name_and_size_is_refused_as_a_duplicate(harness):
     client, sb, _ = harness
     pdf = _pdf_bytes()
     first = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                        data={"title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
+                        data={"audience": "all_students", "title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
                         files={"file": ("fee.pdf", pdf, "application/pdf")})
     second = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                         data={"title": "Fee Policy again", "visibility": "public_students", "scope": "campus"},
+                         data={"audience": "all_students", "title": "Fee Policy again", "visibility": "public_students", "scope": "campus"},
                          files={"file": ("fee.pdf", pdf, "application/pdf")})
 
     assert first.status_code == 202
@@ -300,11 +300,11 @@ def test_same_file_name_and_size_is_refused_as_a_duplicate(harness):
 def test_different_file_with_the_same_name_is_still_accepted(harness):
     client, sb, _ = harness
     first = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                        data={"title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
+                        data={"audience": "all_students", "title": "Fee Policy", "visibility": "public_students", "scope": "campus"},
                         files={"file": ("fee.pdf", _pdf_bytes(), "application/pdf")})
     longer = _pdf_bytes() + b"\n% revised\n"
     second = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                         data={"title": "Fee Policy v2", "visibility": "public_students", "scope": "campus"},
+                         data={"audience": "all_students", "title": "Fee Policy v2", "visibility": "public_students", "scope": "campus"},
                          files={"file": ("fee.pdf", longer, "application/pdf")})
 
     assert first.status_code == 202
@@ -316,7 +316,7 @@ def test_upload_is_refused_before_the_app_storage_budget_is_passed(harness, monk
     client, sb, _ = harness
     monkeypatch.setattr(settings, "storage_budget_bytes", 10)
     response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID),
-                           data={"title": "Too big", "visibility": "public_students", "scope": "campus"},
+                           data={"audience": "all_students", "title": "Too big", "visibility": "public_students", "scope": "campus"},
                            files={"file": ("big.pdf", _pdf_bytes(), "application/pdf")})
 
     assert response.status_code == 507
@@ -361,3 +361,13 @@ def test_listing_conversations_makes_no_model_call_and_removes_nothing(harness):
     assert response.status_code == 200
     assert ai.completions == []
     assert [m["id"] for m in sb.tables["messages"]] == [str(message)]
+
+
+def test_an_upload_without_an_audience_is_refused_before_the_file_is_read(harness):
+    client, sb, _ = harness
+    response = client.post(f"{API}/documents", headers=_auth(FACULTY_ID), data={"title": "No audience"},
+                           files={"file": ("a.pdf", _pdf_bytes(), "application/pdf")})
+
+    assert response.status_code == 400
+    assert "Choose who can see this document" in response.json()["detail"]
+    assert sb.tables["documents"] == []

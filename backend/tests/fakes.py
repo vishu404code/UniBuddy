@@ -138,6 +138,35 @@ class FakeDataClient:
         return rows[offset : offset + limit], len(rows)
 
     async def rpc_service(self, function, payload):
+        if function == "assign_student_academics":
+            student = next((r for r in self.tables["profiles"] if str(r["id"]) == str(payload["p_student"])), None)
+            actor = next((r for r in self.tables["profiles"] if str(r["id"]) == str(payload["p_actor"])), None)
+            if student is None or student.get("role") != "student":
+                raise DataServiceError(400, "student_not_found")
+            if student.get("campus_id") is None:
+                raise DataServiceError(400, "student_has_no_campus")
+            if actor is None or actor.get("role") != "authority" or str(actor.get("campus_id")) != str(student["campus_id"]):
+                raise DataServiceError(400, "not_authorized")
+            campus = str(student["campus_id"])
+            if payload["p_batch_year"] is not None and not any(
+                    str(o["campus_id"]) == campus and o["kind"] == "batch" and o["value"] == str(payload["p_batch_year"])
+                    and o.get("active", True) for o in self.tables["filter_options"]):
+                raise DataServiceError(400, "batch_not_active")
+            if payload["p_section"] is not None and not any(
+                    str(o["campus_id"]) == campus and o["kind"] == "section" and o["value"] == payload["p_section"]
+                    and o.get("active", True) for o in self.tables["filter_options"]):
+                raise DataServiceError(400, "section_not_active")
+            if payload["p_course_id"] is not None and not any(
+                    str(c["id"]) == str(payload["p_course_id"]) and str(c["campus_id"]) == campus and c.get("active", True)
+                    for c in self.tables["courses"]):
+                raise DataServiceError(400, "course_not_active")
+            before = {"batch_year": student.get("batch_year"), "section": student.get("section"), "course_id": student.get("course_id")}
+            after = {"batch_year": payload["p_batch_year"], "section": payload["p_section"], "course_id": payload["p_course_id"]}
+            student.update(after)
+            self.tables["student_academic_audit"].append({"id": str(uuid4()), "student_id": str(student["id"]),
+                                                          "changed_by": str(actor["id"]), "before_values": before,
+                                                          "after_values": after})
+            return after
         if function == "apply_ticket_update":
             ticket = next((r for r in self.tables["tickets"] if r["id"] == payload["p_ticket_id"]), None)
             if payload["p_status"] is not None or payload["p_assigned_faculty_id"] is not None:
