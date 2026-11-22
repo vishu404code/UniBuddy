@@ -70,7 +70,7 @@ async def upload(
     sb: PostgresClient = Depends(get_data_client),
 ):
     """Stores the PDF and queues it for processing. Returns 202; poll GET /documents/{id}.
-    `audience` is required: 'all_students' or 'targeted' (with a batch, course or section)."""
+    `audience` is 'all_students' or 'targeted'. Without it, a batch, course or section makes the upload targeted."""
     _check_form(visibility, scope)
     require_university_wide_permission(session.user, scope)
     metadata = clean_metadata(

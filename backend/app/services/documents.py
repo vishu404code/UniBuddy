@@ -189,11 +189,20 @@ AUDIENCES = ("all_students", "targeted")
 
 
 def require_audience(audience: str | None, metadata: AcademicMetadata | None) -> None:
-    """Every new upload states its audience. Nothing is targeted or published silently."""
-    if audience not in AUDIENCES:
-        raise DocumentError("Choose who can see this document: All students, or a selected batch, course or section.")
+    """Every new upload says who can see it. Nothing is published to all students silently.
+
+    The current upload form (which has no audience field) sends an explicit batch, course or section for a targeted
+    document and none for anything else. Without an audience field, those fields are the explicit choice; with
+    neither, the upload is refused, so a document is never made visible to everyone by omission.
+    """
     targeted = bool(metadata and (metadata.academic_year or metadata.batch_year is not None or metadata.section
                                   or metadata.course_id is not None))
+    if audience is None:
+        if not targeted:
+            raise DocumentError("Choose who can see this document: All students, or a selected batch, course or section.")
+        return
+    if audience not in AUDIENCES:
+        raise DocumentError("Choose who can see this document: All students, or a selected batch, course or section.")
     if audience == "all_students" and targeted:
         raise DocumentError("A document for all students cannot also have a batch, course or section.")
     if audience == "targeted" and not targeted:

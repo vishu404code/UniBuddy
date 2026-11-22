@@ -31,9 +31,15 @@ def _profile(sb, user, *, campus=CAMPUS, **academics):
 
 # --- audience: an explicit choice on every new upload -------------------------------------------------
 
-def test_an_upload_without_an_audience_is_refused():
+def test_an_upload_with_no_audience_and_no_target_is_refused():
     with pytest.raises(DocumentError, match="Choose who can see"):
         require_audience(None, None)
+    with pytest.raises(DocumentError, match="Choose who can see"):
+        require_audience(None, AcademicMetadata(source_person="Office"))
+
+
+def test_without_an_audience_field_the_targeting_fields_are_the_explicit_choice():
+    require_audience(None, AcademicMetadata(batch_year=2026, section="a"))  # what the current upload form sends
 
 
 def test_all_students_cannot_also_carry_a_target():
@@ -135,3 +141,4 @@ async def test_a_course_from_another_campus_is_refused():
     with pytest.raises(DocumentError, match="not an active course"):
         await assign_student_academics(sb=sb, actor=authority, access_token="t", student_id=student.id,
                                        batch_year=None, section=None, course_id=foreign)
+

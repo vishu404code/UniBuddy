@@ -371,3 +371,21 @@ def test_an_upload_without_an_audience_is_refused_before_the_file_is_read(harnes
     assert response.status_code == 400
     assert "Choose who can see this document" in response.json()["detail"]
     assert sb.tables["documents"] == []
+
+
+def test_the_deployed_publish_form_with_a_real_course_is_stored_as_targeted(harness):
+    client, sb, _ = harness
+    course = uuid4()
+    sb.tables["courses"].append({"id": str(course), "campus_id": CAMPUS, "name": "bba", "active": True})
+    sb.tables["filter_options"].append({"campus_id": CAMPUS, "kind": "batch", "value": "2026", "active": True})
+    sb.tables["filter_options"].append({"campus_id": CAMPUS, "kind": "section", "value": "a", "active": True})
+    response = client.post(
+        f"{API}/documents", headers=_auth(FACULTY_ID),
+        data={"title": "Lecture 15", "visibility": "public_students", "scope": "campus",
+              "batch_year": "2026", "section": "a", "course_id": str(course)},
+        files={"file": ("lecture.pdf", _pdf_bytes(), "application/pdf")},
+    )
+    assert response.status_code == 202, response.text
+    stored = sb.tables["documents"][0]
+    assert (stored["batch_year"], stored["section"], str(stored["course_id"])) == (2026, "a", str(course))
+    assert stored["publication_status"] == "draft"  # uploads still start as drafts
