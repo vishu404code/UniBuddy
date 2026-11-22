@@ -18,6 +18,7 @@ from app.schemas.auth import CurrentUser
 from app.services.documents import DocumentConflict, DocumentError, DocumentNotFound
 from app.services.postgres_client import PostgresClient
 from app.services.errors import DataServiceError
+from app.services.ai_usage import embedding_model_name, record_usage
 
 MAX_TITLE_LENGTH = 60
 # Saved as the answer when the AI service fails. It has no citations, so the student can
@@ -79,22 +80,13 @@ class _UsageRecordingGenerator:
         if complete_with_usage is None:
             return await self._generator.complete(system, user)
         text, usage = await complete_with_usage(system, user)
-        try:
-            await self._sb.insert_service(
-                "ai_usage_events",
-                [
-                    {
-                        "id": str(uuid4()),
-                        "operation": "answer",
-                        "model": usage.model,
-                        "request_count": 1,
-                        "input_tokens": usage.input_tokens,
-                        "output_tokens": usage.output_tokens,
-                    }
-                ],
-            )
-        except Exception:
-            logger.warning("Gemini usage metadata could not be recorded")
+        await record_usage(
+            self._sb,
+            operation="answer",
+            model=usage.model,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+        )
         return text
 
 
@@ -185,6 +177,7 @@ async def _answer(
             [{"id": str(user_message_id), "conversation_id": str(conversation_id), "role": "user", "content": question}],
         )
         vectors = await embed_task
+        await record_usage(sb, operation="query_embedding", model=embedding_model_name(ai), request_count=len(parts))
     except BaseException:
         embed_task.cancel()
         raise

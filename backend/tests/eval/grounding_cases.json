@@ -1,0 +1,408 @@
+{
+ "version": 1,
+ "description": "Synthetic grounding and abstention cases. No real documents, no production model calls.",
+ "cases": [
+  {
+   "id": "grounded_fee_due",
+   "question": "When is the autumn tuition due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "Autumn tuition is due by 1 September [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "grounded_late_fee",
+   "question": "What is the late fee?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "A late fee of 500 applies after 15 September."
+    }
+   ],
+   "reply": "A late fee of 500 applies after 15 September [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "grounded_hostel_curfew",
+   "question": "What time is the hostel curfew?",
+   "evidence": [
+    {
+     "doc": "hostel",
+     "title": "Hostel Rules",
+     "page": 2,
+     "content": "The hostel curfew is at 10 PM on weekdays."
+    }
+   ],
+   "reply": "The hostel curfew is at 10 PM on weekdays [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "hostel",
+     2
+    ]
+   ]
+  },
+  {
+   "id": "grounded_library_hours",
+   "question": "When does the library open on weekdays?",
+   "evidence": [
+    {
+     "doc": "library",
+     "title": "Library Handbook",
+     "page": 1,
+     "content": "The library opens at 8 AM on weekdays."
+    }
+   ],
+   "reply": "The library opens at 8 AM on weekdays [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "library",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "multipart_fee_and_curfew",
+   "question": "When is the fee due and what is the hostel curfew?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    },
+    {
+     "doc": "hostel",
+     "title": "Hostel Rules",
+     "page": 2,
+     "content": "The hostel curfew is at 10 PM on weekdays."
+    }
+   ],
+   "reply": "- Autumn tuition is due by 1 September [1].\n- The hostel curfew is at 10 PM on weekdays [2].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ],
+    [
+     "hostel",
+     2
+    ]
+   ]
+  },
+  {
+   "id": "multipart_one_part_missing",
+   "question": "When is the fee due and when is the exam?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "- Autumn tuition is due by 1 September [1].\n- The exam starts on 10 October [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ],
+   "must_not_contain": [
+    "10 October"
+   ]
+  },
+  {
+   "id": "wrong_page_single",
+   "question": "When is the autumn tuition due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    },
+    {
+     "doc": "hostel",
+     "title": "Hostel Rules",
+     "page": 2,
+     "content": "The hostel curfew is at 10 PM on weekdays."
+    }
+   ],
+   "reply": "Autumn tuition is due by 1 September [2].",
+   "expected": "abstain"
+  },
+  {
+   "id": "wrong_page_mixed",
+   "question": "When is the fee due and what is the curfew?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    },
+    {
+     "doc": "hostel",
+     "title": "Hostel Rules",
+     "page": 2,
+     "content": "The hostel curfew is at 10 PM on weekdays."
+    }
+   ],
+   "reply": "- Autumn tuition is due by 1 September [2].\n- The hostel curfew is at 10 PM on weekdays [2].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "hostel",
+     2
+    ]
+   ],
+   "must_not_contain": [
+    "1 September"
+   ]
+  },
+  {
+   "id": "wrong_page_library",
+   "question": "When does the library open?",
+   "evidence": [
+    {
+     "doc": "library",
+     "title": "Library Handbook",
+     "page": 1,
+     "content": "The library opens at 8 AM on weekdays."
+    },
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "The library opens at 8 AM on weekdays [2].",
+   "expected": "abstain"
+  },
+  {
+   "id": "fabricated_fee_amount",
+   "question": "How much is the autumn tuition?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "The autumn tuition is 85000 rupees per semester [1].",
+   "expected": "abstain"
+  },
+  {
+   "id": "fabricated_hostel_rule",
+   "question": "Can I keep a pet in the hostel?",
+   "evidence": [
+    {
+     "doc": "hostel",
+     "title": "Hostel Rules",
+     "page": 2,
+     "content": "The hostel curfew is at 10 PM on weekdays."
+    }
+   ],
+   "reply": "Pets are allowed in hostel rooms with a signed permit [1].",
+   "expected": "abstain"
+  },
+  {
+   "id": "fabricated_mixed_keeps_true",
+   "question": "When is the fee due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "- Autumn tuition is due by 1 September [1].\n- Late payments carry a 2000 rupee penalty [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ],
+   "must_not_contain": [
+    "2000"
+   ]
+  },
+  {
+   "id": "uncited_long_claim",
+   "question": "When is the fee due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "- Autumn tuition is due by 1 September [1].\n- The campus gym is free for all students every weekend without a card.",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ],
+   "must_not_contain": [
+    "gym"
+   ]
+  },
+  {
+   "id": "uncited_only",
+   "question": "When is the fee due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "The fee is due in September according to the university calendar.",
+   "expected": "abstain"
+  },
+  {
+   "id": "no_evidence",
+   "question": "What is the moon made of?",
+   "evidence": [],
+   "reply": "It is made of rock.",
+   "expected": "abstain"
+  },
+  {
+   "id": "model_refuses",
+   "question": "Can I park here?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "INSUFFICIENT_EVIDENCE",
+   "expected": "abstain"
+  },
+  {
+   "id": "off_topic_with_evidence",
+   "question": "What is the best pizza near campus?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "Pizza Hut is near the main gate [1].",
+   "expected": "abstain"
+  },
+  {
+   "id": "citation_out_of_range",
+   "question": "When is the fee due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "Autumn tuition is due by 1 September [9].",
+   "expected": "abstain"
+  },
+  {
+   "id": "paraphrase_fee",
+   "question": "When must tuition be paid?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    }
+   ],
+   "reply": "Tuition must be paid before the start of September [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "fees",
+     1
+    ]
+   ],
+   "known_gap": "paraphrase with few shared content words is refused"
+  },
+  {
+   "id": "paraphrase_library",
+   "question": "Is the reading room open early in the morning?",
+   "evidence": [
+    {
+     "doc": "library",
+     "title": "Library Handbook",
+     "page": 1,
+     "content": "The library opens at 8 AM on weekdays."
+    }
+   ],
+   "reply": "Yes, the reading room starts admitting people at eight in the morning [1].",
+   "expected": "answer",
+   "expected_citations": [
+    [
+     "library",
+     1
+    ]
+   ],
+   "known_gap": "paraphrase with few shared content words is refused"
+  },
+  {
+   "id": "conflict_two_dates",
+   "question": "When is the fee due?",
+   "evidence": [
+    {
+     "doc": "fees",
+     "title": "Fee Policy",
+     "page": 1,
+     "content": "Autumn tuition is due by 1 September."
+    },
+    {
+     "doc": "calendar",
+     "title": "Academic Calendar",
+     "page": 4,
+     "content": "Autumn tuition is due by 15 September."
+    }
+   ],
+   "reply": "Autumn tuition is due by 1 September [1].",
+   "expected": "abstain",
+   "known_gap": "conflicting sources are not detected; the checker keeps a supported claim"
+  }
+ ]
+}

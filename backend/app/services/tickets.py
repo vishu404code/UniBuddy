@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from app.schemas.auth import CurrentUser
 from app.schemas.tickets import TicketUpdateRequest
 from app.services.documents import DocumentConflict, DocumentError, DocumentForbidden, DocumentNotFound
+from app.services.errors import DataServiceError
 from app.services.postgres_client import PostgresClient
 
 STATUS_ORDER = {"submitted": 0, "assigned": 1, "in_progress": 2, "resolved": 3}
@@ -89,38 +90,26 @@ async def update_ticket(
     if not updates and not events:
         return await get_ticket_detail(sb, access_token, ticket_id)
 
-    if updates:
-        filters = {"id": f"eq.{ticket_id}", "status": f"eq.{ticket['status']}"}
-        updated = await sb.update_service("tickets", filters, updates)
-        if not updated:
-            raise DocumentConflict("Ticket was changed by someone else; reload and try again")
-
-    actor = me
-    await sb.insert_service(
-        "ticket_events",
-        [
+    # One transaction in the database: the status or assignee, the timeline events and the notification are
+    # written together or not at all (migration 20261122130000). A concurrent change raises ticket_changed.
+    try:
+        await sb.rpc_service(
+            "apply_ticket_update",
             {
-                "id": str(uuid4()),
-                "ticket_id": str(ticket_id),
-                "actor_id": actor,
-                "event_type": event["event_type"],
-                "note": event["note"],
-            }
-            for event in events
-        ],
-    )
-    if notify_text:
-        await sb.insert_service(
-            "notifications",
-            [
-                {
-                    "id": str(uuid4()),
-                    "user_id": str(ticket["student_id"]),
-                    "text": notify_text,
-                    "ticket_id": str(ticket_id),
-                }
-            ],
+                "p_ticket_id": str(ticket_id),
+                "p_expected_status": ticket["status"],
+                "p_status": updates.get("status"),
+                "p_assigned_faculty_id": updates.get("assigned_faculty_id"),
+                "p_events": [{"event_type": e["event_type"], "note": e["note"], "actor_id": me} for e in events],
+                "p_notifications": (
+                    [{"user_id": str(ticket["student_id"]), "text": notify_text}] if notify_text else []
+                ),
+            },
         )
+    except DataServiceError as exc:
+        if "ticket_changed" in str(exc.detail):
+            raise DocumentConflict("Ticket was changed by someone else; reload and try again") from exc
+        raise
     return await get_ticket_detail(sb, access_token, ticket_id)
 
 
@@ -135,6 +124,10 @@ async def create_ticket(
     priority: str = "medium",
     description: str | None = None,
 ) -> dict[str, Any]:
+    if user.campus_id is None:
+        # A ticket needs a campus to be routed. Refuse clearly instead of writing a made-up campus.
+        raise DocumentError("Your account has no campus assigned yet, so this question cannot be sent. "
+                            "Ask Authority to assign your campus, then try again.")
     ticket_id = uuid4()
     if department_id is not None and user.campus_id is not None:
         department = await sb.select_service(

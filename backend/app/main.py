@@ -21,6 +21,7 @@ from app.routes.documents import router as documents_router
 from app.routes.notifications import router as notifications_router
 from app.routes.provisioning import router as provisioning_router
 from app.routes.tickets import router as tickets_router
+from app.services.chat_retention import tidy_forever
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
 from app.services.errors import DataServiceError
@@ -32,10 +33,14 @@ logger = logging.getLogger("unibuddy")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     worker_task = None
+    tidy_task = None
     if settings.document_worker_enabled and settings.database_url and settings.session_secret and storage_configured():
         try:
             ai = get_ai_client() if settings.gemini_api_key else None
             worker_task = asyncio.create_task(run_forever(get_data_client(), ai))
+            if ai is not None:
+                # Old student chats are summarized and removed here, not on a student's request.
+                tidy_task = asyncio.create_task(tidy_forever(sb=get_data_client(), ai=ai))
             logger.info("Document worker started in this process")
         except HTTPException as exc:
             # Keep the API up (health checks, sign-in, read routes) when storage is not configured yet.
@@ -44,8 +49,9 @@ async def lifespan(_app: FastAPI):
     try:
         yield
     finally:
-        if worker_task is not None:
-            worker_task.cancel()
+        for task in (worker_task, tidy_task):
+            if task is not None:
+                task.cancel()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

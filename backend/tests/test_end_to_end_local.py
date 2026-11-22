@@ -187,3 +187,146 @@ def test_unknown_google_person_becomes_a_student_without_privileges(client):
     assert me.json()["role"] == "student"
     assert me.json()["campus_id"] is None
 
+
+
+# --- Document targeting: enforced by the database, checked through every student-facing path ------------
+#
+# Synthetic fixtures only. A targeted document carries batch, section and course. A student sees it only when
+# their profile matches every targeting field that is set, through the list, the detail, the PDF route, the
+# chunk search and chat retrieval. Staff are not filtered. Untargeted documents are unchanged.
+
+
+def _owner_returning(sql, params=()):
+    with psycopg.connect(DSN) as conn:
+        row = conn.execute(sql, params).fetchone()
+        conn.commit()
+        return row
+
+
+def _seed_course(campus_id, name):
+    return _owner_returning(
+        "insert into public.courses (campus_id, name) values (%s, %s) returning id", (campus_id, name)
+    )[0]
+
+
+def _set_profile_academics(user_id, *, batch=None, section=None, course_id=None):
+    _owner(
+        "update public.profiles set batch_year = %s, section = %s, course_id = %s where id = %s",
+        (batch, section, course_id, user_id),
+    )
+
+
+def _seed_targeted_document(campus_id, uploader, title, *, batch=None, section=None, course_id=None):
+    doc_id = uuid4()
+    _owner(
+        "insert into public.documents (id, title, storage_path, uploaded_by, campus_id, scope, visibility, "
+        "processing_status, publication_status, page_count, batch_year, section, course_id) "
+        "values (%s, %s, %s, %s, %s, 'campus', 'public_students', 'ready', 'published', 1, %s, %s, %s)",
+        (doc_id, title, f"{campus_id}/{doc_id}.pdf", uploader, campus_id, batch, section, course_id),
+    )
+    # Every chunk gets the same vector, so cosine similarity to any query is 1: retrieval depends only on RLS.
+    vector = "[" + ",".join(["0.01"] * 1536) + "]"
+    _owner(
+        "insert into public.document_chunks (document_id, chunk_index, page_number, content, embedding) "
+        "values (%s, 0, 1, %s, %s::vector)",
+        (doc_id, "Pay in week two of the term.", vector),
+    )
+    return doc_id
+
+
+def _store_pdf(client, document_id, campus_id):
+    """Puts a synthetic PDF object in the in-memory store the test client uses."""
+    import asyncio
+
+    pg = app.dependency_overrides[get_data_client]()
+    body = b"%PDF-1.4\n% synthetic test document\n%%EOF\n"
+    asyncio.run(pg.upload_object("bucket", f"{campus_id}/{document_id}.pdf", body, "application/pdf"))
+
+
+def _titles(client, user_id):
+    response = client.get(f"{API}/documents", headers=_auth(user_id))
+    assert response.status_code == 200
+    return [row["title"] for row in response.json()["items"]]
+
+
+def test_targeted_document_is_visible_only_to_the_matching_student(client):
+    campus, match, authority = _seed_campus_with_users()
+    other = _seed_student_on_campus(campus)
+    course = _seed_course(campus, f"Targeting CS {uuid4().hex[:6]}")
+    _set_profile_academics(match, batch=2026, section="A", course_id=course)
+    _set_profile_academics(other, batch=2025, section="B", course_id=course)
+    doc = _seed_targeted_document(campus, authority, "E2E targeted 2026 A", batch=2026, section="A", course_id=course)
+    _store_pdf(client, doc, campus)
+
+    assert "E2E targeted 2026 A" in _titles(client, match)
+    assert "E2E targeted 2026 A" not in _titles(client, other)
+
+    assert client.get(f"{API}/documents/{doc}", headers=_auth(match)).status_code == 200
+    assert client.get(f"{API}/documents/{doc}", headers=_auth(other)).status_code == 404
+
+    pdf_ok = client.get(f"{API}/documents/{doc}/file", headers=_auth(match))
+    assert pdf_ok.status_code == 200 and pdf_ok.content.startswith(b"%PDF-")
+    assert client.get(f"{API}/documents/{doc}/file", headers=_auth(other)).status_code == 404
+
+
+def test_chat_never_cites_a_targeted_document_for_a_non_matching_student(client):
+    campus, match, authority = _seed_campus_with_users()
+    other = _seed_student_on_campus(campus)
+    course = _seed_course(campus, f"Chat course {uuid4().hex[:6]}")
+    _set_profile_academics(match, batch=2026, section="A", course_id=course)
+    _set_profile_academics(other, batch=2025, section="B", course_id=course)
+    _seed_targeted_document(campus, authority, "E2E chat targeted", batch=2026, section="A", course_id=course)
+
+    answered = client.post(f"{API}/chat/ask", headers=_auth(match), json={"question": "When is fee week two?"})
+    denied = client.post(f"{API}/chat/ask", headers=_auth(other), json={"question": "When is fee week two?"})
+
+    assert answered.status_code == 200 and answered.json()["abstained"] is False
+    assert [c["title"] for c in answered.json()["citations"]] == ["E2E chat targeted"]
+    assert denied.status_code == 200
+    assert denied.json()["abstained"] is True
+    assert denied.json()["citations"] == []
+
+
+def test_student_without_profile_academics_does_not_see_a_targeted_document(client):
+    campus, _, authority = _seed_campus_with_users()
+    blank = _seed_student_on_campus(campus)  # no batch, section or course on the profile
+    doc = _seed_targeted_document(campus, authority, "E2E blank profile", batch=2026)
+
+    assert "E2E blank profile" not in _titles(client, blank)
+    assert client.get(f"{API}/documents/{doc}/file", headers=_auth(blank)).status_code == 404
+
+
+def test_course_is_matched_by_id_so_a_different_course_is_denied(client):
+    campus, match, authority = _seed_campus_with_users()
+    wanted = _seed_course(campus, f"Wanted {uuid4().hex[:6]}")
+    unwanted = _seed_course(campus, f"Unwanted {uuid4().hex[:6]}")
+    _set_profile_academics(match, course_id=unwanted)
+    _seed_targeted_document(campus, authority, "E2E course only", course_id=wanted)
+
+    assert "E2E course only" not in _titles(client, match)
+
+
+def test_authority_still_sees_targeted_documents_of_its_campus(client):
+    campus, _, authority = _seed_campus_with_users()
+    _seed_targeted_document(campus, authority, "E2E staff view", batch=2026, section="A")
+
+    assert "E2E staff view" in _titles(client, authority)
+
+
+def test_untargeted_document_is_still_visible_to_every_campus_student(client):
+    campus, student, authority = _seed_campus_with_users()
+    other = _seed_student_on_campus(campus)
+    _seed_document(campus, authority, "E2E open to campus", "published")
+
+    assert "E2E open to campus" in _titles(client, student)
+    assert "E2E open to campus" in _titles(client, other)
+
+
+def _seed_student_on_campus(campus_id):
+    user_id = uuid4()
+    email = f"{user_id.hex}@example.test"
+    _owner("insert into public.account_identities (id, email, google_subject) values (%s, %s, %s)",
+           (user_id, email, f"sub-{user_id.hex}"))
+    _owner("insert into public.profiles (id, email, role, campus_id) values (%s, %s, 'student', %s)",
+           (user_id, email, campus_id))
+    return user_id

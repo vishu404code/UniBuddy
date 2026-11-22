@@ -18,7 +18,7 @@ from app.schemas.chat import (
 )
 from app.schemas.common import Page
 from app.services.chat import AskTimedOut, ask_question, forward_message_to_faculty
-from app.services.chat_retention import cutoff_for, tidy_student_chats_safely
+from app.services.chat_retention import cutoff_for
 from app.services.providers import get_ai_client, get_data_client
 from app.services.postgres_client import PostgresClient
 
@@ -66,13 +66,8 @@ async def list_conversations(
     offset: Annotated[int, Query(ge=0)] = 0,
     sb: PostgresClient = Depends(get_data_client),
 ):
-    """Conversations with messages in the last 72 hours. Each visit also tidies one batch of older
-    chats into private summaries (see chat_retention). That step never fails this request."""
-    try:
-        ai = get_ai_client()
-    except HTTPException:
-        ai = None  # AI not configured: old chats wait for a visit that can summarize them
-    await tidy_student_chats_safely(sb=sb, ai=ai, user=session.user)
+    """Conversations with messages in the last 72 hours. Reading history makes no model call and removes
+    nothing: older chats are tidied by the background worker (see chat_retention.tidy_forever)."""
     cutoff = cutoff_for(datetime.now(timezone.utc))
     recent = await sb.select_as_user(
         session.access_token,

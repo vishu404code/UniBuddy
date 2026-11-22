@@ -18,12 +18,14 @@ their chat history, one batch per request, so an old backlog is cleared over sev
 import hashlib
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
 
 from app.ai.gemini_client import AIServiceError
 from app.schemas.auth import CurrentUser
+from app.services.ai_usage import record_usage
 from app.services.errors import DataServiceError
 from app.services.postgres_client import PostgresClient
 
@@ -117,8 +119,17 @@ async def _next_old_batch(sb: PostgresClient, user: CurrentUser, cutoff: datetim
     return [], None
 
 
-async def summarize(ai: Any, batch: list[dict[str, Any]]) -> str:
-    text = await ai.complete(SYSTEM_PROMPT, _transcript(batch))
+async def summarize(ai: Any, batch: list[dict[str, Any]], sb: PostgresClient | None = None) -> str:
+    complete_with_usage = getattr(ai, "complete_with_usage", None)
+    if complete_with_usage is not None:
+        text, usage = await complete_with_usage(SYSTEM_PROMPT, _transcript(batch))
+        if usage is not None and sb is not None:
+            await record_usage(
+                sb, operation="summary", model=usage.model,
+                input_tokens=usage.input_tokens, output_tokens=usage.output_tokens,
+            )
+    else:
+        text = await ai.complete(SYSTEM_PROMPT, _transcript(batch))
     cleaned = redact((text or "").strip())[:SUMMARY_MAX_CHARS].strip()
     if not cleaned:
         raise AIServiceError("empty summary")
@@ -157,7 +168,7 @@ async def tidy_student_chats(*, sb: PostgresClient, ai: Any | None, user: Curren
         if ai is None:
             return {"status": "deferred", "reason": "AI service not configured; nothing was removed"}
         try:
-            summary = await summarize(ai, batch)
+            summary = await summarize(ai, batch, sb)
         except AIServiceError:
             return {"status": "deferred", "reason": "summary unavailable; nothing was removed"}
         try:
@@ -202,3 +213,49 @@ async def recent_summaries(sb: PostgresClient, access_token: str, limit: int = 5
         access_token, "chat_summaries", {"select": "summary,last_message_at", "order": "last_message_at.desc"}, limit, 0
     )
     return rows
+
+
+@dataclass(frozen=True)
+class _UserRef:
+    """The one field the tidy-up needs from a user. Background runs have no request, so no CurrentUser."""
+
+    id: UUID
+
+
+async def tidy_next_student_batch(*, sb: PostgresClient, ai: Any | None, now: datetime | None = None) -> dict[str, Any]:
+    """One bounded pass for the oldest student with old messages. Students whose old messages are all
+    ticket-linked are skipped, so one of them cannot stop the others from being tidied."""
+    now = now or datetime.now(timezone.utc)
+    cutoff = cutoff_for(now)
+    rows = await sb.select_service(
+        "messages",
+        {"select": "conversation_id", "created_at": f"lt.{cutoff.isoformat()}", "order": "created_at.asc",
+         "limit": str(SCAN_MESSAGES)},
+    )
+    seen: set[str] = set()
+    for row in rows:
+        conversation_id = str(row["conversation_id"])
+        if conversation_id in seen:
+            continue
+        seen.add(conversation_id)
+        owners = await sb.select_service("conversations", {"select": "user_id", "id": f"eq.{conversation_id}", "limit": "1"})
+        if not owners:
+            continue
+        result = await tidy_student_chats(sb=sb, ai=ai, user=_UserRef(id=UUID(str(owners[0]["user_id"]))), now=now)
+        if result["status"] != "nothing_to_do":
+            return result
+    return {"status": "nothing_to_do"}
+
+
+async def tidy_forever(*, sb: PostgresClient, ai: Any | None, interval_seconds: float = 60.0) -> None:
+    """Background loop started with the worker. One batch per tick; a failure is logged and retried next tick."""
+    import asyncio
+
+    while True:
+        try:
+            await tidy_next_student_batch(sb=sb, ai=ai)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - the loop must keep running; the next tick retries
+            logger.warning("chat tidy-up tick did not finish; it will be retried")
+        await asyncio.sleep(interval_seconds)

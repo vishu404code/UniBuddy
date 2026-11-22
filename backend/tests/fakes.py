@@ -138,6 +138,23 @@ class FakeDataClient:
         return rows[offset : offset + limit], len(rows)
 
     async def rpc_service(self, function, payload):
+        if function == "apply_ticket_update":
+            ticket = next((r for r in self.tables["tickets"] if r["id"] == payload["p_ticket_id"]), None)
+            if payload["p_status"] is not None or payload["p_assigned_faculty_id"] is not None:
+                if ticket is None or ticket["status"] != payload["p_expected_status"]:
+                    raise DataServiceError(400, "ticket_changed")
+                if payload["p_status"] is not None:
+                    ticket["status"] = payload["p_status"]
+                if payload["p_assigned_faculty_id"] is not None:
+                    ticket["assigned_faculty_id"] = payload["p_assigned_faculty_id"]
+            for event in payload["p_events"]:
+                self.tables["ticket_events"].append({"id": str(uuid4()), "ticket_id": payload["p_ticket_id"],
+                                                     "actor_id": event["actor_id"], "event_type": event["event_type"],
+                                                     "note": event["note"]})
+            for note in payload["p_notifications"]:
+                self.tables["notifications"].append({"id": str(uuid4()), "user_id": note["user_id"],
+                                                     "text": note["text"], "ticket_id": payload["p_ticket_id"]})
+            return None
         if function == "open_student_signup":
             account, email = payload["p_account"], payload["p_email"].lower()
             if any(row["id"] == account or row["email"] == email for row in self.tables["profiles"]):

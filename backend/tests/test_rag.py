@@ -80,7 +80,10 @@ async def test_answer_without_citation_markers_abstains():
 @pytest.mark.asyncio
 async def test_citations_come_from_retrieved_metadata_only():
     evidence = select_evidence(
-        [_row(DOC_A, "Fee Policy", 3, 0.8), _row(DOC_B, "Calendar", 1, 0.7)],
+        [
+            _row(DOC_A, "Fee Policy", 3, 0.8, content="Pay the fee in week two of term."),
+            _row(DOC_B, "Calendar", 1, 0.7, content="The calendar lists exams in December."),
+        ],
         min_similarity=0.3,
         limit=5,
     )
@@ -102,3 +105,49 @@ async def test_prompt_contains_numbered_sources_and_question():
     assert "[1] Fee Policy, page 3" in prompt
     assert "Pay by week two." in prompt
     assert prompt.endswith("QUESTION: When?")
+
+
+# --- Grounding: a claim is shown only when its cited source supports it ----------------------------------
+
+@pytest.mark.asyncio
+async def test_a_cited_claim_the_cited_source_does_not_support_is_dropped():
+    evidence = select_evidence([_row(DOC_A, "Fee Policy", 3, 0.8, content="Hostel rooms are allocated by lottery.")],
+                               min_similarity=0.3, limit=5)
+    generator = FakeAI(reply="The fee is due on the first Monday of September [1].")
+
+    answer = await answer_question("When is the fee due?", evidence, generator)
+
+    assert answer.abstained is True
+    assert answer.citations == []
+
+
+@pytest.mark.asyncio
+async def test_mixed_answer_keeps_only_supported_claims_and_their_citations():
+    evidence = select_evidence(
+        [
+            _row(DOC_A, "Fee Policy", 3, 0.8, content="Pay the fee in week two of term."),
+            _row(DOC_B, "Hostel", 7, 0.7, content="Hostel rooms are allocated by lottery."),
+        ],
+        min_similarity=0.3,
+        limit=5,
+    )
+    generator = FakeAI(reply="Pay the fee in week two [1]. The hostel fee is a dragon's gold [2].")
+
+    answer = await answer_question("When is the fee due?", evidence, generator)
+
+    assert answer.abstained is False
+    assert answer.text == "Pay the fee in week two [1]."
+    assert [(c.title, c.page) for c in answer.citations] == [("Fee Policy", 3)]
+
+
+@pytest.mark.asyncio
+async def test_a_long_uncited_claim_is_never_shown():
+    evidence = select_evidence([_row(DOC_A, "Fee Policy", 3, 0.8, content="Pay the fee in week two of term.")],
+                               min_similarity=0.3, limit=5)
+    generator = FakeAI(reply="Pay the fee in week two [1].\nAdditionally the library is open all night without fines.")
+
+    answer = await answer_question("When is the fee due?", evidence, generator)
+
+    assert answer.abstained is False
+    assert "library" not in answer.text
+    assert [(c.title, c.page) for c in answer.citations] == [("Fee Policy", 3)]

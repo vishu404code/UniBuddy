@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -71,6 +72,18 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def _chunking_must_advance(self):
+        # Each chunk starts max - overlap characters after the last. If the overlap is not smaller than the
+        # chunk size, the chunker never advances and the document worker loops forever. Refuse at startup.
+        if self.chunk_max_chars <= 0:
+            raise ValueError("CHUNK_MAX_CHARS must be greater than zero")
+        if self.chunk_overlap_chars < 0:
+            raise ValueError("CHUNK_OVERLAP_CHARS must not be negative")
+        if self.chunk_overlap_chars >= self.chunk_max_chars:
+            raise ValueError("CHUNK_OVERLAP_CHARS must be smaller than CHUNK_MAX_CHARS")
+        return self
 
     @property
     def allowed_origins_list(self) -> list[str]:

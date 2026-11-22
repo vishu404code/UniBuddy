@@ -5,9 +5,10 @@ from typing import Any
 import httpx
 
 from app.ai.chunking import chunk_pages
-from app.ai.gemini_client import AIServiceError, GeminiClient
+from app.ai.gemini_client import EMBEDDING_BATCH_SIZE, AIServiceError, GeminiClient
 from app.ai.pdf_extractor import PdfProcessingError, extract_pages
 from app.config import settings
+from app.services.ai_usage import embedding_model_name, record_usage
 from app.services.postgres_client import PostgresClient
 from app.services.errors import DataServiceError
 
@@ -56,9 +57,15 @@ async def process_document(
     document_id = document["id"]
     try:
         data = await sb.download_object(bucket, document["storage_path"])
-        extracted = extract_pages(data)
-        chunks = chunk_pages(extracted.pages, chunk_max_chars, chunk_overlap_chars)
+        # Extraction and chunking are CPU-bound. They run in a worker thread so a large PDF cannot stall the API.
+        extracted = await asyncio.to_thread(extract_pages, data)
+        chunks = await asyncio.to_thread(chunk_pages, extracted.pages, chunk_max_chars, chunk_overlap_chars)
         vectors = await ai.embed_documents([chunk.content for chunk in chunks])
+        if chunks:
+            await record_usage(
+                sb, operation="document_embedding", model=embedding_model_name(ai),
+                request_count=-(-len(chunks) // EMBEDDING_BATCH_SIZE),
+            )
 
         rows = [
             {

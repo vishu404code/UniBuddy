@@ -342,3 +342,22 @@ def test_ask_past_the_deadline_returns_a_visible_503(harness, monkeypatch):
 
     assert response.status_code == 503
     assert response.json() == {"detail": "The answer took too long. Please try again."}
+
+
+def test_listing_conversations_makes_no_model_call_and_removes_nothing(harness):
+    """Reading history must not summarize or delete (that work runs in the background worker)."""
+    from datetime import datetime, timedelta, timezone
+
+    client, sb, ai = harness
+    old = (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    conversation = uuid4()
+    sb.tables["conversations"].append({"id": str(conversation), "user_id": str(STUDENT_ID), "title": "old", "created_at": old})
+    message = uuid4()
+    sb.tables["messages"].append({"id": str(message), "conversation_id": str(conversation), "role": "user",
+                                  "content": "an old question", "created_at": old})
+
+    response = client.get(f"{API}/chat/conversations", headers=_auth(STUDENT_ID))
+
+    assert response.status_code == 200
+    assert ai.completions == []
+    assert [m["id"] for m in sb.tables["messages"]] == [str(message)]

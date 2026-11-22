@@ -101,21 +101,79 @@ async def answer_question(question: str, evidence: list[Evidence], generator: Te
     if not raw or INSUFFICIENT_MARKER in raw:
         return abstain()
 
-    # Accept [1], [1][2] and [1, 2]; a model often writes the last form.
-    cited = {int(n) for group in CITATION_PATTERN.findall(raw) for n in re.findall(r"\d+", group)}
-    cited_numbers = sorted(n for n in cited if 1 <= n <= len(evidence))
-    if not cited_numbers:
+    # Each sentence is checked on its own. A claim that cites no retrieved source, or that its cited sources do
+    # not support, is dropped. Only the claims that survive are shown, and only their citations are returned.
+    kept: list[str] = []
+    cited_all: set[int] = set()
+    for bullet, unit in _split_units(raw):
+        cited = _cited_numbers(unit, len(evidence))
+        if not cited:
+            if len(_content_words(unit)) >= MIN_CLAIM_WORDS:
+                continue  # an uncited claim: never shown
+            kept.append(("- " if bullet else "") + unit)  # a short phrase such as an intro line
+            continue
+        if not _supported(unit, cited, evidence):
+            continue  # cited, but the cited sources do not say it
+        cited_all.update(cited)
+        kept.append(("- " if bullet else "") + unit)
+
+    if not cited_all:
         return abstain()
 
     seen: set[tuple[UUID, int | None]] = set()
     citations: list[Citation] = []
-    for number in cited_numbers:
+    for number in sorted(cited_all):
         source = evidence[number - 1]
         key = (source.document_id, source.page_number)
         if key not in seen:
             seen.add(key)
             citations.append(Citation(document_id=source.document_id, title=source.title, page=source.page_number))
-    return Answer(text=raw, citations=citations, abstained=False)
+    return Answer(text="\n".join(kept), citations=citations, abstained=False)
+
+
+# Grounding checks, deterministic and local. They limit what can be shown; they do not prove an answer is right.
+# A claim is supported when at least SUPPORT_THRESHOLD of its content words appear in one of the sources it cites.
+SUPPORT_THRESHOLD = 0.5
+MIN_CLAIM_WORDS = 4
+STOPWORDS = frozenset(
+    "a an and are as at be been being but by can could did do does for from had has have how i if in into is "
+    "it its of on or our should so than that the their them then there these they this to too very was we were "
+    "what when where which who why will with would you your about after also any because both each few more "
+    "most must not only other over same some such only".split()
+)
+
+
+def _content_words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9]+", text.lower()) if len(w) >= 3 and w not in STOPWORDS}
+
+
+def _split_units(text: str) -> list[tuple[bool, str]]:
+    """Lines first (a bullet keeps its marker), then sentences inside each line. Returns (is_bullet, sentence)."""
+    units: list[tuple[bool, str]] = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        bullet = stripped.startswith(("- ", "* ", "• "))
+        body = stripped[2:].strip() if bullet else stripped
+        for sentence in re.split(r"(?<=[.!?])\s+", body):
+            if sentence.strip():
+                units.append((bullet, sentence.strip()))
+    return units
+
+
+def _cited_numbers(unit: str, evidence_count: int) -> list[int]:
+    # Accept [1], [1][2] and [1, 2]; a model often writes the last form. Numbers outside the sources are ignored.
+    cited = {int(n) for group in CITATION_PATTERN.findall(unit) for n in re.findall(r"\d+", group)}
+    return sorted(n for n in cited if 1 <= n <= evidence_count)
+
+
+def _supported(unit: str, cited: list[int], evidence: list["Evidence"]) -> bool:
+    claim = _content_words(CITATION_PATTERN.sub("", unit))
+    if not claim:
+        return True
+    best = max(len(claim & _content_words(evidence[n - 1].content)) / len(claim) for n in cited)
+    return best >= SUPPORT_THRESHOLD
 
 
 # Several questions in one message ("A, and how long B?") need each part searched on its own. A single

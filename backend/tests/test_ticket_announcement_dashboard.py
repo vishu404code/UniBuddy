@@ -123,15 +123,15 @@ async def test_concurrent_status_change_is_detected():
     sb = FakeDataClient(visible=_visible_to_all)
     sb.tables["tickets"].append(_ticket(student, assigned=faculty, status="assigned"))
     ticket_id = sb.tables["tickets"][0]["id"]
-    original_update = sb.update_service
+    original_rpc = sb.rpc_service
 
-    async def concurrent_update(table, filters, values):
-        for row in sb.tables[table]:
+    async def concurrent_update(function, payload):
+        for row in sb.tables["tickets"]:
             if row["id"] == ticket_id:
                 row["status"] = "in_progress"  # another request moves the ticket after our read
-        return await original_update(table, filters, values)
+        return await original_rpc(function, payload)
 
-    sb.update_service = concurrent_update
+    sb.rpc_service = concurrent_update  # the guard is the transactional RPC's expected-status check
 
     with pytest.raises(DocumentConflict, match="changed by someone else"):
         await _update(sb, faculty, ticket_id, status="resolved")

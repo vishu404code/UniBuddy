@@ -12,6 +12,9 @@ class Chunk:
 
 def _windows(text: str, max_chars: int, overlap: int) -> list[str]:
     step = max_chars - overlap
+    if step <= 0:
+        # Defense in depth: settings validation refuses this at startup, so the loop below can always advance.
+        raise ValueError("chunk overlap must be smaller than the chunk size")
     pieces = []
     start = 0
     while True:
