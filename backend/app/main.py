@@ -25,9 +25,19 @@ from app.services.chat_retention import tidy_forever
 from app.services.document_worker import run_forever
 from app.services.documents import DocumentError
 from app.services.errors import DataServiceError
+from app.services import request_timing
 from app.services.providers import get_ai_client, get_data_client, storage_configured
 
 logger = logging.getLogger("unibuddy")
+# Uvicorn configures only its own loggers. Without a handler here, every INFO line from the app's loggers
+# (request timings, chat stage timings, worker progress) is dropped in production.
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+timing_logger = logging.getLogger("unibuddy.timing")
 
 
 @asynccontextmanager
@@ -55,6 +65,30 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+
+@app.middleware("http")
+async def request_timing_middleware(request: Request, call_next):
+    """One line per API request: total, authentication, profile lookup and database time (durations only)."""
+    timing, token = request_timing.start()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        total = timing.total_ms()
+        response.headers["Server-Timing"] = timing.server_timing(total)
+        return response
+    finally:
+        total = timing.total_ms()
+        request_timing.finish(token)
+        if request.method != "OPTIONS" and request.url.path != f"{settings.api_v1_prefix}/health":
+            route = request.scope.get("route")
+            path = getattr(route, "path", None) or "unmatched"
+            parts = " ".join(f"{name}_ms={ms:.0f}" for name, ms in timing.parts_ms.items())
+            timing_logger.info(
+                "request %s %s status=%s total_ms=%.0f db_calls=%d %s",
+                request.method, path, status_code, total, timing.db_calls, parts,
+            )
 
 app.add_middleware(
     CORSMiddleware,

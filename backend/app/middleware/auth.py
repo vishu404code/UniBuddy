@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.config import settings
 from app.repositories.profiles import ProfileLookupError, ProfileRepository
 from app.schemas.auth import CurrentUser, Role
+from app.services import request_timing
 from app.services.providers import get_data_client
 from app.services.token_verifier import InvalidAccessToken, SessionTokenVerifier
 
@@ -39,12 +40,14 @@ async def get_current_session(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated", _UNAUTHORIZED_HEADERS)
 
     try:
-        user_id: UUID = verifier.verify(credentials.credentials)
+        with request_timing.measure("auth"):
+            user_id: UUID = verifier.verify(credentials.credentials)
     except InvalidAccessToken as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token", _UNAUTHORIZED_HEADERS) from exc
 
     try:
-        profile = await profiles.get_by_id(user_id)
+        with request_timing.measure("profile"):
+            profile = await profiles.get_by_id(user_id)
     except ProfileLookupError as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Could not load user profile") from exc
 

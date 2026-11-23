@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends
 
 from app.middleware.auth import CurrentSession, session_with_roles
 from app.schemas.dashboards import ManagementAnalytics, ManagementStats, StaffDashboard, StudentDashboard
-from app.services.dashboards import management_analytics, management_stats, staff_dashboard, student_dashboard
+from app.services.dashboards import (
+    management_analytics,
+    management_platform_overview,
+    management_stats,
+    staff_dashboard,
+    student_dashboard,
+)
 from app.services.providers import get_data_client
 from app.services.postgres_client import PostgresClient
 
@@ -42,3 +48,12 @@ async def management_analytics_overview(
 ):
     """Read-only, aggregate. Management only: the role comes from the database profile."""
     return await management_analytics(sb)
+
+
+@router.get("/management/overview")
+async def management_full_overview(
+    _session: Annotated[CurrentSession, Depends(session_with_roles("management"))],
+    sb: PostgresClient = Depends(get_data_client),
+):
+    """Management only. University-wide counts and recent rows, read from the database. No document text is returned."""
+    return await management_platform_overview(sb)

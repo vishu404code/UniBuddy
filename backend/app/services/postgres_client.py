@@ -11,15 +11,19 @@ so services don't change when the backend is switched.
 import asyncio
 import logging
 import re
+import time
+import weakref
 from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
 import psycopg
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 from psycopg_pool import ConnectionPool, PoolTimeout
 
+from app.services import request_timing
 from app.services.errors import DataServiceError
 from app.storage.objects import ObjectNotFound, ObjectStore, ObjectStoreError
 
@@ -29,6 +33,10 @@ RESERVED = frozenset({"select", "order", "limit", "offset"})
 COMPARISONS = {"eq": "=", "neq": "<>", "lt": "<", "lte": "<=", "gt": ">", "gte": ">="}
 TABLE_FUNCTIONS = frozenset({"match_document_chunks", "claim_document_jobs", "publish_document_version"})
 SINGLE_ROW_FUNCTIONS = frozenset({"publish_document_version"})
+# A pooled connection that has been idle longer than this is pinged before use. One used more recently is
+# handed out directly: the ping is a full round trip to Neon, and most requests reuse a connection within seconds.
+IDLE_CHECK_SECONDS = 30.0
+PAGE_TOTAL = "ub_page_total"
 
 
 def _ident(name: str) -> str:
@@ -123,17 +131,29 @@ class PostgresClient:
         # Production: a small pool, so each request reuses an open connection instead of paying for
         # a new TLS handshake to Neon. Tests that inject `connect` keep their own connection behaviour.
         self._pool: ConnectionPool | None = None
+        self._last_used: weakref.WeakKeyDictionary[psycopg.Connection, float] = weakref.WeakKeyDictionary()
         if connect is None:
             self._pool = ConnectionPool(
                 conninfo=dsn,
                 min_size=1,
                 max_size=pool_size,
-                kwargs={"row_factory": dict_row, "connect_timeout": 10},
-                check=ConnectionPool.check_connection,
+                # Autocommit: each call opens its own transaction explicitly (see _run_sync), so the opening
+                # statements and the query travel together instead of one round trip each.
+                kwargs={"row_factory": dict_row, "connect_timeout": 10, "autocommit": True},
+                check=self._check_if_idle,
+                reset=self._mark_used,
                 timeout=15,
                 open=True,
             )
         self._connect = connect or (lambda url: psycopg.connect(url, row_factory=dict_row))
+
+    def _mark_used(self, conn: psycopg.Connection) -> None:
+        self._last_used[conn] = time.monotonic()
+
+    def _check_if_idle(self, conn: psycopg.Connection) -> None:
+        last = self._last_used.get(conn)
+        if last is None or time.monotonic() - last > IDLE_CHECK_SECONDS:
+            ConnectionPool.check_connection(conn)
 
     def _checkout(self):
         """Context manager that yields one connection; the pool commits or rolls back on exit."""
@@ -151,17 +171,42 @@ class PostgresClient:
         except SessionError as exc:
             raise DataServiceError(401, "invalid session") from exc
 
+    @staticmethod
+    def _in_transaction(conn: psycopg.Connection, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
+        """One transaction: the role and user settings, the work, then commit.
+
+        Pipeline mode sends begin, the settings and the first query together, so a read costs about two round
+        trips (query, commit) instead of five. Both settings are transaction-local (is_local => true), exactly
+        like SET LOCAL ROLE, so nothing leaks to the next request on the same connection.
+        """
+        if not conn.autocommit:
+            conn.autocommit = True  # injected connections (tests): the transaction is opened explicitly below
+        try:
+            with conn.pipeline():
+                conn.execute("begin")
+                if as_user is None:
+                    conn.execute("select set_config('role', 'service_role', true)")
+                else:
+                    conn.execute(
+                        "select set_config('role', 'authenticated', true), set_config('app.user_id', %s, true)",
+                        (str(as_user),),
+                    )
+                result = work(conn)
+                conn.execute("commit")
+            return result
+        except BaseException:
+            if not conn.closed and conn.info.transaction_status != TransactionStatus.IDLE:
+                try:
+                    conn.rollback()
+                except psycopg.Error:
+                    pass  # the pool discards a broken connection
+            raise
+
     def _run_sync(self, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
+        started = time.perf_counter()
         try:
             with self._checkout() as conn:
-                if as_user is None:
-                    conn.execute("set local role service_role")
-                else:
-                    conn.execute("set local role authenticated")
-                    conn.execute("select set_config('app.user_id', %s, true)", (str(as_user),))
-                result = work(conn)
-                conn.commit()
-                return result
+                return self._in_transaction(conn, as_user, work)
         except DataServiceError:
             raise
         except psycopg.errors.UniqueViolation as exc:
@@ -176,6 +221,8 @@ class PostgresClient:
             raise DataServiceError(503, "database unavailable") from exc
         except psycopg.Error as exc:
             raise DataServiceError(500, "database request failed") from exc
+        finally:
+            request_timing.record("db", (time.perf_counter() - started) * 1000, db_call=True)
 
     async def _run(self, as_user: UUID | None, work: Callable[[psycopg.Connection], Any]) -> Any:
         return await asyncio.to_thread(self._run_sync, as_user, work)
@@ -220,12 +267,27 @@ class PostgresClient:
         self, access_token: str, table: str, params: dict[str, str], limit: int, offset: int
     ) -> tuple[list[dict[str, Any]], int]:
         user = self._user_id(access_token)
+        # The total comes from a window count in the same query (counted over every matching row, before the
+        # limit), so a list page is one query instead of two. A page past the end has no row to carry the
+        # total; only then is it counted separately.
         sql, values = self._select_sql(table, {**params, "limit": str(limit), "offset": str(offset)})
+        columns = _columns(params.get("select"))
+        prefix = f"select {columns} from "
+        if not sql.startswith(prefix):
+            raise DataServiceError(500, "unexpected page query")
+        sql = f"select {columns}, count(*) over () as {PAGE_TOTAL} from " + sql[len(prefix):]
         count_sql, count_values = self._select_sql(table, {k: v for k, v in params.items() if k not in ("select", "order")})
 
         def work(conn):
             rows = conn.execute(sql, values).fetchall()
-            total = conn.execute(f"select count(*) as n from ({count_sql}) as counted", count_values).fetchone()["n"]
+            if rows:
+                total = rows[0][PAGE_TOTAL]
+                for row in rows:
+                    del row[PAGE_TOTAL]
+            elif offset:
+                total = conn.execute(f"select count(*) as n from ({count_sql}) as counted", count_values).fetchone()["n"]
+            else:
+                total = 0
             return rows, total
 
         return await self._run(user, work)

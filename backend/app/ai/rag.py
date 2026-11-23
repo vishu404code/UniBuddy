@@ -120,15 +120,29 @@ async def answer_question(question: str, evidence: list[Evidence], generator: Te
     if not cited_all:
         return abstain()
 
-    seen: set[tuple[UUID, int | None]] = set()
+    # The listed citations are de-duplicated by (document, page), so a marker written against the source list can
+    # point past the end of the list the student sees. Markers are rewritten to the position in the shown list.
+    position: dict[tuple[UUID, int | None], int] = {}
     citations: list[Citation] = []
+    number_to_position: dict[int, int] = {}
     for number in sorted(cited_all):
         source = evidence[number - 1]
         key = (source.document_id, source.page_number)
-        if key not in seen:
-            seen.add(key)
+        if key not in position:
             citations.append(Citation(document_id=source.document_id, title=source.title, page=source.page_number))
-    return Answer(text="\n".join(kept), citations=citations, abstained=False)
+            position[key] = len(citations)
+        number_to_position[number] = position[key]
+    text = "\n".join(_renumber(line, number_to_position) for line in kept)
+    return Answer(text=text, citations=citations, abstained=False)
+
+
+def _renumber(line: str, number_to_position: dict[int, int]) -> str:
+    def replace(match: re.Match[str]) -> str:
+        numbers = {int(n) for n in re.findall(r"\d+", match.group(1))}
+        positions = sorted({number_to_position[n] for n in numbers if n in number_to_position})
+        return "".join(f"[{p}]" for p in positions)  # a marker with no retained source is removed
+
+    return CITATION_PATTERN.sub(replace, line)
 
 
 # Grounding checks, deterministic and local. They limit what can be shown; they do not prove an answer is right.
