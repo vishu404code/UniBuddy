@@ -5,6 +5,8 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="./runtime-config.js"></script>
 <style>
 @view-transition{navigation:auto}
 :root{
@@ -515,9 +517,9 @@ footer{display:block;text-align:center;font-size:13px;color:var(--muted);padding
       <div class="google-wrap" style="position:relative;width:100%">
         <button class="gbtn" id="google" type="button">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>
-          Continue with Google
+          <span id="google-label">Continue with Google</span>
         </button>
-        <div id="google-signin-btn" style="position:absolute;inset:0;opacity:0.0001;cursor:pointer;z-index:10;display:flex;justify-content:center;align-items:center"></div>
+        <div id="google-signin-btn" style="position:absolute;inset:0;opacity:0.0001;cursor:pointer;z-index:10;display:flex;justify-content:center;align-items:center;overflow:hidden"></div>
       </div>
       
       <div class="or">or use your email</div>
@@ -579,6 +581,18 @@ footer{display:block;text-align:center;font-size:13px;color:var(--muted);padding
       <a class="btn pri" href="index.html#cta">Request access for your campus</a>
       <button class="btn" id="again2" type="button">Use another email</button>
     </div>
+
+    <!-- Access request state for 403 no_profile -->
+    <div class="state" id="accessreq">
+      <div class="big"><svg class="ico"><use href="#i-cap"/></svg></div>
+      <h1 id="arTitle">Campus Account Not Found</h1>
+      <p class="sub" id="arSub">Your Google identity was verified, but no student or staff profile exists for this email yet.</p>
+      <div style="margin:20px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn pri" id="btnRequestAccess" type="button">Request Student Access</button>
+        <button class="btn" id="again3" type="button">Try Another Account</button>
+      </div>
+      <div class="msg" id="arMsg" role="alert" style="margin-top:14px"></div>
+    </div>
   </section>
 </div></main>
 
@@ -588,6 +602,12 @@ footer{display:block;text-align:center;font-size:13px;color:var(--muted);padding
 {
 const $=id=>document.getElementById(id);
 const ic=n=>`<svg class="ico"><use href="#i-${n}"/></svg>`;
+
+const _isLocal=['localhost','127.0.0.1'].includes(window.location.hostname);
+const UB_API_BASE=String((_isLocal?'/api/v1':(window.UB_CONFIG?.apiBase||''))).replace(/\/$/,'');
+const UB_GOOGLE_CLIENT_ID=String(window.UB_CONFIG?.googleClientId||'675157891879-ufpn2fmb16n6qkq7qjjeclre6eaem085.apps.googleusercontent.com');
+
+let currentGoogleCredential = null;
 
 const PUBLIC=['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','proton.me'];
 function lookup(email){
@@ -611,7 +631,7 @@ const DPW='UniBuddy@123';
 const VALID_PWS=['UniBuddy@123','demo123','password','password123'];
 
 function show(id){
-  ['signin','routing','notyet'].forEach(s=>{if($(s))$(s).classList.toggle('show',s===id);});
+  ['signin','routing','notyet','accessreq'].forEach(s=>{if($(s))$(s).classList.toggle('show',s===id);});
   if($('signin'))$('signin').style.display=id==='signin'?'':'none';
 }
 function msg(text,type='err'){
@@ -626,6 +646,17 @@ function reset(){
     $('submit').disabled=false;
     $('submit').innerHTML='Log in '+ic('arrow');
   }
+  if($('google')){
+    $('google').disabled=false;
+    const gl=$('google-label');
+    if(gl)gl.textContent='Continue with Google';
+  }
+  const m=$('msg');
+  if(m)m.className='msg';
+  const arm=$('arMsg');
+  if(arm)arm.className='msg';
+  const ra=$('btnRequestAccess');
+  if(ra){ra.disabled=false;ra.textContent='Request Student Access';ra.style.display='';}
 }
 
 // Prefill email if remembered
@@ -669,7 +700,8 @@ function route(email, pw){
     student: {name:'Student Portal', icon:'cap'},
     faculty: {name:'Faculty Portal', icon:'brief'},
     authority: {name:'Authority Portal', icon:'shield'},
-    management: {name:'Management Portal', icon:'build'}
+    management: {name:'Management Portal', icon:'build'},
+    super_admin: {name:'Management Portal', icon:'build'}
   };
   const p = roleNames[role] || {name: role.charAt(0).toUpperCase() + role.slice(1) + ' Portal', icon:'cap'};
 
@@ -696,6 +728,228 @@ function route(email, pw){
   }, 1000);
 }
 
+// Google Authentication Credential Handler
+async function handleGoogleCredential(id_token){
+  if(!id_token) return;
+  currentGoogleCredential = id_token;
+  
+  const gBtn = $('google');
+  const gLbl = $('google-label');
+  if(gBtn) gBtn.disabled = true;
+  if(gLbl) gLbl.innerHTML = '<span class="spin"></span> Authenticating…';
+  msg('Verifying Google credentials with university server…', 'info');
+
+  try {
+    const res = await fetch(UB_API_BASE + '/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token })
+    });
+    
+    let data;
+    try {
+      data = await res.json();
+    } catch(e) {
+      data = {};
+    }
+
+    if (res.ok && data?.access_token) {
+      localStorage.setItem('ub-token', data.access_token);
+      let me = data.user;
+      
+      // If user profile is not returned in session payload, fetch from /auth/me
+      if (!me) {
+        try {
+          const meRes = await fetch(UB_API_BASE + '/auth/me', {
+            headers: { 'Authorization': `Bearer ${data.access_token}` }
+          });
+          if (meRes.ok) {
+            me = await meRes.json();
+          }
+        } catch(e) {
+          console.warn('Failed to fetch /auth/me:', e);
+        }
+      }
+
+      if (me) {
+        const u = {
+          id: me.id,
+          email: me.email,
+          name: me.full_name || me.email.split('@')[0],
+          full_name: me.full_name,
+          role: me.role,
+          campus_id: me.campus_id,
+          department_id: me.department_id,
+          cross_campus_record_access: !!me.cross_campus_record_access
+        };
+        try {
+          localStorage.setItem('ub-user', JSON.stringify(u));
+          localStorage.setItem('ub-current-user', me.email);
+        } catch(e){}
+
+        const roleNames = {
+          student: {name:'Student Portal', icon:'cap'},
+          faculty: {name:'Faculty Portal', icon:'brief'},
+          authority: {name:'Authority Portal', icon:'shield'},
+          management: {name:'Management Portal', icon:'build'},
+          super_admin: {name:'Management Portal', icon:'build'}
+        };
+        const p = roleNames[me.role] || {name: me.role.charAt(0).toUpperCase() + me.role.slice(1) + ' Portal', icon:'cap'};
+
+        if($('rIcon')) $('rIcon').innerHTML = ic(p.icon);
+        if($('rTitle')) $('rTitle').textContent = 'Opening ' + p.name;
+        if($('rSub')) $('rSub').textContent = `Signed in as ${me.email}. Redirecting to your dashboard…`;
+        show('routing');
+
+        if($('rBar')){
+          $('rBar').style.width = '0';
+          requestAnimationFrame(() => requestAnimationFrame(() => $('rBar').style.width = '100%'));
+        }
+
+        setTimeout(() => {
+          location.href = 'index.html';
+        }, 900);
+        return;
+      }
+    }
+
+    // Handle 403 no_profile
+    if (res.status === 403 && (data?.detail?.code === 'no_profile' || data?.code === 'no_profile')) {
+      const detailMsg = data?.detail?.message || 'Your Google identity was verified, but no student or staff profile exists for this email yet.';
+      if($('arSub')) $('arSub').textContent = detailMsg;
+      show('accessreq');
+      return;
+    }
+
+    // Handle 401 unverified / expired
+    if (res.status === 401) {
+      msg('Google could not verify your identity or the credential has expired. Please try signing in again.', 'err');
+      return;
+    }
+
+    // Handle 409 conflict
+    if (res.status === 409) {
+      msg('This Google account is linked to another university account. Please contact your campus administrator.', 'err');
+      return;
+    }
+
+    // Handle 503 not configured
+    if (res.status === 503) {
+      msg('Google sign-in service is currently not configured on the server. Please contact support.', 'err');
+      return;
+    }
+
+    // Other error
+    const errText = data?.detail?.message || (typeof data?.detail === 'string' ? data.detail : null) || 'Sign-in could not be completed. Please try again.';
+    msg(errText, 'err');
+
+  } catch(err) {
+    console.error('Google auth error:', err);
+    msg('Unable to connect to UniBuddy authentication service. Please check your connection or server status.', 'err');
+  } finally {
+    if(gBtn) gBtn.disabled = false;
+    if(gLbl) gLbl.textContent = 'Continue with Google';
+  }
+}
+
+// Student Access Request Handler
+async function requestStudentAccess(){
+  if(!currentGoogleCredential) {
+    if($('arMsg')){
+      $('arMsg').textContent = 'Google credential expired. Please sign in again with Google.';
+      $('arMsg').className = 'msg show err';
+    }
+    return;
+  }
+  const btn = $('btnRequestAccess');
+  if(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Submitting request…';
+  }
+  const arm = $('arMsg');
+  if(arm) arm.className = 'msg';
+
+  try {
+    const res = await fetch(UB_API_BASE + '/auth/google/access-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: currentGoogleCredential })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if(res.status === 202 || res.ok) {
+      if(data?.status === 'has_account') {
+        if(arm){
+          arm.textContent = 'You already have an active account! Redirecting to sign-in…';
+          arm.className = 'msg show info';
+        }
+        setTimeout(() => reset(), 1500);
+      } else {
+        if($('arSub')) $('arSub').textContent = 'Your Student access request has been submitted to the campus administration for review. Once approved, you will be able to sign in immediately.';
+        if(btn) btn.style.display = 'none';
+        if(arm){
+          arm.textContent = 'Request received. Please check back after approval.';
+          arm.className = 'msg show info';
+        }
+      }
+    } else {
+      const errText = data?.detail?.message || 'Failed to submit access request. Please try again.';
+      if(arm){
+        arm.textContent = errText;
+        arm.className = 'msg show err';
+      }
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = 'Retry Request';
+      }
+    }
+  } catch(e) {
+    console.error('Access request error:', e);
+    if(arm){
+      arm.textContent = 'Network error while submitting access request. Please check connection.';
+      arm.className = 'msg show err';
+    }
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = 'Retry Request';
+    }
+  }
+}
+
+// Initialize Google Identity Services
+function initGoogleAuth(){
+  if(!UB_GOOGLE_CLIENT_ID) return;
+  if(window.google?.accounts?.id){
+    try{
+      window.google.accounts.id.initialize({
+        client_id: UB_GOOGLE_CLIENT_ID,
+        callback: (resp) => {
+          if(resp?.credential) handleGoogleCredential(resp.credential);
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      const gbtn = $('google-signin-btn');
+      if(gbtn && !gbtn.hasChildNodes()){
+        window.google.accounts.id.renderButton(gbtn, {
+          theme: 'outline',
+          size: 'large',
+          width: 380,
+          text: 'continue_with',
+          shape: 'rectangular'
+        });
+      }
+    }catch(e){
+      console.warn('initGoogleAuth error:', e);
+    }
+  }else if(!window.__ubGoogleRetry){
+    window.__ubGoogleRetry = setTimeout(() => {
+      window.__ubGoogleRetry = null;
+      initGoogleAuth();
+    }, 400);
+  }
+}
+
 if($('form')) {
   $('form').addEventListener('submit',e=>{
     e.preventDefault();
@@ -710,7 +964,15 @@ if($('form')) {
 
 if($('google')) {
   $('google').addEventListener('click',()=>{
-    msg('To sign in with Google, use your university Google account on UniBuddy.', 'info');
+    if(window.google?.accounts?.id){
+      window.google.accounts.id.prompt((notification) => {
+        if(notification.isNotDisplayed() || notification.isSkippedMomentum()){
+          console.log('GSI prompt not displayed:', notification.getNotDisplayedReason());
+        }
+      });
+    } else {
+      msg('Google sign-in is initializing. Please try again in a moment.', 'info');
+    }
   });
 }
 
@@ -730,6 +992,8 @@ if($('forgot')) {
 
 if($('again')) $('again').addEventListener('click',reset);
 if($('again2')) $('again2').addEventListener('click',reset);
+if($('again3')) $('again3').addEventListener('click',reset);
+if($('btnRequestAccess')) $('btnRequestAccess').addEventListener('click',requestStudentAccess);
 
 // Demo pills autofill & instant login
 document.querySelectorAll('[data-demo-role]').forEach(btn => {
@@ -743,6 +1007,7 @@ document.querySelectorAll('[data-demo-role]').forEach(btn => {
 });
 
 reset();
+initGoogleAuth();
 }
 </script>
 
