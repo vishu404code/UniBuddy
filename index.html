@@ -267,24 +267,6 @@ table{min-width:620px}.card .tw{padding-bottom:6px}tr.rw{cursor:pointer;transiti
 .ub-landing .role span {display:block;color:var(--mute);font-size:16px;margin-top:6px;line-height:1.4}
 .ub-landing .role[aria-selected=true] {background:var(--bg0)}
 .ub-landing .role:hover {background:rgba(0,0,0,.18)}
-
-.ub-landing .work-track {position:relative;height:280vh;max-width:100%}
-.ub-landing .work-showcase {position:sticky;top:76px;z-index:5;padding-top:6px}
-.ub-landing .work-showcase .center h2 {margin:0;font-size:clamp(32px,3.8vw,52px);line-height:1.06}
-.ub-landing .work-showcase .center .lede {margin:10px auto 0;max-width:860px;font-size:clamp(15px,1.3vw,18px);line-height:1.45}
-.ub-landing .work-showcase .roles {margin-top:16px}
-.ub-landing .work-showcase .work {margin-top:20px}
-.ub-landing #wstack .sc {will-change:transform,opacity,box-shadow}
-@media(max-width:1050px) {
-.ub-landing .work-track {height:240vh}
-.ub-landing .work-showcase {top:66px;padding-top:4px}
-.ub-landing .work-showcase .work {margin-top:16px}
-}
-@media(max-width:560px) {
-.ub-landing .work-track {height:200vh}
-.ub-landing .work-showcase {top:60px}
-.ub-landing .work-showcase .work {margin-top:12px}
-}
 .ub-landing .work {display:grid;grid-template-columns:110px minmax(0,.85fr) minmax(0,1.25fr);gap:clamp(20px,3vw,48px);max-width:1260px;margin:90px auto 0;align-items:start}
 .ub-landing .clock {position:relative;padding-left:8px}
 .ub-landing .clock div {display:flex;align-items:center;gap:10px;height:46px;font-size:14px;color:var(--dim);position:relative}
@@ -3004,10 +2986,7 @@ function landing(){
   </div>
 </div></section>
 
-<section class="sec alt" id="work">
-  <div class="work-track" id="wtrack">
-    <div class="work-showcase" id="wshowcase">
-      <div class="wrap">
+<section class="sec alt" id="work"><div class="wrap">
   <div class="center rv"><h2>Put UniBuddy to work</h2><p class="lede" style="max-width:860px;margin:28px auto 0">One login for everyone, and a portal shaped around each role. See how a day on campus runs with UniBuddy.</p></div>
   <div class="roles" role="tablist" id="roles"></div>
   <div class="work">
@@ -3026,9 +3005,6 @@ function landing(){
       <div class="wbtns"><button class="btn" id="replay">Replay <svg class="ico" style="width:18px;height:18px"><use href="#i-replay"/></svg></button></div>
     </div>
   </div>
-    </div>
-  </div>
-  <div class="wrap">
   <div class="dock"><div id="dock"></div></div>
   <div class="dpw" id="dpw"><div class="dpi"><div class="dpanel" id="dpanel" role="region" aria-live="polite" aria-label="Feature details"></div></div></div>
 </div></section>
@@ -3660,93 +3636,17 @@ function initLandingPage(){
       return { cs, front, reset(){ order = cs.map((_, i) => i); apply(); }, last: () => order[order.length - 1] };
     }
 
-    // Scroll-driven automatic card switching for #wstack
-    const wtrack = $('wtrack');
-    const wstackEl = $('wstack');
-    let activeWorkCard = 0;
-    const wsk = makeCardStack(wstackEl, c => { activeWorkCard = c; });
-
-    function activateWorkCard(targetIdx, anim = true){
-      if(!wsk || targetIdx < 0 || targetIdx >= wsk.cs.length) return;
-      activeWorkCard = targetIdx;
-      wsk.front(targetIdx, anim);
-
-      // Trigger progressive reveals on Card 1 (steps) and Card 2 (from sources)
-      if(targetIdx === 1 && $('wsteps')){
-        [...$('wsteps').children].forEach((d, k) => {
-          setTimeout(() => d.classList.add('on'), 120 + k * 180);
-        });
-      } else if(targetIdx === 2 && $('wfrom')){
-        setTimeout(() => $('wfrom').classList.add('on'), 120);
+    let wsAuto = 0;
+    const wsk = makeCardStack($('wstack'), () => clearTimeout(wsAuto));
+    function wsRun(){
+      clearTimeout(wsAuto);
+      if(wsk){
+        wsk.front(0, false);
+        wsAuto = setTimeout(() => wsk.front(1, true), 1300);
       }
     }
-
-    function checkWorkCardScroll(){
-      if(!wtrack || !wsk) return;
-      const rect = wtrack.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const scrollableDist = rect.height - vh;
-      if(scrollableDist <= 0) return;
-
-      const headerEl = document.querySelector('.ub-landing header') || document.querySelector('header');
-      const navH = headerEl ? headerEl.offsetHeight : 72;
-      const stickyTop = navH + 4;
-
-      // Before reaching the section: Card 0 stays in foreground, no card switching
-      if(rect.top > stickyTop){
-        if(activeWorkCard !== 0){
-          activateWorkCard(0, true);
-        }
-        return;
-      }
-
-      // Distance scrolled into the pinned section
-      const scrolled = stickyTop - rect.top;
-      const progress = Math.max(0, Math.min(1, scrolled / scrollableDist));
-
-      // Divide scroll distance equally among the 3 cards:
-      // Range 0: [0, 0.33) -> Card 0 ("Your question")
-      // Range 1: [0.33, 0.67) -> Card 1 ("UniBuddy at work")
-      // Range 2: [0.67, 1.0] -> Card 2 ("Where the answer came from")
-      const numCards = wsk.cs.length || 3;
-      let targetIdx = Math.floor(progress * numCards);
-      if(targetIdx >= numCards) targetIdx = numCards - 1;
-      if(targetIdx < 0) targetIdx = 0;
-
-      if(targetIdx !== activeWorkCard){
-        activateWorkCard(targetIdx, true);
-      }
-    }
-
-    let workScrollScheduled = false;
-    window.addEventListener('scroll', () => {
-      if(!workScrollScheduled){
-        requestAnimationFrame(() => {
-          checkWorkCardScroll();
-          workScrollScheduled = false;
-        });
-        workScrollScheduled = true;
-      }
-    }, { passive: true });
-    window.addEventListener('resize', checkWorkCardScroll, { passive: true });
-
-    // Initial activation
-    activateWorkCard(0, false);
-    checkWorkCardScroll();
-
-    if($('roles')){
-      $('roles').addEventListener('click', e => {
-        if(e.target.closest('.role')){
-          activateWorkCard(activeWorkCard, false);
-        }
-      });
-    }
-    if($('replay')){
-      $('replay').addEventListener('click', () => {
-        activateWorkCard(0, true);
-        if(wtrack) wtrack.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
+    if($('roles')) $('roles').addEventListener('click', e => { if(e.target.closest('.role')) wsRun(); });
+    if($('replay')) $('replay').addEventListener('click', wsRun);
 
     // Audio Speech synthesis
     if($('wave')) {
