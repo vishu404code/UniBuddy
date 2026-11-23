@@ -46,6 +46,8 @@ function handleRequest(req, res) {
   let reqPath = req.url.split('?')[0];
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/index.html';
+  } else if (reqPath === '/login') {
+    reqPath = '/login.html';
   }
 
   const filePath = path.join(__dirname, reqPath);

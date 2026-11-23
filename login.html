@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log in · UniBuddy</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;700&display=swap" rel="stylesheet">
+<style>
+@view-transition{navigation:auto}
+:root{
+  color-scheme:dark;
+  --bg:#141413;
+  --bg0:#141413;
+  --bg2:#1e1d1b;
+  --card:#201f1d;
+  --card-hover:#262522;
+  --ink:#faf9f5;
+  --muted:#a6a39b;
+  --line:#34322e;
+  --blue:#4a7cf7;
+  --bink:#739eff;
+  --bsoft:rgba(74,124,247,.12);
+  --ok:#2ea160;
+  --bad:#e5484d;
+  --e:cubic-bezier(.2,.8,.2,1);
+}
+
+*{box-sizing:border-box;min-width:0}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--ink);
+  font:16px/1.55 "DM Sans",system-ui,sans-serif;
+  display:flex;
+  flex-direction:column;
+  overflow-x:clip;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:radial-gradient(55% 45% at 20% 12%,rgba(74,124,247,.1),transparent 70%),radial-gradient(45% 45% at 85% 88%,rgba(74,124,247,.08),transparent 70%);
+}
+a{color:var(--bink)}
+h1,h2{font-family:"Plus Jakarta Sans","DM Sans",sans-serif;font-weight:700;margin:0;letter-spacing:-.015em;text-wrap:balance}
+.top{display:flex;justify-content:space-between;align-items:center;padding:20px max(4vw,18px)}
+.brand{display:flex;align-items:center;gap:11px;font-family:"Plus Jakarta Sans","DM Sans",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;text-decoration:none;color:var(--ink)}
+.brand img{width:36px;height:36px;border-radius:10px;object-fit:contain;overflow:hidden;flex:none}
+.back{font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:40px;font-weight:500;transition:color .2s}
+.back:hover{color:var(--bink)}
+.back .ico{transition:transform .3s var(--e)}
+.back:hover .ico{transform:translateX(-4px)}
+main{flex:1;display:grid;place-items:center;padding:12px max(4vw,16px) 40px}
+
+/* Unified Card */
+.card{
+  width:min(1040px,100%);
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:28px;
+  overflow:hidden;
+  box-shadow:0 24px 64px -20px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.3);
+  animation:in .7s var(--e) both;
+  position:relative;
+  transform:perspective(1400px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+  transition:transform .4s var(--e);
+}
+@keyframes in{from{opacity:0;transform:translateY(18px) scale(.97);filter:blur(6px)}}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Left Hero Showcase with Animated Logo */
+.login-showcase{
+  background:linear-gradient(160deg,#181716 0%,#201f1d 50%,#242321 100%);
+  color:#faf9f5;
+  padding:clamp(32px,4vw,48px);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+  border-right:1px solid var(--line);
+}
+.login-showcase::before{
+  content:"";
+  position:absolute;
+  width:440px;
+  height:440px;
+  top:-120px;
+  right:-120px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(74,124,247,.16),transparent 70%);
+  pointer-events:none;
+  animation:showcaseOrbFloat 14s ease-in-out infinite alternate;
+}
+.login-showcase::after{
+  content:"";
+  position:absolute;
+  width:380px;
+  height:380px;
+  bottom:-100px;
+  left:-80px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(74,124,247,.14),transparent 70%);
+  pointer-events:none;
+  animation:showcaseOrbFloat 18s ease-in-out infinite alternate-reverse;
+}
+@keyframes showcaseOrbFloat{to{transform:translate(25px,20px) scale(1.08)}}
+
+.showcase-brand-hero{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  position:relative;
+  z-index:2;
+  margin-bottom:20px;
+}
+
+/* Prominent Animated UniBuddy Logo Stage */
+.logo-stage-wrap{
+  position:relative;
+  width:132px;
+  height:132px;
+  display:grid;
+  place-items:center;
+  margin-bottom:16px;
+  animation:logoHeroEntrance .9s cubic-bezier(.16,1,.3,1) both;
+}
+.logo-halo-ring{
+  position:absolute;
+  inset:-12px;
+  border-radius:36px;
+  border:1.5px solid rgba(115,158,255,.3);
+  background:radial-gradient(circle,rgba(74,124,247,.18),transparent 70%);
+  animation:logoPulseRing 3.6s ease-in-out infinite;
+  pointer-events:none;
+}
+.logo-halo-ring.outer{
+  inset:-24px;
+  border-radius:44px;
+  border-color:rgba(115,158,255,.15);
+  animation:logoPulseRing 3.6s ease-in-out infinite 1.8s;
+}
+.logo-pod-anchor{
+  position:relative;
+  width:108px;
+  height:108px;
+  border-radius:26px;
+  background:#242321;
+  border:2px solid var(--line);
+  box-shadow:0 16px 36px -10px rgba(0,0,0,.6),0 0 28px rgba(74,124,247,.3);
+  display:grid;
+  place-items:center;
+  animation:logoFloatBreathe 5s ease-in-out infinite;
+  transition:transform .3s ease,box-shadow .3s ease;
+  overflow:hidden;
+}
+.logo-pod-anchor:hover{
+  transform:translateY(-4px) scale(1.04);
+  box-shadow:0 22px 42px -10px rgba(0,0,0,.7),0 0 38px rgba(74,124,247,.5);
+}
+.showcase-logo-img{
+  width:80px;
+  height:80px;
+  object-fit:contain;
+  display:block;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
+  animation:logoGleam 6s ease-in-out infinite;
+}
+
+@keyframes logoHeroEntrance{
+  0%{opacity:0;transform:translateY(24px) scale(.88);filter:blur(8px)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+}
+@keyframes logoFloatBreathe{
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-7px) scale(1.025)}
+}
+@keyframes logoPulseRing{
+  0%,100%{transform:scale(.96);opacity:.4}
+  50%{transform:scale(1.06);opacity:.85}
+}
+@keyframes logoGleam{
+  0%,100%{filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  50%{filter:drop-shadow(0 6px 18px rgba(74,124,247,.65))}
+}
+
+.showcase-body{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.showcase-desc{
+  color:var(--muted);
+  font-size:14.5px;
+  line-height:1.55;
+  margin:0;
+  text-align:center;
+}
+.showcase-badges{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  margin-top:6px;
+}
+.showcase-pill{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:10px 14px;
+  backdrop-filter:blur(8px);
+  transition:background .25s,border-color .25s,transform .25s;
+}
+.showcase-pill:hover{
+  background:rgba(255,255,255,.07);
+  border-color:rgba(255,255,255,.2);
+  transform:translateX(4px);
+}
+.showcase-pill .pico{
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  background:rgba(74,124,247,.2);
+  color:var(--bink);
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+.showcase-footer{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:22px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* Right Form Side */
+.side{
+  padding:clamp(28px,4vw,48px);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  background:var(--card);
+}
+.side h1{font-size:clamp(28px,3.2vw,36px);line-height:1.15;color:var(--ink)}
+.sub{color:var(--muted);margin:8px 0 24px;font-size:15px}
+.gbtn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  min-height:48px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#242321;
+  color:var(--ink);
+  font:600 15px "DM Sans",sans-serif;
+  cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.gbtn:hover{background:#2e2c29;border-color:var(--blue);transform:translateY(-1px)}
+.gbtn:active,.sbtn:active{transform:scale(.98)}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:20px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+form{display:grid;gap:14px}
+label{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--ink)}
+.field{position:relative}
+.field .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none;transition:color .2s}
+.field:focus-within .ico{color:var(--bink)}
+input[type=email],input[type=password],input[type=text]{
+  width:100%;
+  min-height:48px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#181716;
+  color:var(--ink);
+  font:15px "DM Sans",sans-serif;
+  padding:0 44px;
+  transition:border-color .25s,box-shadow .25s,background .25s;
+}
+input::placeholder{
+  color:#78756d;
+  opacity:1;
+}
+input[type=email]:focus,input[type=password]:focus,input[type=text]:focus{
+  outline:0;
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(74,124,247,.22);
+  background:#1e1d1b;
+}
+.field.bad input{border-color:var(--bad);animation:shk .45s}
+.field.bad .ico{color:var(--bad)}
+@keyframes shk{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.eye{
+  position:absolute;
+  right:6px;
+  top:50%;
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  border:0;
+  background:none;
+  color:var(--muted);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  transition:color .2s,background .2s;
+}
+.eye:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+.eye .ico{transition:transform .3s var(--e)}
+.eye.on .ico{transform:scale(1.12);color:var(--bink)}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:10px;flex-wrap:wrap}
+.row label{display:flex;align-items:center;gap:8px;font-weight:400;color:var(--muted);cursor:pointer}
+.row input{width:18px;height:18px;accent-color:var(--blue)}
+.link{background:none;border:0;color:var(--bink);font:500 14px "DM Sans",sans-serif;cursor:pointer;padding:6px 0;transition:color .2s}
+.link:hover{color:var(--blue);text-decoration:underline}
+
+.sbtn{
+  position:relative;
+  overflow:hidden;
+  min-height:50px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#3864d4 0%,var(--blue) 100%);
+  color:#ffffff;
+  font:600 16px "DM Sans",sans-serif;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  transition:transform .25s var(--e),box-shadow .3s;
+  box-shadow:0 10px 24px -8px rgba(74,124,247,.5);
+}
+.sbtn:hover{transform:translateY(-1px);box-shadow:0 14px 28px -8px rgba(74,124,247,.7)}
+.sbtn:disabled{opacity:.7;cursor:wait;transform:none}
+.sbtn::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.24) 50%,transparent 70%);transform:translateX(-120%);transition:transform .8s var(--e);pointer-events:none}
+.sbtn:hover::after{transform:translateX(120%)}
+
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.msg{font-size:14px;border-radius:12px;padding:12px 14px;display:none;line-height:1.5}
+.msg.show{display:block;animation:fade .35s ease}
+.msg.err{background:rgba(229,72,77,.15);color:#ff8589;border:1px solid rgba(229,72,77,.3)}
+.msg.info{background:rgba(74,124,247,.12);color:var(--bink);border:1px solid rgba(74,124,247,.25)}
+@keyframes fade{from{opacity:0;transform:translateY(-4px)}}
+
+.demo-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+.demo-pills .btn{
+  background:#242321;
+  border:1px solid var(--line);
+  color:var(--ink);
+  font-weight:600;
+  transition:all .2s;
+  min-height:32px;
+  padding:0 12px;
+  border-radius:8px;
+  font-size:12px;
+  cursor:pointer;
+}
+.demo-pills .btn:hover{
+  background:#2e2c29;
+  border-color:var(--blue);
+  transform:translateY(-1px);
+}
+
+.newuni{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.preview{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--muted);margin-top:16px;background:rgba(255,255,255,.02)}
+
+/* States */
+.state{display:none;text-align:center;animation:fade .45s ease}
+.state.show{display:block}
+.state .big{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;margin:0 auto 18px;background:rgba(74,124,247,.16);color:var(--bink);animation:popin .7s var(--e)}
+@keyframes popin{from{transform:scale(.4) rotate(-12deg);opacity:0}}
+.state .big .ico{width:32px;height:32px}
+.state h1{margin-bottom:10px;color:var(--ink)}
+.bar{height:5px;border-radius:5px;background:var(--line);overflow:hidden;margin:24px auto 0;max-width:260px}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--bink));transition:width 1.6s ease}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:999px;font:600 15px "DM Sans",sans-serif;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);margin:6px;transition:all .2s}
+.btn.pri{background:var(--blue);color:#ffffff;border-color:var(--blue)}
+.btn:hover{transform:translateY(-2px)}
+
+footer{display:block;text-align:center;font-size:13px;color:var(--muted);padding:0 16px 24px}
+
+@media(max-width:860px){
+  .card{grid-template-columns:minmax(0,1fr)}
+  .login-showcase{padding:26px 20px;border-right:0;border-bottom:1px solid var(--line)}
+  .logo-stage-wrap{width:110px;height:110px;margin-bottom:12px}
+  .logo-pod-anchor{width:90px;height:90px;border-radius:22px}
+  .showcase-logo-img{width:66px;height:66px}
+  .showcase-badges{gap:8px}
+  .showcase-pill{padding:8px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .card{transform:none!important}
+}
+</style>
+</head><body>
+
+<div class="orb" aria-hidden="true" style="position:fixed;left:50%;top:32%;width:min(700px,120vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,rgba(74,124,247,.08),transparent 65%);z-index:-1;pointer-events:none"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-cap" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-build" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 10h.01M15 10h.01M9 14h.01M15 14h.01"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+<symbol id="i-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2.2-2.4 3.7M12 17h.01"/></symbol>
+</defs></svg>
+
+<div class="top">
+  <a class="brand" href="index.html">
+    <img src="logo.png" alt="UniBuddy Logo">
+    UniBuddy
+  </a>
+  <a class="back" href="index.html">
+    <svg class="ico" style="width:16px;height:16px"><use href="#i-left"/></svg>Back to home
+  </a>
+</div>
+
+<main><div class="card">
+  <!-- Left Hero Showcase: Animated UniBuddy Logo -->
+  <section class="login-showcase" aria-label="UniBuddy Campus Intelligence">
+    <div class="showcase-brand-hero">
+      <div class="logo-stage-wrap">
+        <div class="logo-halo-ring outer" aria-hidden="true"></div>
+        <div class="logo-halo-ring" aria-hidden="true"></div>
+        <div class="logo-pod-anchor">
+          <img src="logo.png" alt="UniBuddy Logo" class="showcase-logo-img">
+        </div>
+      </div>
+      <h2 style="font-size:clamp(26px,2.8vw,34px);font-weight:700;color:var(--ink);letter-spacing:-0.02em;margin:0 0 6px">UniBuddy</h2>
+      <p style="color:var(--muted);font-size:14px;margin:0;font-weight:500;letter-spacing:0.02em">Intelligent Campus Platform</p>
+    </div>
+
+    <div class="showcase-body">
+      <p class="showcase-desc">
+        One unified university door. Sign in to seamlessly open your role-specific dashboard with authenticated campus access.
+      </p>
+
+      <div class="showcase-badges">
+        <div class="showcase-pill">
+          <span class="pico">
+            <svg style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <div style="line-height:1.3">
+            <b style="font-size:13.5px;color:var(--ink);display:block">Automated Role Routing</b>
+            <small style="font-size:12px;color:var(--muted)">Instant access for Students, Faculty, Authority &amp; Management</small>
+          </div>
+        </div>
+
+        <div class="showcase-pill">
+          <span class="pico">
+            <svg style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+          </span>
+          <div style="line-height:1.3">
+            <b style="font-size:13.5px;color:var(--ink);display:block">Academic AI Intelligence</b>
+            <small style="font-size:12px;color:var(--muted)">Real-time queries, notices, tickets &amp; analytics</small>
+          </div>
+        </div>
+
+        <div class="showcase-pill">
+          <span class="pico">
+            <svg style="width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <div style="line-height:1.3">
+            <b style="font-size:13.5px;color:var(--ink);display:block">Enterprise SSO &amp; Google Auth</b>
+            <small style="font-size:12px;color:var(--muted)">Verified university credentials with active session sync</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-footer">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block"></span>
+        Campus Verified
+      </span>
+      <span>Official Portal Access</span>
+    </div>
+  </section>
+
+  <!-- Right Side: Clean Unified Login Form -->
+  <section class="side">
+    <div id="signin">
+      <h1>Welcome back</h1>
+      <p class="sub">Log in to your campus on UniBuddy.</p>
+      
+      <div class="google-wrap" style="position:relative;width:100%">
+        <button class="gbtn" id="google" type="button">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <div id="google-signin-btn" style="position:absolute;inset:0;opacity:0.0001;cursor:pointer;z-index:10;display:flex;justify-content:center;align-items:center"></div>
+      </div>
+      
+      <div class="or">or use your email</div>
+      
+      <form id="form" novalidate>
+        <label for="email">University email</label>
+        <div class="field">
+          <svg class="ico"><use href="#i-mail"/></svg>
+          <input id="email" type="email" autocomplete="email" placeholder="name@university.edu" required>
+        </div>
+        
+        <label for="pw">Password</label>
+        <div class="field">
+          <svg class="ico"><use href="#i-lock"/></svg>
+          <input id="pw" type="password" autocomplete="current-password" placeholder="Your password" required>
+          <button class="eye" type="button" id="eye" aria-label="Show password">
+            <svg class="ico" style="position:static;transform:none"><use href="#i-eye"/></svg>
+          </button>
+        </div>
+        
+        <div class="row">
+          <label><input type="checkbox" id="rem">Remember me</label>
+          <button class="link" type="button" id="forgot">Forgot password?</button>
+        </div>
+        
+        <div class="msg" id="msg" role="alert"></div>
+        <button class="sbtn" id="submit" type="submit">Log in <svg class="ico"><use href="#i-arrow"/></svg></button>
+      </form>
+      
+      <div class="demo-pills">
+        <span style="width:100%;text-align:center;font-size:12px;color:var(--muted);font-weight:600">Universal demo accounts (click to autofill):</span>
+        <button type="button" class="btn" data-demo-role="student">🎓 Student</button>
+        <button type="button" class="btn" data-demo-role="faculty">🧑‍🏫 Faculty</button>
+        <button type="button" class="btn" data-demo-role="authority">🛡️ Authority</button>
+        <button type="button" class="btn" data-demo-role="management">🏛️ Management</button>
+      </div>
+
+      <div class="newuni">Is your university new to UniBuddy? <a href="index.html#cta">Request early access</a></div>
+      <p class="preview">Demo credentials: universal password is <strong>UniBuddy@123</strong>. Role detection routes each account automatically.</p>
+    </div>
+
+    <!-- Routing transition state -->
+    <div class="state" id="routing">
+      <div class="big" id="rIcon"></div>
+      <h1 id="rTitle">Opening your portal</h1>
+      <p class="sub" id="rSub"></p>
+      <div class="bar"><span id="rBar"></span></div>
+      <div id="rDone" style="display:none;margin-top:22px">
+        <p class="preview" style="margin:0 0 10px">Signed in successfully. Entering portal…</p>
+        <button class="btn" id="again" type="button">Try another email</button>
+      </div>
+    </div>
+
+    <!-- Unknown campus state -->
+    <div class="state" id="notyet">
+      <div class="big"><svg class="ico"><use href="#i-q"/></svg></div>
+      <h1>Your university isn't on UniBuddy yet</h1>
+      <p class="sub" id="nSub">We couldn't find a campus for this email.</p>
+      <a class="btn pri" href="index.html#cta">Request access for your campus</a>
+      <button class="btn" id="again2" type="button">Use another email</button>
+    </div>
+  </section>
+</div></main>
+
+<footer>© 2026 UniBuddy · <a href="index.html#faq">Help</a></footer>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const ic=n=>`<svg class="ico"><use href="#i-${n}"/></svg>`;
+
+const PUBLIC=['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','proton.me'];
+function lookup(email){
+  const [local,domain]=(email||'').toLowerCase().split('@');
+  if(!domain) return 'student';
+  if(PUBLIC.includes(domain))return null;
+  if(/admin|mgmt|registrar|vc|director/.test(local))return 'management';
+  if(/dean|hod|office|warden|authority/.test(local))return 'authority';
+  if(/prof|faculty|dr\.|teacher|lecturer/.test(local))return 'faculty';
+  return 'student';
+}
+
+const ACC={
+  'student@unibuddy.demo':{role:'student',name:'Aarav Sharma',department:'Computer Science',id:'stu-101'},
+  'faculty@unibuddy.demo':{role:'faculty',name:'Dr. Mehta',department:'Computer Science',id:'fac-201'},
+  'authority@unibuddy.demo':{role:'authority',name:'Campus Authority',department:'Administration',id:'auth-301'},
+  'management@unibuddy.demo':{role:'management',name:'Management Office',department:'Institutional Operations',id:'mgmt-401'},
+  'admin@unibuddy.demo':{role:'super_admin',name:'Super Admin',department:'Administration',id:'admin-001'}
+};
+const DPW='UniBuddy@123';
+const VALID_PWS=['UniBuddy@123','demo123','password','password123'];
+
+function show(id){
+  ['signin','routing','notyet'].forEach(s=>{if($(s))$(s).classList.toggle('show',s===id);});
+  if($('signin'))$('signin').style.display=id==='signin'?'':'none';
+}
+function msg(text,type='err'){
+  const m=$('msg');
+  if(m){m.textContent=text;m.className='msg show '+type;}
+}
+function reset(){
+  show('signin');
+  if($('rBar'))$('rBar').style.width='0';
+  if($('rDone'))$('rDone').style.display='none';
+  if($('submit')){
+    $('submit').disabled=false;
+    $('submit').innerHTML='Log in '+ic('arrow');
+  }
+}
+
+// Prefill email if remembered
+try {
+  const remEmail = localStorage.getItem('ub-email');
+  if(remEmail && $('email')) {
+    $('email').value = remEmail;
+    if($('rem')) $('rem').checked = true;
+  }
+} catch(e){}
+
+function route(email, pw){
+  let a = ACC[email.toLowerCase()];
+  let role = a?.role || lookup(email);
+  
+  if(!role){
+    if($('nSub')) $('nSub').textContent=`We couldn't find a campus for ${email}. Ask your university to join, or log in with your university email.`;
+    show('notyet');
+    if($('submit')){ $('submit').disabled=false; $('submit').innerHTML='Log in '+ic('arrow'); }
+    return;
+  }
+  
+  if(ACC[email.toLowerCase()] && !VALID_PWS.includes(pw) && pw !== DPW){
+    msg('Incorrect password. Universal demo password is ' + DPW + '.', 'err');
+    if($('submit')){ $('submit').disabled=false; $('submit').innerHTML='Log in '+ic('arrow'); }
+    return;
+  }
+  
+  if(!a){
+    const nameParts = email.split('@')[0].split(/[._-]/);
+    const capName = nameParts.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    a = {
+      role: role,
+      name: capName || 'University User',
+      department: role === 'faculty' ? 'Computer Science' : role === 'authority' ? 'Administration' : role === 'management' ? 'Institutional Operations' : 'Student Body',
+      id: 'usr-' + Math.random().toString(36).slice(2, 8)
+    };
+  }
+
+  const roleNames = {
+    student: {name:'Student Portal', icon:'cap'},
+    faculty: {name:'Faculty Portal', icon:'brief'},
+    authority: {name:'Authority Portal', icon:'shield'},
+    management: {name:'Management Portal', icon:'build'}
+  };
+  const p = roleNames[role] || {name: role.charAt(0).toUpperCase() + role.slice(1) + ' Portal', icon:'cap'};
+
+  if($('rIcon')) $('rIcon').innerHTML=ic(p.icon);
+  if($('rTitle')) $('rTitle').textContent='Opening ' + p.name;
+  if($('rSub')) $('rSub').textContent=`Signed in as ${email}. Redirecting to your dashboard…`;
+  show('routing');
+  
+  if($('rBar')){
+    $('rBar').style.width = '0';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>$('rBar').style.width='100%'));
+  }
+  
+  try {
+    const rem = $('rem');
+    if(rem?.checked) localStorage.setItem('ub-email', email);
+    else localStorage.removeItem('ub-email');
+    localStorage.setItem('ub-current-user', email);
+    localStorage.setItem('ub-user', JSON.stringify({ ...a, email: email }));
+  } catch(e){}
+
+  setTimeout(()=>{
+    location.href = 'index.html';
+  }, 1000);
+}
+
+if($('form')) {
+  $('form').addEventListener('submit',e=>{
+    e.preventDefault();
+    const email=$('email').value.trim(),pw=$('pw').value;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg('Enter your university email address.');$('email').focus();return;}
+    if(!pw){msg('Enter your password.');$('pw').focus();return;}
+    $('msg').className='msg';
+    const b=$('submit');b.disabled=true;b.innerHTML='<span class="spin"></span>Checking your campus…';
+    setTimeout(()=>route(email, pw), 400);
+  });
+}
+
+if($('google')) {
+  $('google').addEventListener('click',()=>{
+    msg('To sign in with Google, use your university Google account on UniBuddy.', 'info');
+  });
+}
+
+if($('eye')) {
+  $('eye').addEventListener('click',()=>{
+    const p=$('pw'),t=p.type==='password';
+    p.type=t?'text':'password';
+    $('eye').setAttribute('aria-label',t?'Hide password':'Show password');
+    $('eye').classList.toggle('on',t);
+    $('eye').innerHTML=`<svg class="ico" style="position:static;transform:none"><use href="#i-${t?'eyeoff':'eye'}"/></svg>`;
+  });
+}
+
+if($('forgot')) {
+  $('forgot').addEventListener('click',()=>msg('Password resets are handled by your university administrator. Universal demo password is ' + DPW + '.', 'info'));
+}
+
+if($('again')) $('again').addEventListener('click',reset);
+if($('again2')) $('again2').addEventListener('click',reset);
+
+// Demo pills autofill & instant login
+document.querySelectorAll('[data-demo-role]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const r = btn.dataset.demoRole;
+    const roleEmail = r === 'student' ? 'student@unibuddy.demo' : r === 'faculty' ? 'faculty@unibuddy.demo' : r === 'authority' ? 'authority@unibuddy.demo' : 'management@unibuddy.demo';
+    if($('email')) $('email').value = roleEmail;
+    if($('pw')) $('pw').value = DPW;
+    if($('form')) $('form').dispatchEvent(new Event('submit'));
+  });
+});
+
+reset();
+}
+</script>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 3D perspective response on card
+const card=document.querySelector('.card');
+if(card && !still){
+  card.addEventListener('pointermove',e=>{
+    if(e.pointerType!=='mouse')return;
+    const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    card.style.setProperty('--ry',((x-.5)*3.2).toFixed(2)+'deg');
+    card.style.setProperty('--rx',((.5-y)*2.4).toFixed(2)+'deg');
+  });
+  card.addEventListener('pointerleave',()=>{
+    card.style.removeProperty('--rx');
+    card.style.removeProperty('--ry');
+  });
+}
+
+// Validation feedback
+$('form')?.addEventListener('submit',()=>{
+  const okm=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value.trim()),okp=!!$('pw').value;
+  [['email',okm],['pw',okp]].forEach(([id,ok])=>{
+    const f=$(id)?.parentNode;
+    if(!f)return;
+    f.classList.remove('bad');
+    void f.offsetWidth;
+    $(id).setAttribute('aria-invalid',String(!ok));
+    if(!ok)f.classList.add('bad');
+  });
+});
+['email','pw'].forEach(id=>$(id)?.addEventListener('input',()=>{
+  $(id).parentNode?.classList.remove('bad');
+  $(id).removeAttribute('aria-invalid');
+}));
+}
+</script>
+
+</body></html>

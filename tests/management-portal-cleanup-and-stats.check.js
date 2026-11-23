@@ -209,13 +209,12 @@ S.analytics = {
 const renderedStats = evalInCtx("mgmtPortalView('x')");
 assert(renderedStats.includes('Management Stats'), 'mgmtPortalView(x) must render Management Stats heading');
 
-// Section 1: University Overview with 5 specific cards
-assert(renderedStats.includes('University Overview'), 'Section 1 heading University Overview must exist');
-assert(renderedStats.includes('Student Body'), 'Section 1 must render Student Body card');
-assert(renderedStats.includes('Faculty Members'), 'Section 1 must render Faculty Members card');
-assert(renderedStats.includes('Club Initiatives'), 'Section 1 must render Club Initiatives card');
-assert(renderedStats.includes('Documents'), 'Section 1 must render Documents card');
-assert(renderedStats.includes('Broadcast Notices'), 'Section 1 must render Broadcast Notices card');
+// University Overview 5 cards must be completely removed per requirement
+assert(!renderedStats.includes('University Overview'), 'University Overview section must be removed');
+assert(!renderedStats.includes('Student Body'), 'Student Body card must be removed');
+assert(!renderedStats.includes('Faculty Members'), 'Faculty Members card must be removed');
+assert(!renderedStats.includes('Club Initiatives'), 'Club Initiatives card must be removed');
+assert(!renderedStats.includes('Broadcast Notices'), 'Broadcast Notices card must be removed');
 
 // Section 2: Platform Activity Summary
 assert(renderedStats.includes('Platform Activity'), 'Section 2 heading Platform Activity must exist');
